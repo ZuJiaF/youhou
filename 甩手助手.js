@@ -9,6 +9,8 @@
 // @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=shuaishou.com
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/%E7%94%A9%E6%89%8B%E5%8A%A9%E6%89%8B.js?token=GHSAT0AAAAAACK2HOJVK7RMKG2SNC5OMDF2ZLENJ3A
+// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/%E7%94%A9%E6%89%8B%E5%8A%A9%E6%89%8B.js?token=GHSAT0AAAAAACK2HOJVK7RMKG2SNC5OMDF2ZLENJ3A
 // ==/UserScript==
 
 (function() {
