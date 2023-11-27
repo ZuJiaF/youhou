@@ -9,8 +9,8 @@
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @grant        none
-// @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E6%9F%A5%E8%A2%AB%E9%94%81%E5%BA%93%E5%AD%98.js
-// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E6%9F%A5%E8%A2%AB%E9%94%81%E5%BA%93%E5%AD%98.js
+// @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E6%9F%A5%E8%A2%AB%E9%94%81%E5%BA%93%E5%AD%98.js
+// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E6%9F%A5%E8%A2%AB%E9%94%81%E5%BA%93%E5%AD%98.js
 // ==/UserScript==
 
 (function() {
