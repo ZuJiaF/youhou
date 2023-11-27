@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         tk查被锁库存1.2
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.1.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
+// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E6%9F%A5%E8%A2%AB%E9%94%81%E5%BA%93%E5%AD%98.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=shopee.co.th
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
