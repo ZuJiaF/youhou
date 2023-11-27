@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
