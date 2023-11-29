@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.0
+// @version      0.2.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
@@ -51,6 +51,7 @@
                     CAT_UI.Button("一键审核", {
                         type: "primary",
                         onClick() {
+                            alert("确认后开始审单")
                             getOrderList();
                         },
                     }),
@@ -389,15 +390,14 @@
                     allCount--;
                     console.log("减少")
                     createPackageNo(orderId);//审单
-                    if(allCount==0){
-                        location.reload();//刷新页面
-                    }
+
                 }else if(flag1=1 && wareHouseId!=1688497351560474625){//没库存并且非新仓
                     batchUpdateWareHouse(orderId,orderCode,1)//换仓
                 }else if(flag1=1 && wareHouseId==1688497351560474625){
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
+                        alert("即将刷新页面");
                         location.reload();//刷新页面
                     }
                 }
@@ -408,13 +408,12 @@
                     allCount--;
                     console.log("减少")
                     createPackageNo(orderId);//审单
-                    if(allCount==0){
-                        location.reload();//刷新页面
-                    }
+
                 }else if(flag1=1){
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
+                        alert("即将刷新页面");
                         location.reload();//刷新页面
                     }
                 }
@@ -445,6 +444,10 @@
             })
         }).done(function(response) {
             console.log(response);
+            if(allCount==0){
+                alert("即将刷新页面");
+                location.reload();//刷新页面
+            }
         });
     }
 
