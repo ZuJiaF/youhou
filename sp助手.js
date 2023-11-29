@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         sp查商品价格3.1 分页导demo
+// @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2.0
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -10,6 +10,8 @@
 // @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
+// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
 // ==/UserScript==
 
 (function() {
