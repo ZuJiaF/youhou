@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
+// @version      0.2.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
@@ -397,7 +397,6 @@
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
-                        alert("即将刷新页面");
                         location.reload();//刷新页面
                     }
                 }
@@ -413,7 +412,6 @@
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
-                        alert("即将刷新页面");
                         location.reload();//刷新页面
                     }
                 }
@@ -445,7 +443,6 @@
         }).done(function(response) {
             console.log(response);
             if(allCount==0){
-                alert("即将刷新页面");
                 location.reload();//刷新页面
             }
         });
