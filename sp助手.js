@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.0
+// @version      0.2.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -260,6 +260,17 @@
                             flex: 1,
                         },
                     }),
+                    CAT_UI.Button("查询", {
+                        type: "primary",
+                        onClick() {
+                            shop_id=input1;
+                            item_id=input2;
+                            array1=[array1Head];
+                            getItemInformation(shop_id,item_id,"single");
+                            console.log("shop_id为："+shop_id);
+                            console.log("item_id为："+item_id);
+                        },
+                    }),
 
                 ),
                 CAT_UI.createElement(
@@ -280,28 +291,6 @@
                         },
                         style: {
                             flex: 1,
-                        },
-                    }),
-
-                ),
-                CAT_UI.createElement(
-                    "div",
-                    {
-                        style: {
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                        },
-                    },
-                    CAT_UI.Button("查询", {
-                        type: "primary",
-                        onClick() {
-                            shop_id=input1;
-                            item_id=input2;
-                            array1=[array1Head];
-                            getItemInformation(shop_id,item_id,"single");
-                            console.log("shop_id为："+shop_id);
-                            console.log("item_id为："+item_id);
                         },
                     }),
                     CAT_UI.Button("此页面导出", {
@@ -327,6 +316,19 @@
                             // console.log("item_id为："+item_id);
                         },
                     }),
+
+                ),
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    
+                    
 
                 ),
 
