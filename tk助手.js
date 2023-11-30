@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.0
+// @version      0.2.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -28,8 +28,7 @@
     let array5;//查类目属性的类目id
     let array6=[["类目id","属性id_1","属性名称_1"]];//存放id和属性
     let content;//内容
-    let delCount1;//删除计数
-//
+    //
     /**********************************函数执行区**********************************/
     get_0();//tk被锁库存
     getFlashDealProtect();//获取tk闪购商品id
@@ -243,7 +242,6 @@
                     CAT_UI.Button("删除", {
                         type: "primary",
                         onClick() {
-                            delCount1=0;//删除计数
                             let r=confirm("确定删除吗?");
                             if (r==true){
                                 getFlashDealList(input2.slice(2),input1)
@@ -582,7 +580,7 @@
     }
 
     //删除指定天数指定代号的闪购
-    function deactivateFlashDeal(promotion_id){
+    function deactivateFlashDeal(promotion_id,endFlag){
         $.ajax({
             url: 'https://seller-th.tiktok.com/api/v1/promotion/destroy',
             crossDomain: true,
@@ -599,20 +597,18 @@
                 'promotion_id':promotion_id
             })
         }).done(function(response) {
-            delCount1--;
-            if(delCount1==0){
-                setTimeout(function(){
-                    alert("删除完成");
-                },500);
-            }
             console.log(response);
+            if(endFlag==1){
+                alert("删除完成");
+            }
         });
     }
 
     //获取闪购列表
     function getFlashDealList(date,tail){
+        let deactivateFlashDealArray=[];//需要删除闪购id数组
         $.ajax({
-            url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/list?page_index=1&page_size=50',
+            url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/list?page_index=1&page_size=100',
             crossDomain: true,
             headers: {
                 'authority': 'seller-th.tiktok.com',
@@ -622,6 +618,7 @@
             }
         }).success(function(res) {
             //console.log(res);
+
 
             res.data.flash_sales.forEach(function(e,index){
                 //console.log(e.promotion_id);//活动id
@@ -634,13 +631,23 @@
                 console.log(tail);
                 if(date==name.slice(0,4) && tail==name.slice(17)){
                     //console.log("11111111111");
-                    delCount1++;
+                    deactivateFlashDealArray.push(id);
 
-                    deactivateFlashDeal(id);
                 }
 
 
             })
+        }).done(function(){
+
+            //console.log(deactivateFlashDealArray);
+            deactivateFlashDealArray.forEach(function(e,index){
+
+                if(index!=deactivateFlashDealArray.length-1){
+                    deactivateFlashDeal(e);
+                }else if(index==deactivateFlashDealArray.length-1){
+                    deactivateFlashDeal(e,1);
+                }
+            });
         });
     }
 
