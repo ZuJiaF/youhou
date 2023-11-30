@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -19,7 +19,7 @@
     let shop_id=607032669;
     let item_id=22346379044;
     let item_idArray=[];//存放商品id
-    let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主要产品图片","产品图片2","产品图片3","产品图片4","产品图片5","产品图片6","产品图片7","产品图片8","产品图片9","sku代码","来源","库存","是否预购"];
+    let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主要产品图片","产品图片2","产品图片3","产品图片4","产品图片5","产品图片6","产品图片7","产品图片8","产品图片9","sku代码","来源","库存","是否预购","model_id"];
     let array1;//存放商品信息
     let describeErrorWord=["Shopee","SHOPEE","shopee","เอง","หี","เอง","https","เอง,ตัวเอง","บุหรี่","寸"];//商品描述违禁词库
     let describeErrorWord_Change=["","","","","","","","","","นิ้ว"]
@@ -756,6 +756,8 @@
 
             let is_pre_order;//预购
 
+            let model_id;//组合id
+
             for(let i=0;i<length;i++){
                 //console.log(i);
                 let categoriesLength=res.data.item.categories.length;
@@ -902,7 +904,10 @@
                     is_pre_order="否";
                 }
 
-                array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock,is_pre_order]);
+                //组合id
+                model_id=res.data.item.models[i].model_id;
+
+                array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock,is_pre_order,model_id]);
 
                 //一个item跑完
                 if(i==length-1){
@@ -1004,6 +1009,10 @@
         let from;//来源
 
         let stock;//库存
+
+        let is_pre_order;//预购
+
+        let model_id;//组合id
 
         for(let i=0;i<length;i++){
             //console.log(i);
@@ -1144,7 +1153,21 @@
 
             skucode=getNowDate()+"-"+i;//sku代码
             stock=res.data.item.models[i].stock;//库存
-            array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock]);
+
+             //预购
+                is_pre_order=res.data.item.is_pre_order;
+                if(is_pre_order==true){
+                    is_pre_order="是";
+                }else if(is_pre_order==false){
+                    is_pre_order="否";
+                }
+
+                //组合id
+                model_id=res.data.item.models[i].model_id;
+
+                array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock,is_pre_order,model_id]);
+
+            
 
             //一个item跑完
             if(i==length-1){
