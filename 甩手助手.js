@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
@@ -316,7 +316,7 @@
             headers: {
                 'Accept': 'application/json, text/plain, */*',
                 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-                'Authorization': 'bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDEwNDMxMDMsInVzZXJfbmFtZSI6IjMwNGRkMDBmLTgxNmEtNGMwNS1hOWU2LTMzOTBmODkwYTA1OCIsImF1dGhvcml0aWVzIjpbIlJPTEVfVVNFUiJdLCJqdGkiOiI0ZmJiZTVkZi00NGM5LTQ2NGQtOGI1OC01ODg5MzdiYzU0YWIiLCJjbGllbnRfaWQiOiJtaW5pLWFwaSIsInNjb3BlIjpbImFsbCJdfQ.PmfKiAgxJcFfvZkzAhvPuUQOPsM3KAIfcn6JJ2EGVomjcXksPqKPUBBbvFsWBIPPeOtvLYJLoSX_BZVvRdB0FUcvfPWWaKmPIwildVga9eZMlOltLCIhwpABfqhzTDXdVXx-lrDJAZo2K4EBzsp1s-EfAvc2lmwGUrMZ1FZm5loyo_XszE55HCEOwzBZw1wdaETTxSdicRbJOJRRUVAqjv2xRPRRGhDB13-D-xTnEaNgCTlGhcG5txTMi66o-aszMtXF_eGcc-Jg38zaUm78mbG5lEWF1vdI_i2o9VACef11_VOTWwy3EX85nF6VvcnmXRvANO_MbQ-fe1-MUhxwLw',
+                'Authorization': 'bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMyMTY2NjYsInVzZXJfbmFtZSI6IjMwNGRkMDBmLTgxNmEtNGMwNS1hOWU2LTMzOTBmODkwYTA1OCIsImF1dGhvcml0aWVzIjpbIlJPTEVfVVNFUiJdLCJqdGkiOiIxNGNjMDQ1YS0yZjUxLTQ1YmQtYjJiNy04OGJkOGY0OWZiNDIiLCJjbGllbnRfaWQiOiJtaW5pLWFwaSIsInNjb3BlIjpbImFsbCJdfQ.PTFpyGyf51ZnthILWCqWWUpdrcNuHUh4_N7Y0CdrVdm6HEl_YXW6apF-Uy5eAr8i-72ySrLXg901ZjJ5uOlWCmRpTR38YOeBHqazk9Pc4RsFb9JCiF8aKKbsBDp_QsryFhIuC-oKm4yNjwQx3uaGbumkmonfmt-tCy6WHas2B_vb9aGqBt1yZZkNNJ3TO3cCOBIzxqrp7rHc_Ir48a4UzAAgok1rpASQmhqifSjxSi1HRELzUf90TtbAHvhIuElJ50Ro7QwGIP8CoDM5ZF5mi-XuMZzX-k0mHiT2OdaNy-ONY6IJumMx63_LGp7vtPuhxSd23iypcZ1rHdCH9LL1iw',
 
             },
             data: {
