@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
+// @version      0.2.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -566,7 +566,7 @@
             })
         }).success(function(res) {
             console.log(res);
-            if(res.message=="success"){
+            if(res.message=="success" || res.message=="promotion invalid time period"){
                 if(time!=1){
                     flashDealActivity(tail,date+3600*frequency,time-1,frequency,content)
                 }else if(time==1){
