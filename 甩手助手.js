@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
@@ -386,9 +386,8 @@
             })
             //第一次
             if(flag==0){
+                //库存大于5
                 if(flag1==0){
-                    allCount--;
-                    console.log("减少")
                     createPackageNo(orderId);//审单
 
                 }else if(flag1=1 && wareHouseId!=1688497351560474625){//没库存并且非新仓
@@ -397,21 +396,22 @@
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
+                        alert("123");
                         location.reload();//刷新页面
                     }
                 }
             }
             //第二次
             else if(flag==1){
+                //库存大于5
                 if(flag1==0){
-                    allCount--;
-                    console.log("减少")
                     createPackageNo(orderId);//审单
 
                 }else if(flag1=1){
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
+                        alert("345");
                         location.reload();//刷新页面
                     }
                 }
@@ -442,7 +442,10 @@
             })
         }).done(function(response) {
             console.log(response);
+            allCount--;
+            console.log("减少")
             if(allCount==0){
+                alert("567");
                 location.reload();//刷新页面
             }
         });
