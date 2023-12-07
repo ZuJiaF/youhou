@@ -396,7 +396,7 @@
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
-                        alert("123");
+                        alert("确认后刷新页面1");
                         location.reload();//刷新页面
                     }
                 }
@@ -411,7 +411,7 @@
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
-                        alert("345");
+                        alert("确认后刷新页面2");
                         location.reload();//刷新页面
                     }
                 }
@@ -445,7 +445,7 @@
             allCount--;
             console.log("减少")
             if(allCount==0){
-                alert("567");
+                alert("确认后刷新页面3");
                 location.reload();//刷新页面
             }
         });
