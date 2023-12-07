@@ -566,14 +566,17 @@
             })
         }).success(function(res) {
             console.log(res);
-            if(res.message=="success" || res.message=="promotion invalid time period"){
+            if(res.message=="success"){
                 if(time!=1){
                     flashDealActivity(tail,date+3600*frequency,time-1,frequency,content)
                 }else if(time==1){
                     alert("活动报名成功");
                 }
+            }else if(res.message=="promotion invalid time period"){
+                alert("活动时间段冲突");
             }else if(res.message=="The promotion name already exists"){
-                alert("活动已存在");
+                alert("活动名已经存在");
+
             }else{
                 alert("报名失败！！！！！！");
             }
