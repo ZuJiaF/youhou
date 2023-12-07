@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -572,6 +572,8 @@
                 }else if(time==1){
                     alert("活动报名成功");
                 }
+            }else if(res.message=="The promotion name already exists"){
+                alert("活动已存在");
             }else{
                 alert("报名失败！！！！！！");
             }
