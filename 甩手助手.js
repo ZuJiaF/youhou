@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.4
+// @version      0.2.5
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
@@ -26,19 +26,81 @@
     let flag2=0;//新仓运行flag
     let oldListLength=0;
     let newListLength=0;
+    let Authorization;//Authorization
+    let code;//code
+    let key=123456;//key
     /*********全局变量*********/
 
+    /*********函数*********/
+    init();
+    /*********函数*********/
 
+    //初始化
+    function init(){
+        Authorization=localStorage.getItem("Authorization");
+        code=localStorage.getItem("code");
+        key=localStorage.getItem("key");
+    }
     //面板数据
     const data = {
         input1: 11,
-
+        input2:Authorization,
+        input3:code
     };
-    //主页
+    //主页 #首页 #首页UI #首页ui
     function firstPage() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);//商品id
+        const [input2, setInput2] = CAT_UI.useState(data.input2);//Authorization
+        const [input3, setInput3] = CAT_UI.useState(data.input3);//code
         return CAT_UI.Space(
             [
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("Authorization："),
+                    CAT_UI.Input({
+                        value: input2,
+                        onChange(val) {
+                            setInput2(val);
+                            data.input2 = val;
+                            localStorage.setItem("Authorization",val);
+                        },
+                        style: {
+                            flex: 1,
+                        },
+                    }),
+
+
+                ),CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("code："),
+                    CAT_UI.Input({
+                        value: input3,
+                        onChange(val) {
+                            setInput3(val);
+                            data.input3 = val;
+                            localStorage.setItem("code",val);
+                        },
+                        style: {
+                            flex: 1,
+                        },
+                    }),
+
+
+                ),
                 CAT_UI.createElement(
                     "div",
                     {
@@ -51,8 +113,11 @@
                     CAT_UI.Button("一键审核", {
                         type: "primary",
                         onClick() {
-                            alert("确认后开始审单")
-                            getOrderList();
+                            if(key=="123456"){
+                                alert("确认后开始审单")
+                                getOrderList();
+                            }
+
                         },
                     }),
 
@@ -256,7 +321,7 @@
             },
             contentType: 'application/json',
             data: JSON.stringify({
-                'code': '304dd00f-816a-4c05-a9e6-3390f890a058',
+                'code': code,
                 'pageNo': 1,
                 'pageSize': 100,
                 'wareHouseId': 0,
@@ -297,7 +362,7 @@
                     allCount--;
                     console.log("减少")
                 }else{
-                    getDetail(e.orderCode,e.id,0);//获取订单详情
+                    getDetail(e.orderCode,e.id,0,Authorization,code);//获取订单详情
                 }
 
 
@@ -309,20 +374,21 @@
 
 
     //获取订单详情
-    function getDetail(orderCode,orderId,flag){
+    function getDetail(orderCode,orderId,flag,Authorization,code){
+        //console.log("Authorization",Authorization);
         $.ajax({
             url: 'https://dz.shuaishou.com/api/orderPrint/orderHead/detail',
             crossDomain: true,
             headers: {
                 'Accept': 'application/json, text/plain, */*',
                 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-                'Authorization': 'bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMyMTY2NjYsInVzZXJfbmFtZSI6IjMwNGRkMDBmLTgxNmEtNGMwNS1hOWU2LTMzOTBmODkwYTA1OCIsImF1dGhvcml0aWVzIjpbIlJPTEVfVVNFUiJdLCJqdGkiOiIxNGNjMDQ1YS0yZjUxLTQ1YmQtYjJiNy04OGJkOGY0OWZiNDIiLCJjbGllbnRfaWQiOiJtaW5pLWFwaSIsInNjb3BlIjpbImFsbCJdfQ.PTFpyGyf51ZnthILWCqWWUpdrcNuHUh4_N7Y0CdrVdm6HEl_YXW6apF-Uy5eAr8i-72ySrLXg901ZjJ5uOlWCmRpTR38YOeBHqazk9Pc4RsFb9JCiF8aKKbsBDp_QsryFhIuC-oKm4yNjwQx3uaGbumkmonfmt-tCy6WHas2B_vb9aGqBt1yZZkNNJ3TO3cCOBIzxqrp7rHc_Ir48a4UzAAgok1rpASQmhqifSjxSi1HRELzUf90TtbAHvhIuElJ50Ro7QwGIP8CoDM5ZF5mi-XuMZzX-k0mHiT2OdaNy-ONY6IJumMx63_LGp7vtPuhxSd23iypcZ1rHdCH9LL1iw',
+                'Authorization': Authorization,
 
             },
             data: {
                 'orderCode': orderCode,
                 'orderId': orderId,
-                'code': '304dd00f-816a-4c05-a9e6-3390f890a058'
+                'code': code
             }
         }).done(function(res) {
             console.log("getDetail",res);
@@ -370,7 +436,7 @@
             },
             contentType: 'application/json',
             data: JSON.stringify({
-                'code': '304dd00f-816a-4c05-a9e6-3390f890a058',
+                'code': code,
                 'id': orderId,
                 'wareHouseId': wareHouseId,//仓库代码
                 'itemSkuModels': itemSkuModels
@@ -392,7 +458,7 @@
 
                 }else if(flag1=1 && wareHouseId!=1688497351560474625){//没库存并且非新仓
                     batchUpdateWareHouse(orderId,orderCode,1)//换仓
-                }else if(flag1=1 && wareHouseId==1688497351560474625){
+                }else if(flag1=1 && wareHouseId==1688497351560474625){//没库存并且是新仓
                     allCount--;
                     console.log("减少")
                     if(allCount==0){
@@ -435,7 +501,7 @@
             },
             contentType: 'application/json',
             data: JSON.stringify({
-                'code': '304dd00f-816a-4c05-a9e6-3390f890a058',
+                'code': code,
                 'ids': [
                     orderId
                 ]
@@ -465,7 +531,7 @@
             },
             contentType: 'application/json',
             data: JSON.stringify({
-                'code': '304dd00f-816a-4c05-a9e6-3390f890a058',
+                'code': code,
                 'wareHouseId': '1688497351560474625',
                 'ids': [
                     orderId
@@ -475,7 +541,7 @@
             })
         }).done(function(res) {
             console.log(res);
-            getDetail(orderCode,orderId,flag);//再尝试
+            getDetail(orderCode,orderId,flag,Authorization,code);//再尝试
         });
     }
 
