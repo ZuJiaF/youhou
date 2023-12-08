@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.5
+// @version      0.2.6
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
@@ -28,7 +28,7 @@
     let newListLength=0;
     let Authorization;//Authorization
     let code;//code
-    let key=123456;//key
+    let key;//key
     /*********全局变量*********/
 
     /*********函数*********/
