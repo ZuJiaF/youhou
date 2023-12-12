@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -58,7 +58,7 @@
                             alignItems: "center",
                         },
                     },
-                    CAT_UI.Button("导出被查库存", {
+                    CAT_UI.Button("导出被锁库存", {
                         type: "primary",
                         onClick() {
                             if(end_flag1==1){
