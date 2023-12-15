@@ -70,7 +70,7 @@ function firstPage() {
                     type: "primary",
                     onClick() {
                         //混密2
-                        if(key=="\x77\x6f\x73\x68\x69\x73\x68\x75\x61\x69\x67\x65"){window["\x61\x6c\x65\x72\x74"]("\u786e\u8ba4\u540e\u5f00\u59cb\u5ba1\u5355");getOrderList()}
+                        if(key=="\x77\x6f\x73\x68\x69\x73\x68\x75\x61\x69\x67\x65"){window["\x61\x6c\x65\x72\x74"]("\u786e\u8ba4\u540e\u5f00\u59cb\u5ba1\u5355");getOrderList()}else{window["\x61\x6c\x65\x72\x74"]("\u53d1\u751f\u9519\u8bef\uff0c\u8bf7\u8054\u7cfb\u4f5c\u8005")}
 
                     },
                 }),
@@ -573,7 +573,7 @@ function getAvailableStock(orderId,wareHouseId,itemSkuModels,orderCode,flag){
                 console.log("减少")
                 if(allCount==0){
                     //刷新页面flag
-                    if(reloadFlag==1){
+                    if(reloadAlertFlag==1){
                         alert("确认后刷新页面1");
                     }
                     location.reload();//刷新页面
@@ -591,7 +591,7 @@ function getAvailableStock(orderId,wareHouseId,itemSkuModels,orderCode,flag){
                 console.log("减少")
                 if(allCount==0){
                     //刷新页面flag
-                    if(reloadFlag==1){
+                    if(reloadAlertFlag==1){
                         alert("确认后刷新页面1");
                     }
                     location.reload();//刷新页面
@@ -628,7 +628,7 @@ function createPackageNo(orderId){
         console.log("减少")
         if(allCount==0){
             //刷新页面flag
-            if(reloadFlag==1){
+            if(reloadAlertFlag==1){
                 alert("确认后刷新页面1");
             }
             location.reload();//刷新页面
