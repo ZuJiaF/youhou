@@ -11,7 +11,7 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=shuaishou.com
 // @grant        none
 // @downloadURL https://raw.githubusercontent.com/ZuJiaF/youhou/main/%E7%94%A9%E6%89%8B%E5%8A%A9%E6%89%8B%E6%AD%A3%E5%BC%8F%E7%89%88.js
-// @updateURL https://raw.githubusercontent.com/ZuJiaF/youhou/main/%E7%94%A9%E6%89%8B%E5%8A%A9%E6%89%8B%E6%AD%A3%E5%BC%8F%E7%89%88.js
+// @updateURL   https://raw.githubusercontent.com/ZuJiaF/youhou/main/%E7%94%A9%E6%89%8B%E5%8A%A9%E6%89%8B%E6%AD%A3%E5%BC%8F%E7%89%88.js
 // ==/UserScript==
 (function() {
 /全局变量/
