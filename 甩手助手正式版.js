@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         甩手助手公开版
+// @name         甩手助手正式版
 // @namespace    http://tampermonkey.net/
 // @version      0.2.8
 // @description  try to take over the world!
