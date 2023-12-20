@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -19,6 +19,7 @@
     let shop_id=607032669;
     let item_id=22346379044;
     let item_idArray=[];//存放商品id
+    let finishItemIdArray=[];//已经完成的商品id
     let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主要产品图片","产品图片2","产品图片3","产品图片4","产品图片5","产品图片6","产品图片7","产品图片8","产品图片9","sku代码","来源","库存","是否预购","model_id"];
     let array1;//存放商品信息
     let describeErrorWord=["Shopee","SHOPEE","shopee","เอง","หี","เอง","https","เอง,ตัวเอง","บุหรี่","寸"];//商品描述违禁词库
@@ -32,7 +33,7 @@
     let abcCount=0;
     let total;//总数
     let page=1;//默认页码
-    let mode;//模式(1:全店 2:整页 3:单个 4:同店多个 5:跨店多个)
+    let mode;//模式(1:全店 2:整页 3:单个 4:同店多个 5:跨店多个 6:线下单个)
     let othersArray;//跨店多个存储数组
 
     let afAcEncDat=[
@@ -328,8 +329,8 @@
                             alignItems: "center",
                         },
                     },
-                    
-                    
+
+
 
                 ),
 
@@ -460,7 +461,7 @@
         );
     }
 
-    //线下单个(页面6)
+    //线下单个(页面6) #线下页面 #线下界面
     function OffLine() {
         const [input1, setInput1] = CAT_UI.useState(data.input6);
         return CAT_UI.Space(
@@ -491,7 +492,7 @@
                         onClick() {
                             //console.log(JSON.parse(input1));
                             array1=[array1Head];
-                            offLine_getItemInformation(JSON.parse(input1));
+                            offLine_getItemInformation(JSON.parse(input1),"","",6);//线下获取
                         },
                     }),
                 ),
@@ -697,264 +698,22 @@
                 'item_id': item_id
             }
         }).success(function(res) {
+            item_idArray.push([item_id]);//已完成的itemId
             console.log(`正在执行第${getItemInformationCount}个`);
-            console.log(res);
-
-
-            //console.log("sku数量为："+res.data.item.models.length);
-            let length=res.data.item.models.length;//sku数量
-
-            //console.log("类目代码为："+res.data.item.categories[2].catid);
-            let catid;
-
-            //console.log("品牌为："+res.data.item.brand);
-            let brand;
-
-            //console.log("标题："+res.data.item.title);
-            let title;
-
-            //console.log("商品描述："+res.data.item.description);
-            let description;
-
-            //console.log("sku名称："+res.data.item.models[0].name);
-            let name;
-
-            //console.log("变体1："+res.data.item.models[0].name);
-            let name1;
-
-            //console.log("变体2："+res.data.item.models[0].name);
-            let name2;
-
-            //console.log("sku图像："+res.data.product_images.first_tier_variations[0].image);
-            let image;
-
-            //console.log("sku价格："+res.data.item.models[0].price);
-            let price;
-
-            //console.log("打折前sku价格："+res.data.item.models[0].price_before_discount);
-            let price_before_discount;
-
-            let skucode;//sku代码
-
-            //console.log("商品图片1",res.data.product_images.images[0]);
-            //console.log("商品图片2",res.data.product_images.images[1]);
-            //console.log("商品图片3",res.data.product_images.images[2]);
-            //console.log("商品图片4",res.data.product_images.images[3]);
-            //console.log("商品图片5",res.data.product_images.images[4]);
-            //console.log("商品图片6",res.data.product_images.images[5]);
-            //console.log("商品图片7",res.data.product_images.images[6]);
-            //console.log("商品图片8",res.data.product_images.images[7]);
-            //console.log("商品图片9",res.data.product_images.images[8]);
-            let images=[];//商品图片
-
-            let linkHead="https://cf.shopee.co.th/file/";//获取图像的链接头部
-
-            let fromHead="https://shopee.co.th/product/";//来源链接头部
-            let from;//来源
-
-            let stock;//库存
-
-            let is_pre_order;//预购
-
-            let model_id;//组合id
-
-            for(let i=0;i<length;i++){
-                //console.log(i);
-                let categoriesLength=res.data.item.categories.length;
-                catid=res.data.item.categories[categoriesLength-1].catid;//类目代码
-                brand=res.data.item.brand;//品牌
-                if(brand==null){
-                    brand="No brand";
-                }
-
-                title=res.data.item.title;//标题
-
-                //主图处理
-                images[0]=linkHead+res.data.product_images.images[0];
-                images[1]=linkHead+res.data.product_images.images[1];
-                images[2]=linkHead+res.data.product_images.images[2];
-                images[3]=linkHead+res.data.product_images.images[3];
-                images[4]=linkHead+res.data.product_images.images[4];
-                images[5]=linkHead+res.data.product_images.images[5];
-                images[6]=linkHead+res.data.product_images.images[6];
-                images[7]=linkHead+res.data.product_images.images[7];
-                images[8]=linkHead+res.data.product_images.images[8];
-                for(let i1=0;i1<9;i1++){
-                    if(res.data.product_images.images[i1]==undefined){
-                        images[i1]=null;
-                    }
-                }
-
-                //sku名称处理
-                name=res.data.item.models[i].name;//sku名称
-                let index1=name.indexOf(",");
-
-                if(name==""){
-                    name1="one";
-                    name2="";
-                }else if(index1>0){
-                    name1=name.split(",")[0];//变体1
-                    //console.log("变体1："+name1);
-                    name2=name.split(",")[1];//变体2
-                    //console.log("变体2："+name2);
-                }else if(index1<0){
-                    name1=name;//变体1
-                    //console.log("变体1："+name1);
-                    name2="one";//变体2
-                    //console.log("变体2："+name2);
-                }
-
-                //变体去除违禁词
-                for(let p=0;p<VariationErrorWord.length;p++){
-                    if(name1.includes(VariationErrorWord[p])){
-                        let regex2 = new RegExp(VariationErrorWord[p], 'g');
-                        name1 = name1.replace(regex2, VariationErrorWord_Change[p]);
-
-                    }
-                    if(name2.includes(VariationErrorWord[p])){
-                        let regex3 = new RegExp(VariationErrorWord[p], 'g');
-                        name2 = name2.replace(regex3, VariationErrorWord_Change[p]);
-
-                    }
-                }
-
-
-                //sku图片处理
-                let skuImageLength=res.data.product_images.first_tier_variations.length;//sku图片数量
-                for(let j=0;j<skuImageLength;j++){
-                    //console.log(res.data.product_images.first_tier_variations[j].name);
-                    if(name1==res.data.product_images.first_tier_variations[j].name){
-                        image=linkHead+res.data.product_images.first_tier_variations[j].image;//sku图像
-
-                    }
-
-                }
-                //如果没有sku图片，用主图替换
-                if(image==undefined){
-                    image=images[0]
-                }
-                //商品描述处理
-                description=res.data.item.description;//商品描述
-                for(let l=0;l<describeErrorWord.length;l++){
-                    if(description.includes(describeErrorWord[l])){
-                        let regex1 = new RegExp(describeErrorWord[l], 'g');
-                        description = description.replace(regex1, describeErrorWord_Change[l]);
-
-                    }
-                }
-                for(let i2=0;i2<9;i2++){
-                    if(i2==8){
-                        description=description+"<img src='"+image+"' width='800' height='800'>"
-                    }else if(images[i2+1]!=null){
-                        description=description+"<img src='"+images[i2+1]+"' width='800' height='800'>"
-
-
-                    }
-
-
-                }
-
-
-                //console.log(`第${i+1}个sku图像:${image}`);
-                price=res.data.item.models[i].price/100000;//sku价格
-                //console.log("处理后sku价格："+price);
-
-                //如果没有打折，则用打折前的价格替代
-                price_before_discount=res.data.item.models[i].price_before_discount/100000;//打折前sku价格
-                if(price_before_discount==0){
-                    price_before_discount=price;
-                }
-
-
-                //修正sku价格
-                if(price>0 && price<=50){
-                    price=price+25;
-                }else if(price>50 && price<=100){
-                    price=price+20;
-                }else if(price>100){
-                    price=price+10;
-                }
-
-                //修正打折前sku价格
-                if(price_before_discount>0 && price_before_discount<=50){
-                    price_before_discount=price_before_discount*5;
-                }else if(price_before_discount>50 && price_before_discount<=100){
-                    price_before_discount=price_before_discount*3;
-                }else if(price_before_discount>100){
-                    price_before_discount=price_before_discount*2;
-                }
-
-
-
-                //console.log("折扣前sku价格："+price_before_discount);
-
-                from=fromHead+res.data.item.shop_id+"/"+res.data.item.item_id;
-
-
-
-
-                skucode=getNowDate()+"-"+i;//sku代码
-                stock=res.data.item.models[i].stock;//库存
-
-                //预购
-                is_pre_order=res.data.item.is_pre_order;
-                if(is_pre_order==true){
-                    is_pre_order="是";
-                }else if(is_pre_order==false){
-                    is_pre_order="否";
-                }
-
-                //组合id
-                model_id=res.data.item.models[i].model_id;
-
-                array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock,is_pre_order,model_id]);
-
-                //一个item跑完
-                if(i==length-1){
-                    //一页跑完
-                    if(getItemInformationCount=="single"){
-                        ex(array1,`单个产品信息`);
-                    }else if(getItemInformationCount==limit){
-                        //console.log("最后一个");
-                        if(mode==1){
-                            ex(array1,`整店产品信息`);
-                        }else if(mode==2){
-                            ex(array1,`产品信息第${page}页`);
-                        }else if(mode==5){
-                            ex(array1,`跨店多个`);
-                        }
-
-
-                    }else if(getItemInformationCount!=limit){
-                        getItemInformationIndex++;
-                        getItemInformationCount++;
-                        if(mode==5){
-
-                            setTimeout(function(){
-                                getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
-                            },60000)
-                        }else{
-                            setTimeout(function(){
-                                getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,limit,mode)
-                            },60000)
-                        }
-
-                    }
-
-
-
-                }
-            }
+            offLine_getItemInformation(res,getItemInformationCount,limit,mode);
 
         }).error(function(res) {
             console.log("失败失败失败");
+            array1 = array1.filter( ( el ) => !item_idArray.includes( el ) );//去除已经成功的
             ex(array1,`整店产品信息(未完成)`);
         });
     }
-    //线下获取单个商品详情
-    function offLine_getItemInformation(res){
-
-        console.log(`正在执行线下获取`);
+    //获取单个商品详情后处理
+    function offLine_getItemInformation(res,getItemInformationCount,limit,mode){
+        if(mode==6){
+            console.log(`正在执行线下获取`);
+        }
+        CAT_UI.Message.info('This is an info message!');
         console.log(res);
 
         //console.log("sku数量为："+res.data.item.models.length);
@@ -1154,26 +913,54 @@
             skucode=getNowDate()+"-"+i;//sku代码
             stock=res.data.item.models[i].stock;//库存
 
-             //预购
-                is_pre_order=res.data.item.is_pre_order;
-                if(is_pre_order==true){
-                    is_pre_order="是";
-                }else if(is_pre_order==false){
-                    is_pre_order="否";
-                }
+            //预购
+            is_pre_order=res.data.item.is_pre_order;
+            if(is_pre_order==true){
+                is_pre_order="是";
+            }else if(is_pre_order==false){
+                is_pre_order="否";
+            }
 
-                //组合id
-                model_id=res.data.item.models[i].model_id;
+            //组合id
+            model_id=res.data.item.models[i].model_id.toString();//#modelId #modelid
 
-                array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock,is_pre_order,model_id]);
+            array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock,is_pre_order,model_id]);
 
-            
+
 
             //一个item跑完
             if(i==length-1){
                 //一页跑完
-                ex(array1,`线下单个产品信息`);
+                if(getItemInformationCount=="single"){
+                    ex(array1,`单个产品信息`);
+                }else if(mode==6){
+                    ex(array1,`线下单个产品信息`);
+                }else if(getItemInformationCount==limit){
+                    //console.log("最后一个");
+                    if(mode==1){
+                        ex(array1,`整店产品信息`);
+                    }else if(mode==2){
+                        ex(array1,`产品信息第${page}页`);
+                    }else if(mode==5){
+                        ex(array1,`跨店多个`);
+                    }
 
+
+                }else if(getItemInformationCount!=limit){
+                    getItemInformationIndex++;
+                    getItemInformationCount++;
+                    if(mode==5){
+
+                        setTimeout(function(){
+                            getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
+                        },60000)
+                    }else{
+                        setTimeout(function(){
+                            getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,limit,mode)
+                        },60000)
+                    }
+
+                }
 
 
 
