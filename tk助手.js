@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.6
+// @version      0.2.7
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -541,11 +541,7 @@
         let starDate=date.toString();
         let endDate=(date+3600*frequency).toString();
         console.log(startTime+"-"+endTime+" "+tail);
-        CAT_UI.Message.info({
-          content: startTime+"-"+endTime+" "+tail+' 正在报名',
-          closable: true,
-          duration: 60000,
-        });
+
         //console.log(endTime);
         $.ajax({
             url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
