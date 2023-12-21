@@ -464,6 +464,7 @@
     //线下单个(页面6) #线下页面 #线下界面
     function OffLine() {
         const [input1, setInput1] = CAT_UI.useState(data.input6);
+
         return CAT_UI.Space(
             [
                 CAT_UI.createElement(
@@ -499,6 +500,7 @@
 
 
 
+
             ],
             {
                 direction: "vertical",
@@ -519,7 +521,9 @@
 
         //point: { x: (window.screen.width - 500) / 2, y: 20 },// 面板初始坐标
         header: {
+
             title() {
+                const [visible, setVisible] = CAT_UI.useState(false);
                 return CAT_UI.el(
                     "div",
                     {
@@ -539,9 +543,39 @@
                         CAT_UI.Router.Link("同店多个", { to: "/many" }),
                         CAT_UI.Router.Link("跨店多个", { to: "/other" }),
                         CAT_UI.Router.Link("线下单个", { to: "/offLine" }),
+                        CAT_UI.Icon.IconSettings({ spin: false, //图标旋转
+                                                  style: { fontSize: 24},
+                                                  onClick: () => setVisible(true),
+                                                 }),
+                        CAT_UI.Drawer(
+                            CAT_UI.createElement("div", { style: { textAlign: "left" } }, [
+                                "Here is an example text.",
+                                CAT_UI.Divider("divider with text"),
+                                "text2",
+                                CAT_UI.Divider(null, { type: "vertical" }),
+                                "text3",
+                            ]),
+                            {
+                                title: "Basic",
+                                visible,
+                                focusLock: true,
+                                autoFocus: true,
+                                zIndex: 10000,
+                                onOk: () => {
+                                    setVisible(false);
+                                },
+                                onCancel: () => {
+                                    setVisible(false);
+                                },
+                            }
+                        ),
+                    ]),
 
-                    ])
+
+
+
                 );
+
             },
             icon:CAT_UI.Icon.ScriptCat({
                 style: { width: "24px"},
@@ -551,6 +585,7 @@
 
             style: { background: "#e5e5ff",borderBottom: "1px solid gray" },
         },
+
         routes: [
             {
                 path: "/",
@@ -576,6 +611,7 @@
                 path: "/offLine",
                 Component: OffLine,
             },
+
         ],
     });
 
@@ -705,7 +741,7 @@
         }).error(function(res) {
             console.log("失败失败失败");
             item_idArray = item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) );//去除已经成功的
-            ex(`整店产品信息(未完成)`,array1,"Sheet1");
+            ex(`整店产品信息(未完成)`,array1,"Sheet1",item_idArray,"Sheet2");
         });
     }
     //获取单个商品详情后处理
@@ -953,11 +989,11 @@
 
                         setTimeout(function(){
                             getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
-                        },60000)
+                        },30000)
                     }else{
                         setTimeout(function(){
                             getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,limit,mode)
-                        },60000)
+                        },30000)
                     }
 
                 }
