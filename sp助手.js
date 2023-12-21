@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.4
+// @version      0.2.5
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -698,14 +698,14 @@
                 'item_id': item_id
             }
         }).success(function(res) {
-            item_idArray.push([item_id]);//已完成的itemId
+            finishItemIdArray.push([item_id]);//已完成的itemId
             console.log(`正在执行第${getItemInformationCount}个`);
             offLine_getItemInformation(res,getItemInformationCount,limit,mode);
 
         }).error(function(res) {
             console.log("失败失败失败");
-            array1 = array1.filter( ( el ) => !item_idArray.includes( el ) );//去除已经成功的
-            ex(array1,`整店产品信息(未完成)`);
+            item_idArray = item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) );//去除已经成功的
+            ex(`整店产品信息(未完成)`,array1,"Sheet1");
         });
     }
     //获取单个商品详情后处理
@@ -932,17 +932,17 @@
             if(i==length-1){
                 //一页跑完
                 if(getItemInformationCount=="single"){
-                    ex(array1,`单个产品信息`);
+                    ex(`单个产品信息`,array1,"Sheet1");
                 }else if(mode==6){
-                    ex(array1,`线下单个产品信息`);
+                    ex(`线下单个产品信息`,array1,"Sheet1");
                 }else if(getItemInformationCount==limit){
                     //console.log("最后一个");
                     if(mode==1){
-                        ex(array1,`整店产品信息`);
+                        ex(`整店产品信息`,array1,"Sheet1");
                     }else if(mode==2){
-                        ex(array1,`产品信息第${page}页`);
+                        ex(`产品信息第${page}页`,array1,"Sheet1");
                     }else if(mode==5){
-                        ex(array1,`跨店多个`);
+                        ex(`跨店多个`,array1,"Sheet1");
                     }
 
 
@@ -1004,15 +1004,33 @@
         return now;
     }
 
-    //导出表格函数
-    function ex(array,name){
+    //导出二维数组为表格
+    function ex(bookName,array1,sheetName1,array2,sheetName2,array3,sheetName3){
         /* 把转换JS数据数组的数组为工作表 */
-        const sheet= XLSX.utils.aoa_to_sheet(array)
+        const sheet0= XLSX.utils.aoa_to_sheet(array1);
+
+        let sheet1;
+        if(array2!=undefined && sheetName2!=undefined){
+            sheet1= XLSX.utils.aoa_to_sheet(array2);
+        }
+
+        let sheet2;
+        if(array3!=undefined && sheetName3!=undefined){
+            sheet2= XLSX.utils.aoa_to_sheet(array3);
+        }
+
         /* 生成工作簿并添加工作表 */
         const book = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(book,sheet,'Sheet0' )
+        XLSX.utils.book_append_sheet(book,sheet0,sheetName1 )
+        if(array2!=undefined && sheetName2!=undefined){
+            XLSX.utils.book_append_sheet(book,sheet1,sheetName2 )
+        }
+        if(array3!=undefined && sheetName3!=undefined){
+            XLSX.utils.book_append_sheet(book,sheet2,sheetName3 )
+        }
+
         /* 保存到文件 */
-        XLSX.writeFile(book,name+'.xlsx')
+        XLSX.writeFile(book,bookName+".xlsx")
     }
 
 })();
