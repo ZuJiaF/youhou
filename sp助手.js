@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.5
+// @version      0.2.6
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -71,6 +71,7 @@
         input4:1,
         input5:"1096120823,18495122261",
         input6:"null",
+        frequency1:"30",//频率
     };
     //整店(主页)
     function allShop() {
@@ -524,6 +525,14 @@
 
             title() {
                 const [visible, setVisible] = CAT_UI.useState(false);
+                const [input1, setInput1] = CAT_UI.useState(data.frequency1);
+                //console.log(input1);
+                const temp={
+                    data1:null,
+                    data2:null,
+                }
+                temp.data1=input1;
+                console.log(12312);
                 return CAT_UI.el(
                     "div",
                     {
@@ -548,7 +557,40 @@
                                                   onClick: () => setVisible(true),
                                                  }),
                         CAT_UI.Drawer(
+
                             CAT_UI.createElement("div", { style: { textAlign: "left" } }, [
+                                CAT_UI.createElement(
+                                    "div",
+                                    {
+                                        style: {
+                                            display: "flex",
+                                            //justifyContent: "space-between",//平均分布
+                                            alignItems: "center",
+
+                                        },
+                                    },
+                                    CAT_UI.Text("采集频率："),
+                                    CAT_UI.Input({
+                                        value: input1,
+                                        onChange(val) {
+                                            setInput1(val);
+                                            data.frequency1 = val;
+                                            console.log("1",temp.data1)
+                                        },
+                                        style: {
+                                            width:"50px",
+                                            border: "1px solid black",
+                                        },
+                                    }),
+                                    CAT_UI.Text(" 秒"),
+
+
+                                ),
+
+
+
+
+
                                 "Here is an example text.",
                                 CAT_UI.Divider("divider with text"),
                                 "text2",
@@ -560,11 +602,27 @@
                                 visible,
                                 focusLock: true,
                                 autoFocus: true,
-                                zIndex: 10000,
+                                zIndex: 100000,
+                                width:500,
+                                style:{
+                                    position: "fixed"
+                                },
+                                maskStyle:{
+                                    position: "fixed"
+                                },
+                                //抽屉打开的回调
+                                afterOpen(){
+
+                                    console.log("123",temp.data1)
+                                },
                                 onOk: () => {
                                     setVisible(false);
                                 },
                                 onCancel: () => {
+                                    console.log("55",temp.data1)
+                                    data.frequency1 = temp.data1;
+                                    console.log(data.frequency1)
+                                    setInput1(temp.data1);
                                     setVisible(false);
                                 },
                             }
@@ -989,11 +1047,11 @@
 
                         setTimeout(function(){
                             getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
-                        },30000)
+                        },data.frequency1)
                     }else{
                         setTimeout(function(){
                             getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,limit,mode)
-                        },30000)
+                        },data.frequency1)
                     }
 
                 }
