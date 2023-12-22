@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         甩手助手正式版
 // @namespace    http://tampermonkey.net/
-// @version      0.2.11
+// @version      0.2.12
 // @description  try to take over the world!
 // @author       You
 // @match        https://dz.shuaishou.com/*
@@ -14,7 +14,7 @@
 // @updateURL   https://raw.githubusercontent.com/ZuJiaF/youhou/main/%E7%94%A9%E6%89%8B%E5%8A%A9%E6%89%8B%E6%AD%A3%E5%BC%8F%E7%89%88.js
 // ==/UserScript==
 (function() {
-/全局变量/
+/*全局变量*/
 let allCount=0;
 let ArrayHead=["商品sku","商品名称","货架位编号","可用库存","锁定库存","总库存","在途库存","头程天数","安全天数","仓库名称","币种","成本价"];
 let oldWarehouseArray=[];//宝函仓数据
@@ -282,13 +282,13 @@ function stockEx() {
 
                         //数组没数据时才加载
                         if(flag1==0){
-                            alert("确定后开始导出");
+                            confirm("确定后开始导出");
                             oldWarehouseArray=[ArrayHead];
                             abc("1629401226010591234");//宝函仓
 
                         }
                         else if(flag1==1){
-                            alert("加载中，等等再点");
+                            confirm("加载中，等等再点");
                         }
                         console.log("老仓已存好的数据的长度:"+oldWarehouseArray.length);
                         console.log("加载标志",flag1);
@@ -312,7 +312,7 @@ function stockEx() {
                     onClick() {
                         //数组没数据时才加载
                         if(flag2==0){
-                            alert("确定后开始导出");
+                            confirm("确定后开始导出");
                             newWarehouseArray=[ArrayHead];
                             abc("1688497351560474625");//新仓
                         }else if(flag2==1){
@@ -340,7 +340,7 @@ function stockEx() {
                         console.log("正在导出双仓库存")
                         //数组没数据时才加载
                         if(flag1==0 || flag2==0 ){
-                            alert("确定后开始导出");
+                            confirm("确定后开始导出");
                             if(flag2==0){
                                 newWarehouseArray=[ArrayHead];
                                 abc("1688497351560474625");//新仓
