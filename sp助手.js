@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.6
+// @version      0.2.7
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -15,6 +15,7 @@
 // ==/UserScript==
 
 (function() {
+    /*********全局变量*********/
     let shop_name="x1gj1oxbyg";
     let shop_id=607032669;
     let item_id=22346379044;
@@ -35,6 +36,17 @@
     let page=1;//默认页码
     let mode;//模式(1:全店 2:整页 3:单个 4:同店多个 5:跨店多个 6:线下单个)
     let othersArray;//跨店多个存储数组
+
+    //面板数据
+    const data = {
+        input1: shop_id,
+        input2: item_id,
+        input3:page,
+        input4:1,
+        input5:"1096120823,18495122261",
+        input6:"null",
+        frequency1:"30",//频率
+    };
 
     let afAcEncDat=[
         'AAczLjEuMC0yAAABi/r42UQAABBSAzAAAAAAAAAAAiSDMisKBKWXhFWoKJviyowvY4iK8MS3gD4Lv0cZsWDYYHdpR1c3Np8BzcsRRPm/ZZgFLUngG5gdglPRlokHaBO6riuJzOhSEoCDq8ldg+RcTmGj6lzRcbx+u+wuFArvx+zvDDCzMOdK2xGN7mdKcf0ai/FxzOhSEoCDq8ldg+RcTmGj6lzRcbx+u+wuFArvx+zvDDBGV2Ia3yab8r/0vvuJ/GyfpohFHsEFTkPArlIVDn5bBVRiZeaLJCVJU0SfG5dRLyXEplSWPkm3eMEC3t+KLNlvGAt58mjadOCSqdJGJMljclRiZeaLJCVJU0SfG5dRLyVQC2vNp6jUpSv3D5U18muvsvJKMJC0+mL3l7r88kmGwBBPodmt4EdszHIcF4opk6aXjBbNxi1NURHpXdqCk5eKsc2Xbfdc2gpt/+aJUOqVPH+RElVIBn5MeXS/LyLxjKlllqCm21b2m6kp9Vd0SkMAXR0XEHp7nMd/yK6jJfN2mv439vzknrcdleW6J26R8SlgUIRBDXTXr7nYsbBk4Wfdl/82EyfDx/bVRcPaaRvYm5L8vN1nsB5ywHJ5dl7O9dPfY0EN60QwLnl6HSLwgd/geVtks1BST6eLSS4Vm6Mzx0gD9O1aYGgjmjuYbekv+r9vs85v4y7AEcXy7ddZlL1tEAYZPgDUhzKwgzjaO10Sdm00Cr7DVbXK8pbTcoVnQB0fLRBA3s8ND6ugUuGGEdYfkU+Lo3qZaiQIjNEhGUHZMwscYcBiFSLos/8ny53y5QpeAegpoENX/mRWMfYImHwz/YM+Do5deU7+ILL0uUjXp8pyiEm8SfiDA6HSULGwYb8Q5QWwNN/1vD6U7zc+txgo99sXkIJ6XcTaDO9nXu2EHdOni1yjtLPpIkKVIm15JUKIifA17G6/9SJL2858xcFVahwEDOEeYPtTEyjQwiQ9B3KJrZfkERuul2wRp2FoTx75ucxzA6P+HlxI8a0e0EITl/82EyfDx/bVRcPaaRvYm/yy1RDHOdM+KuEojloDjpIro6uipbkK1W6idbgIsQc798jZ/901tpYwiYTjGF/2xHqIptH3C3IGsFAf36t4GoQ=',
@@ -62,17 +74,29 @@
         'HIkIsmvspKEhsKEhhCEPsK/hhCEhsK/hsKEosKEhuKshs/xssKEesKEhqRzyznvhsKEGssEhkKshs+es/JNJ8owcxk/Db+exHDuwiZ5jRj6FZIxc8uaXbIIk10Y+9U4v15g53FYM3D6kdTvEhzn4ca+7P7jD/vBi8ii/AGCUtmH4+lVcpsc+OSoye1zMyNAOEdzZ3OqC7iQt/f8X0GLMfqX7YMVnuFDo8lVIXCyYZl7K5rPuc8+19DDxLse89dOJENOaPpDTWE8186ygCa8SSmSYdSnojAceQetujc1MaSX2mNa2VcUUo2Vqc5AQNoHG9sXi7kQkTpAO0kIR/XjIao6HoeInuBcDJgEpFcNGBy3KsUqRwzjV5ni04SfblnCi2AO2DA5eIerpt6M5KDCnuDOn7ByVwA+Qp7euEQUQ5coAmKaq2FDTVbrLTC6MMbckol8MyAnDVzzOsziSdkHmWzVThnEhs7OCJpBCIwQhwRjyznvhsKEcsKEheKEhsB7rYEi7bQSucsd3a1bL6+3YrrucoKEhs7sb4pevBpsgsKEhsKvhpKEPsK/hoKEhsKvhsKEcsKEheKEhs3plmU6yqDcg91IDNJgJDmIzsANDoKEhs2hnJ1cvBw/ZsKEhsK==',
 
     ];
+    /*********全局变量*********/
 
-    //面板数据
-    const data = {
-        input1: shop_id,
-        input2: item_id,
-        input3:page,
-        input4:1,
-        input5:"1096120823,18495122261",
-        input6:"null",
-        frequency1:"30",//频率
-    };
+    /*********函数*********/
+    init();
+    /*********函数*********/
+
+    //数据初始化
+    //混密1st
+    function init(){
+
+        data.frequency1 = localStorage.getItem("frequency1");
+        if(data.frequency1!=null){
+            data.frequency1=Number(data.frequency1);
+        }else if(data.frequency1==null){
+            data.frequency1=30;
+            localStorage.setItem("frequency1",JSON.stringify(data.frequency1));
+        }
+
+    }
+    //混密1ed
+
+
+    
     //整店(主页)
     function allShop() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);//商品id
@@ -575,6 +599,7 @@
                                         onChange(val) {
                                             setInput1(val);
                                             data.frequency1 = val;
+                                            localStorage.setItem("frequency1",val);
                                             console.log("1",temp.data1)
                                         },
                                         style: {
@@ -619,10 +644,9 @@
                                     setVisible(false);
                                 },
                                 onCancel: () => {
-                                    console.log("55",temp.data1)
                                     data.frequency1 = temp.data1;
-                                    console.log(data.frequency1)
                                     setInput1(temp.data1);
+                                    localStorage.setItem("frequency1",temp.data1);
                                     setVisible(false);
                                 },
                             }
@@ -773,11 +797,11 @@
                 'accept': 'application/json',
                 'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
                 /*会变动*/
-                //'af-ac-enc-dat':'AAczLjEuMC0yAAABjADZ1IsAABB1AzAAAAAAAAAAAiSDMitgC7fJ8Lsf1APFhO9cQ4Gz8MS3gD4Lv0cZsWDYYHdpR1c3Np8BzcsRRPm/ZZgFLUngG5gdglPRlokHaBO6riuJzOhSEoCDq8ldg+RcTmGj6lzRcbx+u+wuFArvx+zvDDCzMOdK2xGN7mdKcf0ai/FxzOhSEoCDq8ldg+RcTmGj6lzRcbx+u+wuFArvx+zvDDBGV2Ia3yab8r/0vvuJ/GyfpohFHsEFTkPArlIVDn5bBVRiZeaLJCVJU0SfG5dRLyXEplSWPkm3eMEC3t+KLNlvGAt58mjadOCSqdJGJMljclRiZeaLJCVJU0SfG5dRLyVQC2vNp6jUpSv3D5U18muvsvJKMJC0+mL3l7r88kmGwBBPodmt4EdszHIcF4opk6b0ZLKniNkzZatfdyqaGoqXsc2Xbfdc2gpt/+aJUOqVPH+RElVIBn5MeXS/LyLxjKlllqCm21b2m6kp9Vd0SkMAXR0XEHp7nMd/yK6jJfN2mv439vzknrcdleW6J26R8SlgUIRBDXTXr7nYsbBk4Wfdl/82EyfDx/bVRcPaaRvYm5L8vN1nsB5ywHJ5dl7O9dPfY0EN60QwLnl6HSLwgd/geVtks1BST6eLSS4Vm6Mzx0gD9O1aYGgjmjuYbekv+r9vs85v4y7AEcXy7ddZlL1ttLdXwCTZlUhB0VUlouCcTSbEt7N9qHhmf2CuFcGcpkd+kXRq38sgxXBMhEb6HyfnvXiVhzhpwl1P5YTiEMOFjQscYcBiFSLos/8ny53y5QqT6QDETK2OO0y6IgTIBlMQxwa9r0x4suGdbmNlP/PPf6R4UmloS8DczDyQrHWGRCEDORnOpfHuH9xEKlYnLTkDXAYQszwY8EVre9vPDaFm8vUl0t8j5JDAIB3JNJ/Aa14p9xiDe2qJPSdrQA1bObThCZIaCNOVzooBUmfWkD+KhWRrNiwph5gHzrOGlk3P+Hy6UKVFBNpQYodVpLSZikUAl/82EyfDx/bVRcPaaRvYm6YYQrr5kgrd9GoJ5bFfZaDdv8J4nqSRm5zsKW/39Y3a4uCgisFY7om8kJPXrmzIjqFBQHpHAWDNJCsfZCYdlkY=' ,
+    //'af-ac-enc-dat': 'AAczLjMuMC0yAAABjJTANqMAABA1AzAAAAAAAAAAAv0CU/Zr/uvprC/Du0pGpP8uZO2Bl/82EyfDx/bVRcPaaRvYm5f/NhMnw8f21UXD2mkb2JuN5GavmK9Le0WHfSLZ9v+VwVHl4XjXL5Vuk8zoRatVjK82ncQN3M6nEn+TX92kqm93Klz0SQJAiMqSWXTebQiMBSCy14MigrBSynoPM/sJ55f/NhMnw8f21UXD2mkb2Jtn/ITcW+wLKZcVOXYrFuPG8oyOVk+CDzd2jz4zfQgqkxN5QCFuh0m2a7iQsFUA38j67cDTfmPTkKWfUZwGpXmJ0RySdhyhKzToeXrsCr/7VhqGwctYFue5E9TPO5YUqWOi64TImIt+ZarJPMqBJLQq/ZaWvPGalyjKeTtfwQlVJOCQI4hQAKyjaYSF6bcF806xLwaFmyJcAkO5+qOuucdnaoo2CY25LIyt6wMpQ+l2qCnWI1LozFhgDlcarbKS8KUFfHa8SKQ1OmY/Jijj0EUgLaPmcjGwGdD15dVE/NbApQ7kzL3gRGGMPpQYugB7di11yWs8g5EXgCo7x09f4CdFtnPtlij76RsT4FDcPIJJ1PDFHN+XHd766Bnkt0QCKaigodbiVL9qSo74ztGOsQ5iGxTXPkx2ZaMjX+FrjRfleFECX6tytQBtRKSjutepLYsG2Oz/ShzC+mkLReBZSnesCGe7oH//pJSowu3Ex+7EfMG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00XrTLz3ewduDtG2yVdVJklsG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00GsfH4howtDgf0tg2xUf0T8LFzTWE8itx0swhqFf+AV1HJH5/2qmdhFATAtz74Bv1GM+kXYPGv5UM32qTEZcA8WB+qCUm1JxbxQXbfg7WXidHJH5/2qmdhFATAtz74Bv1I5KRJpVPyuhhS/7enx8SIQ1WBaSo9Wet29HogIHkfkSB+3GQVnvilyYpBGbYpbPZmsMJj8kZXQzRp7lDmAtZliZ7xHIi74kk0Kr0yHi1esAf7hAth/5Qo0wWU7m7iaZYAwk0wNlo/s+J+SOH0sN6Ezuan3BqEhMd3XnfDUwK5o0=',
                 /*会变动*/
                 //'af-ac-enc-sz-token':'mzk2PH9Q5e7v/hPk3H/05Q==|yd+88oZoo/BZTT1pk0XwDcTtAI59iJv1Q5QKac56Kj9s59ghwbj+NQ6yDbNt1IQulqLTSssxeZJ9ag==|YvfNbf1XlfKJbNe1|08|3' ,
                 'x-api-source': 'pc',
-                'x-csrftoken': 'PEXDoA7pY70v5JuF5EVpfhMgUcGS2iyx',
+                'x-csrftoken': 'r6a7YaiI3qg0JcJdP9juOB51NY0oW3lc',
                 'x-requested-with': 'XMLHttpRequest',
                 /*会变动*/
                 //'x-sap-ri': '4d7960659f4f3f74a7138a3b01019fbdc322263b7e2c8ad72d51',
@@ -792,14 +816,16 @@
                 'item_id': item_id
             }
         }).success(function(res) {
-            finishItemIdArray.push([item_id]);//已完成的itemId
+            finishItemIdArray.push(item_id);//已完成的itemId
             console.log(`正在执行第${getItemInformationCount}个`);
             offLine_getItemInformation(res,getItemInformationCount,limit,mode);
 
         }).error(function(res) {
             console.log("失败失败失败");
             item_idArray = item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) );//去除已经成功的
-            ex(`整店产品信息(未完成)`,array1,"Sheet1",item_idArray,"Sheet2");
+
+            console.log(item_idArray);
+            ex(`整店产品信息(未完成)`,array1,"Sheet1",listToMatrix(item_idArray),"Sheet2");
         });
     }
     //获取单个商品详情后处理
@@ -1047,11 +1073,11 @@
 
                         setTimeout(function(){
                             getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
-                        },data.frequency1)
+                        },data.frequency1*1000)
                     }else{
                         setTimeout(function(){
                             getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,limit,mode)
-                        },data.frequency1)
+                        },data.frequency1*1000)
                     }
 
                 }
@@ -1125,6 +1151,22 @@
 
         /* 保存到文件 */
         XLSX.writeFile(book,bookName+".xlsx")
+    }
+
+    // 数组变二维数组方法
+    function listToMatrix(list, elementsPerSubArray) {
+        var matrix = [], i, k;
+
+        for (i = 0, k = -1; i < list.length; i++) {
+            if (i % elementsPerSubArray === 0) {
+                k++;
+                matrix[k] = [];
+            }
+
+            matrix[k].push(list[i]);
+        }
+
+        return matrix;
     }
 
 })();
