@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.7
+// @version      0.2.8
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -23,8 +23,8 @@
     let finishItemIdArray=[];//已经完成的商品id
     let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主要产品图片","产品图片2","产品图片3","产品图片4","产品图片5","产品图片6","产品图片7","产品图片8","产品图片9","sku代码","来源","库存","是否预购","model_id"];
     let array1;//存放商品信息
-    let describeErrorWord=["Shopee","SHOPEE","shopee","เอง","หี","เอง","https","เอง,ตัวเอง","บุหรี่","寸"];//商品描述违禁词库
-    let describeErrorWord_Change=["","","","","","","","","","นิ้ว"]
+    let describeErrorWord=["Shopee","SHOPEE","shopee","เอง","หี","เอง","https","เอง,ตัวเอง","บุหรี่","寸","ยาสูบ"];//商品描述违禁词库
+    let describeErrorWord_Change=["","","","","","","","","","นิ้ว",""]
     let VariationErrorWord=["寸"];//变体违禁词库
     let VariationErrorWord_Change=["นิ้ว"];//变体违禁替换词库
     let offset;//开端
@@ -96,7 +96,7 @@
     //混密1ed
 
 
-    
+
     //整店(主页)
     function allShop() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);//商品id
