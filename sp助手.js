@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.8
+// @version      0.2.9
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -797,7 +797,7 @@
                 'accept': 'application/json',
                 'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
                 /*会变动*/
-    //'af-ac-enc-dat': 'AAczLjMuMC0yAAABjJTANqMAABA1AzAAAAAAAAAAAv0CU/Zr/uvprC/Du0pGpP8uZO2Bl/82EyfDx/bVRcPaaRvYm5f/NhMnw8f21UXD2mkb2JuN5GavmK9Le0WHfSLZ9v+VwVHl4XjXL5Vuk8zoRatVjK82ncQN3M6nEn+TX92kqm93Klz0SQJAiMqSWXTebQiMBSCy14MigrBSynoPM/sJ55f/NhMnw8f21UXD2mkb2Jtn/ITcW+wLKZcVOXYrFuPG8oyOVk+CDzd2jz4zfQgqkxN5QCFuh0m2a7iQsFUA38j67cDTfmPTkKWfUZwGpXmJ0RySdhyhKzToeXrsCr/7VhqGwctYFue5E9TPO5YUqWOi64TImIt+ZarJPMqBJLQq/ZaWvPGalyjKeTtfwQlVJOCQI4hQAKyjaYSF6bcF806xLwaFmyJcAkO5+qOuucdnaoo2CY25LIyt6wMpQ+l2qCnWI1LozFhgDlcarbKS8KUFfHa8SKQ1OmY/Jijj0EUgLaPmcjGwGdD15dVE/NbApQ7kzL3gRGGMPpQYugB7di11yWs8g5EXgCo7x09f4CdFtnPtlij76RsT4FDcPIJJ1PDFHN+XHd766Bnkt0QCKaigodbiVL9qSo74ztGOsQ5iGxTXPkx2ZaMjX+FrjRfleFECX6tytQBtRKSjutepLYsG2Oz/ShzC+mkLReBZSnesCGe7oH//pJSowu3Ex+7EfMG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00XrTLz3ewduDtG2yVdVJklsG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00GsfH4howtDgf0tg2xUf0T8LFzTWE8itx0swhqFf+AV1HJH5/2qmdhFATAtz74Bv1GM+kXYPGv5UM32qTEZcA8WB+qCUm1JxbxQXbfg7WXidHJH5/2qmdhFATAtz74Bv1I5KRJpVPyuhhS/7enx8SIQ1WBaSo9Wet29HogIHkfkSB+3GQVnvilyYpBGbYpbPZmsMJj8kZXQzRp7lDmAtZliZ7xHIi74kk0Kr0yHi1esAf7hAth/5Qo0wWU7m7iaZYAwk0wNlo/s+J+SOH0sN6Ezuan3BqEhMd3XnfDUwK5o0=',
+                //'af-ac-enc-dat': 'AAczLjMuMC0yAAABjJTANqMAABA1AzAAAAAAAAAAAv0CU/Zr/uvprC/Du0pGpP8uZO2Bl/82EyfDx/bVRcPaaRvYm5f/NhMnw8f21UXD2mkb2JuN5GavmK9Le0WHfSLZ9v+VwVHl4XjXL5Vuk8zoRatVjK82ncQN3M6nEn+TX92kqm93Klz0SQJAiMqSWXTebQiMBSCy14MigrBSynoPM/sJ55f/NhMnw8f21UXD2mkb2Jtn/ITcW+wLKZcVOXYrFuPG8oyOVk+CDzd2jz4zfQgqkxN5QCFuh0m2a7iQsFUA38j67cDTfmPTkKWfUZwGpXmJ0RySdhyhKzToeXrsCr/7VhqGwctYFue5E9TPO5YUqWOi64TImIt+ZarJPMqBJLQq/ZaWvPGalyjKeTtfwQlVJOCQI4hQAKyjaYSF6bcF806xLwaFmyJcAkO5+qOuucdnaoo2CY25LIyt6wMpQ+l2qCnWI1LozFhgDlcarbKS8KUFfHa8SKQ1OmY/Jijj0EUgLaPmcjGwGdD15dVE/NbApQ7kzL3gRGGMPpQYugB7di11yWs8g5EXgCo7x09f4CdFtnPtlij76RsT4FDcPIJJ1PDFHN+XHd766Bnkt0QCKaigodbiVL9qSo74ztGOsQ5iGxTXPkx2ZaMjX+FrjRfleFECX6tytQBtRKSjutepLYsG2Oz/ShzC+mkLReBZSnesCGe7oH//pJSowu3Ex+7EfMG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00XrTLz3ewduDtG2yVdVJklsG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00GsfH4howtDgf0tg2xUf0T8LFzTWE8itx0swhqFf+AV1HJH5/2qmdhFATAtz74Bv1GM+kXYPGv5UM32qTEZcA8WB+qCUm1JxbxQXbfg7WXidHJH5/2qmdhFATAtz74Bv1I5KRJpVPyuhhS/7enx8SIQ1WBaSo9Wet29HogIHkfkSB+3GQVnvilyYpBGbYpbPZmsMJj8kZXQzRp7lDmAtZliZ7xHIi74kk0Kr0yHi1esAf7hAth/5Qo0wWU7m7iaZYAwk0wNlo/s+J+SOH0sN6Ezuan3BqEhMd3XnfDUwK5o0=',
                 /*会变动*/
                 //'af-ac-enc-sz-token':'mzk2PH9Q5e7v/hPk3H/05Q==|yd+88oZoo/BZTT1pk0XwDcTtAI59iJv1Q5QKac56Kj9s59ghwbj+NQ6yDbNt1IQulqLTSssxeZJ9ag==|YvfNbf1XlfKJbNe1|08|3' ,
                 'x-api-source': 'pc',
@@ -902,7 +902,10 @@
                 brand="No brand";
             }
 
-            title=res.data.item.title;//标题
+            title=res.data.item.title.toString();//标题
+            if(title.length!=25) {
+                title=title+" safe polular beautiful beautiful beautiful";
+            }
 
             //主图处理
             images[0]=linkHead+res.data.product_images.images[0];
