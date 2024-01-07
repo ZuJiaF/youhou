@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.3.0
+// @version      0.3.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -15,7 +15,6 @@
 // ==/UserScript==
 
 (function() {
-
     /*********全局变量*********/
     let shop_name="x1gj1oxbyg";
     let shop_id=607032669;
@@ -47,6 +46,7 @@
         input5:"1096120823,18495122261",
         input6:"null",
         frequency1:"30",//频率
+        panelStatus:null,//面板缩放默认状态
     };
 
     let afAcEncDat=[
@@ -91,6 +91,15 @@
         }else if(data.frequency1==null){
             data.frequency1=30;
             localStorage.setItem("frequency1",JSON.stringify(data.frequency1));
+        }
+
+        data.panelStatus=localStorage.getItem("panelStatus");
+        console.log(`data.panelStatus的值为${data.panelStatus}`);
+        if(data.panelStatus!=null){//如果有值
+            data.panelStatus=JSON.parse(localStorage.getItem("panelStatus"));//将字符串转为布尔值
+        }else if(data.panelStatus==null){//如果没值
+            data.panelStatus=true;
+            localStorage.setItem("panelStatus",JSON.stringify(data.panelStatus));
         }
 
     }
@@ -370,7 +379,7 @@
         );
     }
 
-    //(页面4)
+    //同店多个(页面4)
     function Many() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);
         const [input2, setInput2] = CAT_UI.useState(data.input2);
@@ -413,6 +422,8 @@
                         onChange(val) {
                             setInput2(val);
                             data.input2 = val;
+                            item_idArray=val.split(",");//商品id数组
+                            console.log(item_idArray);
                         },
                         style: {
                             flex: 1,
@@ -425,7 +436,7 @@
                     onClick() {
                         shop_id=input1;
                         item_id=input2;
-                        array1=[["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主要产品图片","产品图片2","产品图片3","产品图片4","产品图片5","产品图片6","产品图片7","产品图片8","产品图片9","sku代码","来源"]];
+                        array1=[array1Head];//标题头
                         getItemInformation(shop_id,item_id,"single");
                         console.log("shop_id为："+shop_id);
                         console.log("item_id为："+item_id);
@@ -537,7 +548,7 @@
     //创造UI
     CAT_UI.createPanel({
         minButton: true,//minButton控制是否显示最小化按钮，默认为true
-        min: true,// min代表面板初始状态为最小化（仅显示header）
+        min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
         /*相当于GM_addStyle */
         appendStyle: `section {
     max-width:600px;
@@ -618,7 +629,7 @@
 
 
 
-                                "Here is an example text.",
+
                                 CAT_UI.Divider("divider with text"),
                                 "text2",
                                 CAT_UI.Divider(null, { type: "vertical" }),
@@ -697,6 +708,7 @@
             },
 
         ],
+
     });
 
 
@@ -1173,5 +1185,36 @@
 
         return matrix;
     }
+
+    //监听放大缩小按钮
+    let count1=0;
+    let interval1=setInterval(()=>{
+        count1++
+        if(count1==100){
+            console.log(1234123213);
+            clearInterval(interval1);
+        }
+        let element1=document.querySelector("cat-ui-plan").shadowRoot.querySelector("div > div:nth-child(1) > section > header > button");//获取放大缩小按钮元素
+        if(element1!=null){//如果这个元素已经加载好了
+            console.log("加载完成")
+            clearInterval(interval1);
+            console.log(element1);
+            element1.onclick = function(event) {
+                //console.log("验证");
+                let attribute=element1.querySelector("svg > path").getAttribute("d");
+
+                if(attribute=="M5 24h38"){
+                    console.log("点击时是放大的，点击后是缩小的");
+                    localStorage.setItem("panelStatus","true")//最小化
+                }else if(attribute=="M5 24h38M24 5v38"){
+                    console.log("点击时是缩小的，点击后是放大的");
+                    localStorage.setItem("panelStatus","false")//放大化
+                }
+            };
+
+        }
+    },10);
+
+
 
 })();
