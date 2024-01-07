@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.9
+// @version      0.3.0
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -15,6 +15,7 @@
 // ==/UserScript==
 
 (function() {
+
     /*********全局变量*********/
     let shop_name="x1gj1oxbyg";
     let shop_id=607032669;
@@ -580,6 +581,7 @@
                                                   style: { fontSize: 24},
                                                   onClick: () => setVisible(true),
                                                  }),
+                        "v "+GM_info.script.version,//版本
                         CAT_UI.Drawer(
 
                             CAT_UI.createElement("div", { style: { textAlign: "left" } }, [
