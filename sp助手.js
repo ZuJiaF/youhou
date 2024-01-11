@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.3.1
+// @version      0.4.0
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -36,6 +36,7 @@
     let page=1;//默认页码
     let mode;//模式(1:全店 2:整页 3:单个 4:同店多个 5:跨店多个 6:线下单个)
     let othersArray;//跨店多个存储数组
+    let reloadFlag;//刷新标志位
 
     //面板数据
     const data = {
@@ -94,12 +95,69 @@
         }
 
         data.panelStatus=localStorage.getItem("panelStatus");
-        console.log(`data.panelStatus的值为${data.panelStatus}`);
+        //console.log(`data.panelStatus的值为${data.panelStatus}`);
         if(data.panelStatus!=null){//如果有值
             data.panelStatus=JSON.parse(localStorage.getItem("panelStatus"));//将字符串转为布尔值
         }else if(data.panelStatus==null){//如果没值
             data.panelStatus=true;
             localStorage.setItem("panelStatus",JSON.stringify(data.panelStatus));
+        }
+
+        shop_id=localStorage.getItem("shop_id");
+        if(shop_id!=null){//如果有值
+            console.log("1237",shop_id)
+            shop_id=JSON.parse(localStorage.getItem("shop_id"));//将字符串转为对应数据类型
+        }else if(shop_id==null){//如果没值
+            //console.log("1238")
+        }
+
+        item_idArray=localStorage.getItem("item_idArray");
+        if(item_idArray!=null){//如果有值
+            item_idArray=JSON.parse(localStorage.getItem("item_idArray"));//将字符串转为对象
+            console.log("1234",item_idArray)
+        }else if(item_idArray==null){//如果没值
+            //console.log("1235")
+        }
+
+        mode=localStorage.getItem("mode");
+        if(mode!=null){//如果有值
+            console.log("1236",mode)
+            mode=JSON.parse(localStorage.getItem("mode"));//将字符串转为对象
+        }else if(mode==null){//如果没值
+            //console.log("1237")
+        }
+
+        reloadFlag=localStorage.getItem("reloadFlag");
+        if(reloadFlag!=null){//如果有值
+            console.log("1210",reloadFlag)
+            reloadFlag=JSON.parse(localStorage.getItem("reloadFlag"));//将字符串转为对象
+        }else if(reloadFlag==null){//如果没值
+            //console.log("1237")
+        }
+
+        if(mode==4){
+            if(reloadFlag==0){
+                item_id=item_idArray[0];//从数组的第一个开始
+                array1=[array1Head];//标题头
+                setTimeout(()=>{
+                    getItemInformation({
+                        shop_id:shop_id,
+                        item_id:item_id,
+                        mode:4,//同店多个
+                        getItemInformationCount:1,//从第几个开始
+                        limit:item_idArray.length,
+                    });
+                },30000)
+
+
+                console.log("shop_id为："+shop_id);
+                console.log("item_id为："+item_id);
+            }else if(reloadFlag==1){
+                console.log("1538");
+                localStorage.setItem("reloadFlag",0);
+                location.reload();//刷新
+            }
+
         }
 
     }
@@ -435,9 +493,16 @@
                     type: "primary",
                     onClick() {
                         shop_id=input1;
-                        item_id=input2;
+                        item_id=item_idArray[0];//从数组的第一个开始
                         array1=[array1Head];//标题头
-                        getItemInformation(shop_id,item_id,"single");
+                        getItemInformation({
+                            shop_id:shop_id,
+                            item_id:item_id,
+                            mode:4,//同店多个
+                            getItemInformationCount:1,//从第几个开始
+                            limit:item_idArray.length,
+                        });
+
                         console.log("shop_id为："+shop_id);
                         console.log("item_id为："+item_id);
                     },
@@ -568,7 +633,7 @@
                     data2:null,
                 }
                 temp.data1=input1;
-                console.log(12312);
+                //console.log(12312);
                 return CAT_UI.el(
                     "div",
                     {
@@ -802,7 +867,15 @@
         });
     }
     //获取单个商品详情
-    function getItemInformation(shop_id,item_id,getItemInformationCount,limit,mode){
+    function getItemInformation(options){
+        let{
+            shop_id=null,//商店id
+            item_id=null,//商品id
+            getItemInformationCount=null,//计数
+            limit=null,//极限
+            mode=null,//模式
+        }=options;
+        //console.log("106",limit);
         $.ajax({
             url: 'https://shopee.co.th/api/v4/pdp/get_pc',
             crossDomain: true,
@@ -831,21 +904,58 @@
             }
         }).success(function(res) {
             finishItemIdArray.push(item_id);//已完成的itemId
+            if(item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) ).length==0){//去除已经成功的
+                alert("全部商品加载完成")
+            }
             console.log(`正在执行第${getItemInformationCount}个`);
-            offLine_getItemInformation(res,getItemInformationCount,limit,mode);
+            offLine_getItemInformation({
+                res:res,
+                getItemInformationCount:getItemInformationCount,
+                limit:limit,
+                mode:mode,
+            });
 
         }).error(function(res) {
-            console.log("失败失败失败");
+            console.log("加载失败了");
             item_idArray = item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) );//去除已经成功的
-
             console.log(item_idArray);
-            ex(`整店产品信息(未完成)`,array1,"Sheet1",listToMatrix(item_idArray),"Sheet2");
+            ex(`整店产品信息(未完成)`,array1,"Sheet1",listToMatrix(item_idArray,1),"Sheet2");
+            if(mode==4){
+                if(item_idArray.length==0){
+                    console.log("abc");
+                    localStorage.remove("shop_id");
+                    localStorage.remove("item_idArray");
+                    localStorage.remove("mode");
+                    localStorage.remove("reloadFlag");
+                }else{
+                    console.log("12345",item_idArray);
+                    localStorage.setItem("shop_id",shop_id);
+                    localStorage.setItem("item_idArray",JSON.stringify(item_idArray));
+                    localStorage.setItem("mode",mode);
+                    localStorage.setItem("reloadFlag",1);
+                    //location.reload();//刷新页面
+                }
+
+
+            }
+
         });
     }
+
     //获取单个商品详情后处理
-    function offLine_getItemInformation(res,getItemInformationCount,limit,mode){
+    function offLine_getItemInformation(options){
+        let{
+            res=null,//返回的数据
+            getItemInformationCount=null,//计数
+            limit=null,//极限
+            mode=null,//模式
+        }=options;
+        //console.log("101",getItemInformationCount);
         if(mode==6){
             console.log(`正在执行线下获取`);
+        }
+        if(mode==4){
+            console.log(`正在执行同店多个`);
         }
         CAT_UI.Message.info('This is an info message!');
         console.log(res);
@@ -973,6 +1083,8 @@
 
             //sku图片处理
             let skuImageLength=res.data.product_images.first_tier_variations.length;//sku图片数量
+            let firstSkuImage=linkHead+res.data.product_images.first_tier_variations[0].image;
+            console.log(`firstSkuImage ${firstSkuImage}`);
             for(let j=0;j<skuImageLength;j++){
                 //console.log(res.data.product_images.first_tier_variations[j].name);
                 if(name1==res.data.product_images.first_tier_variations[j].name){
@@ -1065,10 +1177,9 @@
 
 
 
-            //一个item跑完
-            if(i==length-1){
-                //一页跑完
-                if(getItemInformationCount=="single"){
+
+            if(i==length-1){//一个item跑完
+                if(getItemInformationCount=="single"){//一页跑完
                     ex(`单个产品信息`,array1,"Sheet1");
                 }else if(mode==6){
                     ex(`线下单个产品信息`,array1,"Sheet1");
@@ -1078,19 +1189,38 @@
                         ex(`整店产品信息`,array1,"Sheet1");
                     }else if(mode==2){
                         ex(`产品信息第${page}页`,array1,"Sheet1");
+                    }else if(mode==4){//同店多个
+                        console.log("111 同店多个");
+                        ex(`同店多个`,array1,"Sheet1");
                     }else if(mode==5){
                         ex(`跨店多个`,array1,"Sheet1");
                     }
 
 
                 }else if(getItemInformationCount!=limit){
+                    console.log("103");
+                    //console.log(getItemInformationIndex);
                     getItemInformationIndex++;
+                    //console.log(getItemInformationCount);
                     getItemInformationCount++;
+                    //console.log(getItemInformationCount);
                     if(mode==5){
-
+                        //console.log("102");
                         setTimeout(function(){
                             getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
                         },data.frequency1*1000)
+                    }else if(mode==4){//同店多个
+                        console.log("104");
+                        setTimeout(()=>{
+                            getItemInformation({
+                                shop_id:shop_id,
+                                item_id:item_idArray[getItemInformationCount-1],
+                                mode:mode,
+                                getItemInformationCount:getItemInformationCount,
+                                limit:limit,
+                            });
+                        },data.frequency1*1000)
+
                     }else{
                         setTimeout(function(){
                             getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,limit,mode)
@@ -1183,6 +1313,7 @@
             matrix[k].push(list[i]);
         }
 
+        console.log("1234",matrix)
         return matrix;
     }
 
@@ -1191,23 +1322,23 @@
     let interval1=setInterval(()=>{
         count1++
         if(count1==100){
-            console.log(1234123213);
+            //console.log(1234123213);
             clearInterval(interval1);
         }
         let element1=document.querySelector("cat-ui-plan").shadowRoot.querySelector("div > div:nth-child(1) > section > header > button");//获取放大缩小按钮元素
         if(element1!=null){//如果这个元素已经加载好了
-            console.log("加载完成")
+            //console.log("加载完成")
             clearInterval(interval1);
-            console.log(element1);
+            //console.log(element1);
             element1.onclick = function(event) {
                 //console.log("验证");
                 let attribute=element1.querySelector("svg > path").getAttribute("d");
 
                 if(attribute=="M5 24h38"){
-                    console.log("点击时是放大的，点击后是缩小的");
+                    //console.log("点击时是放大的，点击后是缩小的");
                     localStorage.setItem("panelStatus","true")//最小化
                 }else if(attribute=="M5 24h38M24 5v38"){
-                    console.log("点击时是缩小的，点击后是放大的");
+                    //console.log("点击时是缩小的，点击后是放大的");
                     localStorage.setItem("panelStatus","false")//放大化
                 }
             };
