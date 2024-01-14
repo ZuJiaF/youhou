@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.0
+// @version      0.4.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -104,11 +104,13 @@
         }
 
         shop_id=localStorage.getItem("shop_id");
-        if(shop_id!=null){//如果有值
+        if(shop_id!=null && shop_id!=""){//如果有值
             console.log("1237",shop_id)
             shop_id=JSON.parse(localStorage.getItem("shop_id"));//将字符串转为对应数据类型
-        }else if(shop_id==null){//如果没值
-            //console.log("1238")
+        }else if(shop_id==null || shop_id==""){//如果没值,或为空
+            console.log("1238")
+            shop_id="607032669";
+            localStorage.setItem("shop_id",JSON.stringify(shop_id));
         }
 
         item_idArray=localStorage.getItem("item_idArray");
@@ -135,30 +137,30 @@
             //console.log("1237")
         }
 
-        if(mode==4){
-            if(reloadFlag==0){
-                item_id=item_idArray[0];//从数组的第一个开始
-                array1=[array1Head];//标题头
-                setTimeout(()=>{
-                    getItemInformation({
-                        shop_id:shop_id,
-                        item_id:item_id,
-                        mode:4,//同店多个
-                        getItemInformationCount:1,//从第几个开始
-                        limit:item_idArray.length,
-                    });
-                },30000)
+        //         if(mode==4){
+        //             if(reloadFlag==0){
+        //                 item_id=item_idArray[0];//从数组的第一个开始
+        //                 array1=[array1Head];//标题头
+        //                 setTimeout(()=>{
+        //                     getItemInformation({
+        //                         shop_id:shop_id,
+        //                         item_id:item_id,
+        //                         mode:4,//同店多个
+        //                         getItemInformationCount:1,//从第几个开始
+        //                         limit:item_idArray.length,
+        //                     });
+        //                 },30000)
 
 
-                console.log("shop_id为："+shop_id);
-                console.log("item_id为："+item_id);
-            }else if(reloadFlag==1){
-                console.log("1538");
-                localStorage.setItem("reloadFlag",0);
-                location.reload();//刷新
-            }
+        //                 console.log("shop_id为："+shop_id);
+        //                 console.log("item_id为："+item_id);
+        //             }else if(reloadFlag==1){
+        //                 console.log("1538");
+        //                 localStorage.setItem("reloadFlag",0);
+        //                 location.reload();//刷新
+        //             }
 
-        }
+        //         }
 
     }
     //混密1ed
@@ -361,7 +363,7 @@
                             shop_id=input1;
                             item_id=input2;
                             array1=[array1Head];
-                            getItemInformation(shop_id,item_id,"single");
+                            getItemInformation({shop_id:shop_id,item_id:item_id,mode:3});
                             console.log("shop_id为："+shop_id);
                             console.log("item_id为："+item_id);
                         },
@@ -393,12 +395,26 @@
                         onClick() {
                             //console.log(location.href);
                             let href=location.href;//页面链接
-                            console.log(href.indexOf("-i"))
-                            let index1=href.indexOf("-i");
-                            let index2=href.indexOf("?");
-                            console.log(href.indexOf("?"))
-                            href=href.slice(index1+3,index2);
-                            let index3=href.indexOf(".");
+                            let index1;
+                            let index3;
+                            let index2;
+                            if(href.indexOf("shopee.co.th")!=-1){
+                                console.log("本土链接")
+                                index1=href.indexOf("product/");
+                                href=href.slice(index1+8);
+                                //console.log(href)
+                                index3=href.indexOf("/");
+
+                            }else if(href.indexOf("-i")!=-1){
+                                console.log("跨境链接")
+                                console.log(href.indexOf("-i"))
+                                index1=href.indexOf("-i");
+                                index2=href.indexOf("?");
+                                console.log(href.indexOf("?"))
+                                href=href.slice(index1+3,index2);
+                                index3=href.indexOf(".");
+                            }
+
 
                             shop_id=href.slice(0,index3);
                             item_id=href.slice(index3+1);
@@ -406,7 +422,7 @@
 
 
                             array1=[array1Head];
-                            getItemInformation(shop_id,item_id,"single");
+                            getItemInformation({shop_id:shop_id,item_id:item_id,mode:3});
                             // console.log("shop_id为："+shop_id);
                             // console.log("item_id为："+item_id);
                         },
@@ -957,6 +973,9 @@
         if(mode==4){
             console.log(`正在执行同店多个`);
         }
+        if(mode==3){
+            console.log(`正在执行单个`);
+        }
         CAT_UI.Message.info('This is an info message!');
         console.log(res);
 
@@ -1083,8 +1102,14 @@
 
             //sku图片处理
             let skuImageLength=res.data.product_images.first_tier_variations.length;//sku图片数量
-            let firstSkuImage=linkHead+res.data.product_images.first_tier_variations[0].image;
-            console.log(`firstSkuImage ${firstSkuImage}`);
+            let firstSkuImage
+            //alert(12)
+            if(res.data.product_images.first_tier_variations.length!=0){//如果非空
+                //alert(123);
+                firstSkuImage=linkHead+res.data.product_images.first_tier_variations[0].image;
+            }
+            //alert(31)
+            //console.log(`firstSkuImage ${firstSkuImage}`);
             for(let j=0;j<skuImageLength;j++){
                 //console.log(res.data.product_images.first_tier_variations[j].name);
                 if(name1==res.data.product_images.first_tier_variations[j].name){
@@ -1109,7 +1134,12 @@
             }
             for(let i2=0;i2<9;i2++){
                 if(i2==8){
-                    description=description+"<img src='"+image+"' width='800' height='800'>"
+                    if(firstSkuImage==null){//如果没有sku图片
+                        description=description+"<img src='"+image+"' width='800' height='800'>"
+                    }else{//如果有sku图片
+                        description=description+"<img src='"+firstSkuImage+"' width='800' height='800'>"
+                    }
+
                 }else if(images[i2+1]!=null){
                     description=description+"<img src='"+images[i2+1]+"' width='800' height='800'>"
 
@@ -1179,7 +1209,7 @@
 
 
             if(i==length-1){//一个item跑完
-                if(getItemInformationCount=="single"){//一页跑完
+                if(mode==3){
                     ex(`单个产品信息`,array1,"Sheet1");
                 }else if(mode==6){
                     ex(`线下单个产品信息`,array1,"Sheet1");
@@ -1198,7 +1228,7 @@
 
 
                 }else if(getItemInformationCount!=limit){
-                    console.log("103");
+                    //console.log("103");
                     //console.log(getItemInformationIndex);
                     getItemInformationIndex++;
                     //console.log(getItemInformationCount);
@@ -1210,7 +1240,7 @@
                             getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
                         },data.frequency1*1000)
                     }else if(mode==4){//同店多个
-                        console.log("104");
+                        //console.log("104");
                         setTimeout(()=>{
                             getItemInformation({
                                 shop_id:shop_id,
