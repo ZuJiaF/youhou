@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.1
+// @version      0.4.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -105,7 +105,7 @@
 
         shop_id=localStorage.getItem("shop_id");
         if(shop_id!=null && shop_id!=""){//如果有值
-            console.log("1237",shop_id)
+            //console.log("1237",shop_id)
             shop_id=JSON.parse(localStorage.getItem("shop_id"));//将字符串转为对应数据类型
         }else if(shop_id==null || shop_id==""){//如果没值,或为空
             console.log("1238")
@@ -123,7 +123,7 @@
 
         mode=localStorage.getItem("mode");
         if(mode!=null){//如果有值
-            console.log("1236",mode)
+            //console.log("1236",mode)
             mode=JSON.parse(localStorage.getItem("mode"));//将字符串转为对象
         }else if(mode==null){//如果没值
             //console.log("1237")
@@ -131,36 +131,36 @@
 
         reloadFlag=localStorage.getItem("reloadFlag");
         if(reloadFlag!=null){//如果有值
-            console.log("1210",reloadFlag)
+            //console.log("1210",reloadFlag)
             reloadFlag=JSON.parse(localStorage.getItem("reloadFlag"));//将字符串转为对象
         }else if(reloadFlag==null){//如果没值
             //console.log("1237")
         }
 
-        //         if(mode==4){
-        //             if(reloadFlag==0){
-        //                 item_id=item_idArray[0];//从数组的第一个开始
-        //                 array1=[array1Head];//标题头
-        //                 setTimeout(()=>{
-        //                     getItemInformation({
-        //                         shop_id:shop_id,
-        //                         item_id:item_id,
-        //                         mode:4,//同店多个
-        //                         getItemInformationCount:1,//从第几个开始
-        //                         limit:item_idArray.length,
-        //                     });
-        //                 },30000)
+                if(mode==4){
+                    if(reloadFlag==0){
+                        item_id=item_idArray[0];//从数组的第一个开始
+                        array1=[array1Head];//标题头
+                        setTimeout(()=>{
+                            getItemInformation({
+                                shop_id:shop_id,
+                                item_id:item_id,
+                                mode:4,//同店多个
+                                getItemInformationCount:1,//从第几个开始
+                                limit:item_idArray.length,
+                            });
+                        },30000)
 
 
-        //                 console.log("shop_id为："+shop_id);
-        //                 console.log("item_id为："+item_id);
-        //             }else if(reloadFlag==1){
-        //                 console.log("1538");
-        //                 localStorage.setItem("reloadFlag",0);
-        //                 location.reload();//刷新
-        //             }
+                        console.log("shop_id为："+shop_id);
+                        console.log("item_id为："+item_id);
+                    }else if(reloadFlag==1){
+                        console.log("1538");
+                        localStorage.setItem("reloadFlag",0);
+                        location.reload();//刷新
+                    }
 
-        //         }
+                }
 
     }
     //混密1ed
@@ -949,7 +949,7 @@
                     localStorage.setItem("item_idArray",JSON.stringify(item_idArray));
                     localStorage.setItem("mode",mode);
                     localStorage.setItem("reloadFlag",1);
-                    //location.reload();//刷新页面
+                    location.reload();//刷新页面
                 }
 
 
