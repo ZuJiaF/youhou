@@ -1,15 +1,16 @@
 // ==UserScript==
-// @name         tk泰国本土助手
+// @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      0.2.7
+// @version      1.0.0
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
+// @match        https://seller.tiktokglobalshop.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=shopee.co.th
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
-// @grant        none
+// @grant        GM_xmlhttpRequest
 // @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
 // @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
 // ==/UserScript==
@@ -28,6 +29,8 @@
     let array5;//查类目属性的类目id
     let array6=[["类目id","属性id_1","属性名称_1"]];//存放id和属性
     let content;//内容
+    let href=location.href;//获取当前页面网址链接
+
     //
     /**********************************函数执行区**********************************/
     get_0();//tk被锁库存
@@ -543,51 +546,122 @@
         console.log(startTime+"-"+endTime+" "+tail);
 
         //console.log(endTime);
-        $.ajax({
-            url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
-            crossDomain: true,
-            method: 'post',
-            headers: {
-                'authority': 'seller-th.tiktok.com',
-                'accept': '*/*',
-                'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-                'x-secsdk-csrf-token': '000100000001d04de9dd1e0747c74b503daa0a43886da2f27d31095dd19f8e503d432d05f5151794f6970cac8e89',
-                'x-tt-oec-region': 'TH'
-            },
-            contentType: 'application/json',
-            data: JSON.stringify({
-                'promotion_name': startTime+"-"+endTime+" "+tail,
-                'period': {
-                    'start_time': starDate,
-                    'end_time': endDate
+        if(href.indexOf("https://seller-th.tiktok.com")!=-1){//泰国本土
+            $.ajax({
+                url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
+                crossDomain: true,
+                method: 'post',
+                headers: {
+                    'authority': 'seller-th.tiktok.com',
+                    'accept': '*/*',
+                    'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+                    'x-secsdk-csrf-token': '000100000001d04de9dd1e0747c74b503daa0a43886da2f27d31095dd19f8e503d432d05f5151794f6970cac8e89',
+                    'x-tt-oec-region': 'TH'
                 },
-                'pre_launch_day': 0,
-                'flash_sale_products':content,
-                'promotion_limit_dimension': 1
-            })
-        }).success(function(res) {
-            console.log(res);
-            if(res.message=="success" || res.message=="promotion invalid time period"){
-                CAT_UI.Message.info({
-          content: startTime+"-"+endTime+" "+tail+' 报名成功',
-          closable: true,
-          duration: 10000,
-        });
-                if(time!=1){
-                    flashDealActivity(tail,date+3600*frequency,time-1,frequency,content)
-                }else if(time==1){
-                    alert("活动报名成功");
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    'promotion_name': startTime+"-"+endTime+" "+tail,
+                    'period': {
+                        'start_time': starDate,
+                        'end_time': endDate
+                    },
+                    'pre_launch_day': 0,
+                    'flash_sale_products':content,
+                    'promotion_limit_dimension': 1
+                })
+            }).success(function(res) {
+                console.log(res);
+                flashDealActivitySuccess({
+                    res:res,
+                    startTime:startTime,
+                    endTime:endTime,
+                    tail:tail,
+                    date:date,
+                    time:time,
+                    frequency:frequency,
+
+                });//请求成功后要执行的
+
+            });
+        }else if(href.indexOf("https://seller.tiktokglobalshop.com")!=-1){//跨境
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/flash_sale/create?oec_seller_id=7495143478410054258",
+                headers: {
+                    'x-secsdk-csrf-token': '000100000001baa41e98f68a44c055ceaf54be2456ab4d49fbd9ba23c001b1eda3573a1b3e5017ab23c6ad8b1e1f',//会变动
+                    "Content-Type": 'application/json',
+                },
+                data: JSON.stringify({
+                    'promotion_name': startTime+"-"+endTime+" "+tail,
+                    'period': {
+                        'start_time': starDate,
+                        'end_time': endDate
+                    },
+                    'display_channels': [
+                        1
+                    ],
+                    'effective_time_type': 1,
+                    'flash_sale_products': content,
+                    'promotion_limit_dimension': 1
+                }),
+                onload: function(response){
+                    let res=JSON.parse(response.responseText);
+                    console.log(res);
+                    flashDealActivitySuccess({
+                    res:res,
+                    startTime:startTime,
+                    endTime:endTime,
+                    tail:tail,
+                    date:date,
+                    time:time,
+                    frequency:frequency,
+
+                });//请求成功后要执行的
+
+                },
+                onerror: function(res){
+                    console.log("请求失败");
                 }
-            }else if(res.message=="The promotion name already exists"){
-                alert("活动名已经存在");
+            });
+        }
 
-            }else{
-                alert("报名失败！！！！！！");
-            }
-
-        });
     }
+    //报闪购成功后要执行的内容
+    function flashDealActivitySuccess(options){
+        let{
+            res=null,
+            startTime=null,
+            endTime=null,
+            tail=null,
+            date=null,
+            time=null,
+            frequency=null,
 
+        }=options
+        if(res.message=="success" || res.message=="promotion invalid time period"){
+            let status;
+            if(res.message=="success"){
+                status=" 报名成功"
+            }else if(res.message=="promotion invalid time period"){
+                status=" 时段冲突，跳过"
+            }
+            CAT_UI.Message.info({
+                content: startTime+"-"+endTime+" "+tail+status,
+                closable: true,
+                duration: 5000,
+            });
+            if(time!=1){
+                flashDealActivity(tail,date+3600*frequency,time-1,frequency,content)
+            }else if(time==1){
+                alert("活动报名成功");
+            }
+        }else if(res.message=="The promotion name already exists"){
+            alert("活动名已经存在");
+
+        }else{
+            alert("报名失败！！！！！！");
+        }
+    }
     //删除指定天数指定代号的闪购
     function deactivateFlashDeal(promotion_id,endFlag){
         $.ajax({
