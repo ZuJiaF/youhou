@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         tk助手
+// @name         tk泰国本土助手
 // @namespace    http://tampermonkey.net/
 // @version      0.2.7
 // @description  try to take over the world!
