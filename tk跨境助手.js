@@ -10,8 +10,8 @@
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
 // @grant        GM_xmlhttpRequest
-// @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
-// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
+// @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E8%B7%A8%E5%A2%83%E5%8A%A9%E6%89%8B.js
+// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/tk%E8%B7%A8%E5%A2%83%E5%8A%A9%E6%89%8B.js
 // ==/UserScript==
 
 (function() {
