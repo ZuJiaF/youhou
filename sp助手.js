@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.3
+// @version      0.4.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -56,28 +56,6 @@
     /*********函数*********/
     init();
     /*********函数*********/
-
-    //设置乐聊的z-index
-    (function(){
-        let count1=0;
-        let interval1=setInterval(()=>{
-            count1++
-            if(count1==100){
-                //console.log(1234123213);
-                clearInterval(interval1);
-            }
-            let element1=document.querySelector("#shopee-mini-chat-embedded");//获取聊聊dom
-            if(element1!=null){//如果这个元素已经加载好
-                console.log("乐聊的dom",element1);
-                //console.log("加载完成")
-                clearInterval(interval1);
-                //console.log(element1);
-                document.querySelector("#shopee-mini-chat-embedded")
-                //element1.style.zIndex=100001;
-
-            }
-        },10);
-    })()
 
 
     //数据初始化
@@ -168,7 +146,7 @@
 
 
 
-    //整店(主页)
+    //整店(主页) #mode:1
     function allShop() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);//商品id
         return CAT_UI.Space(
@@ -217,7 +195,7 @@
         );
     }
 
-    //整页(页面2)
+    //整页(页面2) #mode:2
     function Page() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);//商品id
         const [input3, setInput3] = CAT_UI.useState(data.input3);//页码
@@ -332,7 +310,7 @@
         );
     }
 
-    //单个(页面3)
+    //单个(页面3) #mode:3
     function Single() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);
         const [input2, setInput2] = CAT_UI.useState(data.input2);
@@ -459,7 +437,7 @@
         );
     }
 
-    //同店多个(页面4)
+    //同店多个(页面4) #mode:4
     function Many() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);
         const [input2, setInput2] = CAT_UI.useState(data.input2);
@@ -538,7 +516,7 @@
         );
     }
 
-    //跨店多个(页面5)
+    //跨店多个(页面5) #mode:5
     function Other() {
         const [input1, setInput1] = CAT_UI.useState(data.input5);
         return CAT_UI.Space(
@@ -591,7 +569,7 @@
         );
     }
 
-    //线下单个(页面6) #线下页面 #线下界面
+    //线下单个(页面6) #线下页面 #线下界面 #mode:5
     function OffLine() {
         const [input1, setInput1] = CAT_UI.useState(data.input6);
 
@@ -936,17 +914,16 @@
             }else{
                 console.log(`正在加载第${getItemInformationCount}个`);
             }
-
-            finishItemIdArray.push(item_id);//已完成的itemId
-            if(item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) ).length==0){//去除已经成功的
-                alert("全部商品加载完成")
-                reloadFlag=0;//重置状态
-                localStorage.removeItem("item_idArray");
-                localStorage.removeItem("mode");
-
-
-
+            if(mode==4){
+                finishItemIdArray.push(item_id);//已完成的itemId
+                if(item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) ).length==0){//去除已经成功的
+                    alert("全部商品加载完成")
+                    reloadFlag=0;//重置状态
+                    localStorage.removeItem("item_idArray");
+                    localStorage.removeItem("mode");
+                }
             }
+
 
 
             offLine_getItemInformation({
