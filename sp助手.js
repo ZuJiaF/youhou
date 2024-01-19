@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.2
+// @version      0.4.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -44,43 +44,41 @@
         input2: item_id,
         input3:page,
         input4:1,
-        input5:"1096120823,18495122261",
+        input5:"546172073,20633481965",//跨店多个输入框初始值
         input6:"null",
         frequency1:"30",//频率
         panelStatus:null,//面板缩放默认状态
     };
 
-    let afAcEncDat=[
-        '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',
-    ];
-    let afAcEncSzToken=[
-        'ycMBHB68abwisuenF0QQuQ==|TGEng2U8rkQDuYwi0ZTHuxb93uO3Zg11gy4va6WnNH8uJt9BppgNkpk8mCu/aBhbmU31obOmkIY=|tLgwSKKww1ebbBvr|08|3',
-        'oPjeFCzFJIuWaNLLcUpblQ==|TmEng2U8rkQDuYwi0ZTHuxb93uO3Zg11gy4vaxaIOH8uJt9BppgNkpk8mCu/aBhbmU31obOmkIYYbQ==|tLgwSKKww1ebbBvr|08|3',
-        'sAwI2+a5EDHHBYMEAmD3KQ==|T2Eng2U8rkQDuYwi0ZTHuxb93uO3Zg11gy4va7IqOH8uJt9BppgNkpk8mCu/aBhbmU31obOmkIYYbQ==|tLgwSKKww1ebbBvr|08|3',
-        'F4NCJ9pntIEshT+qAINR/A==|QGEng2U8rkQDuYwi0ZTHuxb93uO3Zg11gy4va5G4OX8uJt9BppgNkpk8mCu/aBhbmU31obOmkIYYbQ==|tLgwSKKww1ebbBvr|08|3',
 
-    ];
-    let xSapRi=[
-        '07f85e65765ef9ed98e49a3f0101b625cc62907887b3febfb490',
-        '72f85e6519e2c2223c00813c010141db359d314c5423b0fa7c38',
-        '98f85e658b62416fa49e2e3a0101555a0b0b77e4a8ceb262c632',
-        'bcf85e6501bbb5e46c3e13310101a7df344f8691c029bcfaf27d',
-    ];
-    let xSapSec=[
-        '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',
-
-    ];
     /*********全局变量*********/
 
     /*********函数*********/
     init();
     /*********函数*********/
+
+    //设置乐聊的z-index
+    (function(){
+        let count1=0;
+        let interval1=setInterval(()=>{
+            count1++
+            if(count1==100){
+                //console.log(1234123213);
+                clearInterval(interval1);
+            }
+            let element1=document.querySelector("#shopee-mini-chat-embedded");//获取聊聊dom
+            if(element1!=null){//如果这个元素已经加载好
+                console.log("乐聊的dom",element1);
+                //console.log("加载完成")
+                clearInterval(interval1);
+                //console.log(element1);
+                document.querySelector("#shopee-mini-chat-embedded")
+                //element1.style.zIndex=100001;
+
+            }
+        },10);
+    })()
+
 
     //数据初始化
     //混密1st
@@ -116,9 +114,11 @@
         item_idArray=localStorage.getItem("item_idArray");
         if(item_idArray!=null){//如果有值
             item_idArray=JSON.parse(localStorage.getItem("item_idArray"));//将字符串转为对象
-            console.log("1234",item_idArray)
+            console.log("未加载的商品列表为：",item_idArray)
         }else if(item_idArray==null){//如果没值
             //console.log("1235")
+            item_idArray=[];
+            localStorage.setItem("item_idArray",JSON.stringify(item_idArray));
         }
 
         mode=localStorage.getItem("mode");
@@ -137,30 +137,31 @@
             //console.log("1237")
         }
 
-                if(mode==4){
-                    if(reloadFlag==0){
-                        item_id=item_idArray[0];//从数组的第一个开始
-                        array1=[array1Head];//标题头
-                        setTimeout(()=>{
-                            getItemInformation({
-                                shop_id:shop_id,
-                                item_id:item_id,
-                                mode:4,//同店多个
-                                getItemInformationCount:1,//从第几个开始
-                                limit:item_idArray.length,
-                            });
-                        },30000)
+        if(mode==4){
+            if(reloadFlag==0){
+                let delayMs=30000;
+                item_id=item_idArray[0];//从数组的第一个开始
+                array1=[array1Head];//标题头
+                setTimeout(()=>{
+                    getItemInformation({
+                        shop_id:shop_id,
+                        item_id:item_id,
+                        mode:4,//同店多个
+                        getItemInformationCount:1,//从第几个开始
+                        limit:item_idArray.length,
+                    });
+                },delayMs);
+                console.log(`${delayMs/1000}秒后开始加载`);
 
+                console.log("本次加载第一个shop_id为："+shop_id);
+                console.log("本次加载第一个item_id为："+item_id);
+            }else if(reloadFlag==1){
+                console.log("1538");
+                localStorage.setItem("reloadFlag",0);
+                location.reload();//刷新
+            }
 
-                        console.log("shop_id为："+shop_id);
-                        console.log("item_id为："+item_id);
-                    }else if(reloadFlag==1){
-                        console.log("1538");
-                        localStorage.setItem("reloadFlag",0);
-                        location.reload();//刷新
-                    }
-
-                }
+        }
 
     }
     //混密1ed
@@ -395,36 +396,41 @@
                         onClick() {
                             //console.log(location.href);
                             let href=location.href;//页面链接
-                            let index1;
-                            let index3;
-                            let index2;
-                            if(href.indexOf("shopee.co.th")!=-1){
-                                console.log("本土链接")
-                                index1=href.indexOf("product/");
-                                href=href.slice(index1+8);
-                                //console.log(href)
-                                index3=href.indexOf("/");
+                            if(href.indexOf("shopee.co.th/product")!=-1 || href.indexOf("-i")!=-1){
+                                let index1;
+                                let index3;
+                                let index2;
+                                if(href.indexOf("shopee.co.th/product")!=-1){//本土站情况
+                                    console.log("本土链接")
+                                    index1=href.indexOf("product/");
+                                    href=href.slice(index1+8);
+                                    //console.log(href)
+                                    index3=href.indexOf("/");
 
-                            }else if(href.indexOf("-i")!=-1){
-                                console.log("跨境链接")
-                                console.log(href.indexOf("-i"))
-                                index1=href.indexOf("-i");
-                                index2=href.indexOf("?");
-                                console.log(href.indexOf("?"))
-                                href=href.slice(index1+3,index2);
-                                index3=href.indexOf(".");
+                                }else if(href.indexOf("-i")!=-1){//跨境站的情况
+                                    console.log("跨境链接")
+                                    console.log(href.indexOf("-i"))
+                                    index1=href.indexOf("-i");
+                                    index2=href.indexOf("?");
+                                    console.log(href.indexOf("?"))
+                                    href=href.slice(index1+3,index2);
+                                    index3=href.indexOf(".");
+                                }
+
+
+                                shop_id=href.slice(0,index3);
+                                item_id=href.slice(index3+1);
+                                console.log(item_id);
+
+
+                                array1=[array1Head];
+                                getItemInformation({shop_id:shop_id,item_id:item_id,mode:3});
+                                // console.log("本次要加载的shop_id为："+shop_id);
+                                // console.log("本次要加载的item_id为："+item_id);
+                            }else{
+                                alert("!!!当前并非商品页面");
                             }
 
-
-                            shop_id=href.slice(0,index3);
-                            item_id=href.slice(index3+1);
-                            console.log(item_id);
-
-
-                            array1=[array1Head];
-                            getItemInformation({shop_id:shop_id,item_id:item_id,mode:3});
-                            // console.log("shop_id为："+shop_id);
-                            // console.log("item_id为："+item_id);
                         },
                     }),
 
@@ -567,7 +573,13 @@
                         shop_id=othersArray[0];
                         item_id=othersArray[1];
                         array1=[array1Head];
-                        getItemInformation(shop_id,item_id,1,(othersArray.length)/2,5);
+                        getItemInformation({
+                            shop_id:shop_id,
+                            item_id:item_id,
+                            mode:5,
+                            getItemInformationCount:1,//计数
+                            limit:(othersArray.length)/2,//上限
+                        });
                     },
                 }),
 
@@ -632,10 +644,10 @@
         min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
         /*相当于GM_addStyle */
         appendStyle: `section {
-    max-width:600px;
-    box-shadow:0px 0px 5px;
-    position: fixed !important;
-  }`,
+            max-width:600px;
+            box-shadow:0px 0px 5px;
+            position: fixed !important;
+            }`,
 
         //point: { x: (window.screen.width - 500) / 2, y: 20 },// 面板初始坐标
         header: {
@@ -721,7 +733,7 @@
                                 visible,
                                 focusLock: true,
                                 autoFocus: true,
-                                zIndex: 100000,
+                                //zIndex: 1,
                                 width:500,
                                 style:{
                                     position: "fixed"
@@ -919,11 +931,24 @@
                 'item_id': item_id
             }
         }).success(function(res) {
+            if(mode==3){
+
+            }else{
+                console.log(`正在加载第${getItemInformationCount}个`);
+            }
+
             finishItemIdArray.push(item_id);//已完成的itemId
             if(item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) ).length==0){//去除已经成功的
                 alert("全部商品加载完成")
+                reloadFlag=0;//重置状态
+                localStorage.removeItem("item_idArray");
+                localStorage.removeItem("mode");
+
+
+
             }
-            console.log(`正在执行第${getItemInformationCount}个`);
+
+
             offLine_getItemInformation({
                 res:res,
                 getItemInformationCount:getItemInformationCount,
@@ -975,6 +1000,9 @@
         }
         if(mode==3){
             console.log(`正在执行单个`);
+        }
+        if(mode==5){
+            console.log(`正在执行跨店多个`);
         }
         CAT_UI.Message.info('This is an info message!');
         console.log(res);
@@ -1237,7 +1265,14 @@
                     if(mode==5){
                         //console.log("102");
                         setTimeout(function(){
-                            getItemInformation(othersArray[(getItemInformationCount-1)*2],othersArray[(getItemInformationCount-1)*2+1],getItemInformationCount,limit,mode)
+                            getItemInformation({
+                                shop_id:othersArray[(getItemInformationCount-1)*2],
+                                item_id:othersArray[(getItemInformationCount-1)*2+1],
+                                getItemInformationCount:getItemInformationCount,
+                                limit:limit,
+                                mode:mode,
+
+                            })
                         },data.frequency1*1000)
                     }else if(mode==4){//同店多个
                         //console.log("104");
