@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      1.0.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -356,6 +356,7 @@
                         CAT_UI.Router.Link("首页", { to: "/" }),
                         CAT_UI.Router.Link("闪购", { to: "/flashDeal" }),
                         CAT_UI.Router.Link("属性", { to: "/getAttribute" }),
+                        "v "+GM_info.script.version,//版本
                     ])
                 );
             },
