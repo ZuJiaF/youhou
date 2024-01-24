@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -105,11 +105,30 @@
 
 
                 ),
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+
+                        },
+                    },
+                    CAT_UI.Button("跨境店导出折扣表", {
+                        type: "primary",
+                        onClick() {
+                            //alert(1);
+                            getZK();
+                        },
+                        style: {
+
+                            flex: 1,
+                        }
+                    }),
 
 
-
-
-
+                ),
             ],
             {
                 direction: "vertical",
@@ -531,6 +550,47 @@
 
     }
 
+    //跨境店获得折扣内容
+    function getZK(){
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/list_products_by_cursor?oec_seller_id=7495143478410054258',
+            headers: {
+                "Content-Type": 'application/json',
+            },
+            data: JSON.stringify({
+                'promotion_id': '7323186918946604806',
+                'cursor': 0,
+                'limit': 0
+            }),
+            onload: function(response){
+                let res=JSON.parse(response.responseText);
+                console.log("内容为",res);
+                let array=[["产品id","skuId","price"]];//数组
+                res.data.item_products.forEach((e,index,self)=>{//遍历每个商品
+                    e.skus.forEach((e1,index1,self1)=>{//遍历每个sku
+                        // console.log(e1);
+                        // console.log("数组长度为：",self1.length);//数组长度
+                        // console.log(index1);
+                        // console.log("产品id为：",e1.product_id);
+                        // console.log("skuId为：",e1.sku_id);
+                        // console.log("价格为：",e1.fixed_price_value);
+                        // console.log("数组",array);
+                        array.push([e1.product_id,e1.sku_id,e1.fixed_price_value])
+                        if(index==self.length-1 && index1==self1.length-1){//最后一条
+                            ex("产品折扣表",array,"Sheet1")
+                        }
+                    })
+                })
+
+
+            },
+            onerror: function(res){
+                console.log("请求失败");
+            }
+        });
+    }
+
     //报闪购
     function flashDealActivity(tail,date,time,frequency,content){
 
@@ -609,15 +669,15 @@
                     let res=JSON.parse(response.responseText);
                     console.log(res);
                     flashDealActivitySuccess({
-                    res:res,
-                    startTime:startTime,
-                    endTime:endTime,
-                    tail:tail,
-                    date:date,
-                    time:time,
-                    frequency:frequency,
+                        res:res,
+                        startTime:startTime,
+                        endTime:endTime,
+                        tail:tail,
+                        date:date,
+                        time:time,
+                        frequency:frequency,
 
-                });//请求成功后要执行的
+                    });//请求成功后要执行的
 
                 },
                 onerror: function(res){
@@ -627,6 +687,7 @@
         }
 
     }
+
     //报闪购成功后要执行的内容
     function flashDealActivitySuccess(options){
         let{
@@ -663,6 +724,7 @@
             alert("报名失败！！！！！！");
         }
     }
+
     //删除指定天数指定代号的闪购
     function deactivateFlashDeal(promotion_id,endFlag){
         $.ajax({
@@ -746,6 +808,7 @@
         let m = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes());
         return M + D + h + m;
     }
+
     //获取年月日
     function getDate(){
 
@@ -802,8 +865,4 @@
         /* 保存到文件 */
         XLSX.writeFile(book,bookName+".xlsx")
     }
-
-
-
-    // Your code here...
 })();
