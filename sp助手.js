@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.4
+// @version      0.4.5
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -480,7 +480,12 @@
                         onChange(val) {
                             setInput2(val);
                             data.input2 = val;
-                            item_idArray=val.split(",");//商品id数组
+                            if(val.indexOf(",")!=-1){//如果是逗号分割的形式
+                                item_idArray=val.split(",");//商品id数组
+                            }else if(val.indexOf(" ")!=-1){//如果是空格分割的形式
+                                item_idArray=val.split(" ");//商品id数组
+                            }
+
                             console.log(item_idArray);
                         },
                         style: {
@@ -854,7 +859,13 @@
                             getItemInformationIndex=0;//索引
                             getItemInformationCount=1;//计数
                             length=item_idArray.length;
-                            getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,length,mode);//开始执行单个sku
+                            getItemInformation({//开始执行单个sku
+                                shop_id:shop_id,
+                                item_id:item_idArray[getItemInformationIndex],
+                                getItemInformationCount:getItemInformationCount,
+                                limit:length,
+                                mode:mode
+                            });
                         }
                     }
 
@@ -914,8 +925,9 @@
             }else{
                 console.log(`正在加载第${getItemInformationCount}个`);
             }
+            finishItemIdArray.push(item_id);//已完成的itemId
             if(mode==4){
-                finishItemIdArray.push(item_id);//已完成的itemId
+
                 if(item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) ).length==0){//去除已经成功的
                     alert("全部商品加载完成")
                     reloadFlag=0;//重置状态
@@ -1228,18 +1240,29 @@
                         console.log("111 同店多个");
                         ex(`同店多个`,array1,"Sheet1");
                     }else if(mode==5){
-                        ex(`跨店多个`,array1,"Sheet1");
+                        ex(`跨店多个`,array1,"Sheet1") ? 1:alert("全部加载完成");
                     }
 
 
-                }else if(getItemInformationCount!=limit){
+                }else if(getItemInformationCount!=limit){//还没跑完
                     //console.log("103");
                     //console.log(getItemInformationIndex);
                     getItemInformationIndex++;
                     //console.log(getItemInformationCount);
                     getItemInformationCount++;
                     //console.log(getItemInformationCount);
-                    if(mode==5){
+
+                    if(mode==1){//整店模式
+                        setTimeout(function(){
+                            getItemInformation({
+                                shop_id:shop_id,
+                                item_id:item_idArray[getItemInformationIndex],
+                                getItemInformationCount:getItemInformationCount,
+                                limit:limit,
+                                mode:mode
+                            })
+                        },data.frequency1*1000)
+                    }else if(mode==5){
                         //console.log("102");
                         setTimeout(function(){
                             getItemInformation({
@@ -1265,7 +1288,13 @@
 
                     }else{
                         setTimeout(function(){
-                            getItemInformation(shop_id,item_idArray[getItemInformationIndex],getItemInformationCount,limit,mode)
+                            getItemInformation({
+                                shop_id:shop_id,
+                                item_id:item_idArray[getItemInformationIndex],
+                                getItemInformationCount:getItemInformationCount,
+                                limit:limit,
+                                mode:mode
+                            })
                         },data.frequency1*1000)
                     }
 
@@ -1340,6 +1369,7 @@
 
         /* 保存到文件 */
         XLSX.writeFile(book,bookName+".xlsx")
+        return 0;
     }
 
     // 数组变二维数组方法
