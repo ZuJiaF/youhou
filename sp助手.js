@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.5
+// @version      0.4.6
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -48,6 +48,7 @@
         input6:"null",
         frequency1:"30",//频率
         panelStatus:null,//面板缩放默认状态
+        status1:0,//同店多个自动模式的开关,默认为关
     };
 
 
@@ -61,13 +62,20 @@
     //数据初始化
     //混密1st
     function init(){
-
         data.frequency1 = localStorage.getItem("frequency1");
         if(data.frequency1!=null){
             data.frequency1=Number(data.frequency1);
         }else if(data.frequency1==null){
             data.frequency1=30;
             localStorage.setItem("frequency1",JSON.stringify(data.frequency1));
+        }
+
+        data.status1 = localStorage.getItem("status1");
+        if(data.status1!=null){
+            data.status1=JSON.parse(data.status1);
+        }else if(data.status1==null){
+            data.status1=0;
+            localStorage.setItem("status1",JSON.stringify(data.status1));
         }
 
         data.panelStatus=localStorage.getItem("panelStatus");
@@ -115,7 +123,7 @@
             //console.log("1237")
         }
 
-        if(mode==4){
+        if(mode==4 && data.status1==1){
             if(reloadFlag==0){
                 let delayMs=30000;
                 item_id=item_idArray[0];//从数组的第一个开始
@@ -497,19 +505,24 @@
                 CAT_UI.Button("查询", {
                     type: "primary",
                     onClick() {
-                        shop_id=input1;
-                        item_id=item_idArray[0];//从数组的第一个开始
-                        array1=[array1Head];//标题头
-                        getItemInformation({
-                            shop_id:shop_id,
-                            item_id:item_id,
-                            mode:4,//同店多个
-                            getItemInformationCount:1,//从第几个开始
-                            limit:item_idArray.length,
-                        });
+                        if(mode==4){
+                            alert("模式4正在运行，请稍后再点击")
+                        }else if(mode==null){
+                            shop_id=input1;
+                            item_id=item_idArray[0];//从数组的第一个开始
+                            array1=[array1Head];//标题头
+                            getItemInformation({
+                                shop_id:shop_id,
+                                item_id:item_id,
+                                mode:4,//同店多个
+                                getItemInformationCount:1,//从第几个开始
+                                limit:item_idArray.length,
+                            });
 
-                        console.log("shop_id为："+shop_id);
-                        console.log("item_id为："+item_id);
+                            console.log("shop_id为："+shop_id);
+                            console.log("item_id为："+item_id);
+                        }
+
                     },
                 }),
 
@@ -634,16 +647,18 @@
 
         //point: { x: (window.screen.width - 500) / 2, y: 20 },// 面板初始坐标
         header: {
-
             title() {
                 const [visible, setVisible] = CAT_UI.useState(false);
                 const [input1, setInput1] = CAT_UI.useState(data.frequency1);
+                const [input2, setInput2] = CAT_UI.useState(data.status1);
                 //console.log(input1);
                 const temp={
                     data1:null,
                     data2:null,
+                    data3:null,
                 }
-                temp.data1=input1;
+                temp.data1=input1;//暂存
+                temp.data2=input2;//暂存
                 //console.log(12312);
                 return CAT_UI.el(
                     "div",
@@ -697,7 +712,35 @@
                                         },
                                     }),
                                     CAT_UI.Text(" 秒"),
+                                ),
+                                CAT_UI.createElement(
+                                    "div",
+                                    {
+                                        style: {
+                                            display: "flex",
+                                            //justifyContent: "space-between",//平均分布
+                                            alignItems: "center",
 
+                                        },
+                                    },
+                                    CAT_UI.Text("同店多个的自动模式："),
+                                    CAT_UI.Checkbox("",{
+                                        checked:input2,
+                                        onChange(checked){
+                                            //选中时
+                                            if(checked){
+                                                setInput2(1);//重新设置input2
+                                                localStorage.setItem("status1","1");
+                                                //data.status1=1;
+
+                                            }else{
+                                                setInput2(0);
+                                                localStorage.setItem("status1","0");
+                                                data.status1=0;
+                                            }
+
+                                        },
+                                    }),
 
                                 ),
 
@@ -716,7 +759,7 @@
                                 visible,
                                 focusLock: true,
                                 autoFocus: true,
-                                //zIndex: 1,
+                                zIndex: 999999,
                                 width:500,
                                 style:{
                                     position: "fixed"
@@ -726,16 +769,18 @@
                                 },
                                 //抽屉打开的回调
                                 afterOpen(){
-
-                                    console.log("123",temp.data1)
+                                    //console.log("123",temp.data1)
                                 },
                                 onOk: () => {
                                     setVisible(false);
                                 },
-                                onCancel: () => {
-                                    data.frequency1 = temp.data1;
+                                onCancel: () => {//取消后
+                                    data.frequency1 = temp.data1;//复原
+                                    data.status1=temp.data2;//复原
                                     setInput1(temp.data1);
-                                    localStorage.setItem("frequency1",temp.data1);
+                                    setInput2(temp.data2);
+                                    localStorage.setItem("frequency1",temp.data1);//本地存储
+                                    localStorage.setItem("status1",temp.data2);//本地存储
                                     setVisible(false);
                                 },
                             }
