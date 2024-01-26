@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.7
+// @version      0.4.8
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -1105,10 +1105,7 @@
             //console.log(i);
             let categoriesLength=res.data.item.categories.length;
             catid=res.data.item.categories[categoriesLength-1].catid;//类目代码
-            brand=res.data.item.brand;//品牌
-            if(brand==null){
-                brand="No brand";
-            }
+            brand="No brand";//品牌
 
             //标题处理
             title=res.data.item.title.toString();//标题
