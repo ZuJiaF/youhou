@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.6
+// @version      0.4.7
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -23,8 +23,10 @@
     let finishItemIdArray=[];//已经完成的商品id
     let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主要产品图片","产品图片2","产品图片3","产品图片4","产品图片5","产品图片6","产品图片7","产品图片8","产品图片9","sku代码","来源","库存","是否预购","model_id"];
     let array1;//存放商品信息
+    let productNameErrorWord=["ลดน้ำหนัก"];//商品名称违禁词库
+    let productNameErrorWord_Change=["",]//商品名称违禁词替换库
     let describeErrorWord=["Shopee","SHOPEE","shopee","เอง","หี","เอง","https","เอง,ตัวเอง","บุหรี่","寸","ยาสูบ"];//商品描述违禁词库
-    let describeErrorWord_Change=["","","","","","","","","","นิ้ว",""]
+    let describeErrorWord_Change=["","","","","","","","","","นิ้ว",""]//商品描述违禁词替换库
     let VariationErrorWord=["寸"];//变体违禁词库
     let VariationErrorWord_Change=["นิ้ว"];//变体违禁替换词库
     let offset;//开端
@@ -1031,6 +1033,7 @@
         }
         if(mode==4){
             console.log(`正在执行同店多个`);
+            CAT_UI.Message.info('正在执行同店多个任务，进度是：'+getItemInformationCount+"/"+limit);
         }
         if(mode==3){
             console.log(`正在执行单个`);
@@ -1038,7 +1041,7 @@
         if(mode==5){
             console.log(`正在执行跨店多个`);
         }
-        CAT_UI.Message.info('This is an info message!');
+        
         console.log(res);
 
         //console.log("sku数量为："+res.data.item.models.length);
@@ -1107,9 +1110,17 @@
                 brand="No brand";
             }
 
+            //标题处理
             title=res.data.item.title.toString();//标题
             if(title.length!=25) {
-                title=title+" safe polular beautiful beautiful beautiful";
+                title=title+" safe polular perfect nice beautiful";
+            }
+            for(let l=0;l<productNameErrorWord.length;l++){//处理标题违规词
+                if(title.includes(productNameErrorWord[l])){
+                    let regex1 = new RegExp(productNameErrorWord[l], 'g');
+                    title = title.replace(regex1, productNameErrorWord_Change[l]);
+
+                }
             }
 
             //主图处理
