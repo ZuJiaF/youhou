@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.0.3
+// @version      1.0.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -51,11 +51,15 @@
 
     //综合面板
     const data = {
-        input1: "a",
-        input2: getDate(),
+        input1: "a",//闪购报名尾缀
+        input2: getDate(),//闪购报名日期
         input3: "1",
         input4:"700789,600017",
-        input5:"null"
+        input5:"null",//闪购报名内容
+        input6:"a",//折扣报名尾缀
+        input7: getDate(),//折扣报名日期
+        input8:"null"//折扣报名内容
+
     };
     function Home() {
 
@@ -304,8 +308,141 @@
             }
         );
     }
+    //折扣(页面3)
+    function UI_discount(){
+        const [input1, setInput1] = CAT_UI.useState(data.input6);
+        const [input2, setInput2] = CAT_UI.useState(data.input7);
+        const [input3, setInput3] = CAT_UI.useState(data.input8);
+        return CAT_UI.Space(
+            [
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("命名尾缀："),
+                    CAT_UI.Input({
+                        value: input1,
+                        onChange(val) {
+                            setInput1(val);
+                            data.input6 = val;
+                        },
+                        style: {
+                            flex: 1,
+                        },
+                    }),
 
-    //获取属性(页面3)
+                ),
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("日期(例如:"+getDate()+")："),
+                    CAT_UI.Input({
+                        value: input2,
+                        onChange(val) {
+                            setInput2(val);
+                            data.input7 = val;
+                        },
+                        style: {
+                            flex: 1,
+                        },
+                    }),
+
+                ),
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("内容："),
+                    CAT_UI.Input({
+                        value: input3,
+                        onChange(val) {
+                            setInput3(val);
+                            data.input8 = val;
+                            content=JSON.parse(val);
+
+                        },
+                        style: {
+                            flex: 1,
+                        },
+                    }),
+
+                ),
+
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Button("启动", {
+                        type: "primary",
+                        onClick() {
+                            let yearPart=input2.slice(0,2);
+                            let month=input2.slice(2,4);
+                            let day=input2.slice(4);
+                            let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
+                            //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
+                            newDate=Date.parse(newDate)/1000+3600;//+3600是转换成泰国时间
+                            //console.log(newDate);
+                            alert("点击确定，任务开始执行");
+                            console.log(content);
+                            discountActivity({
+                                tail:input1,
+                                date:newDate,
+                                content:content,
+                                mode:mode,
+                            });
+
+                        },
+                    }),
+                    CAT_UI.Button("删除", {
+                        type: "primary",
+                        onClick() {
+                            let r=confirm("确定删除吗?");
+                            if (r==true){
+                                getFlashDealList({
+                                    date:input2.slice(2),
+                                    tail:input1,
+                                    mode:mode,
+                                })
+                            }
+                            else{
+                            }
+
+                        },
+                    }),
+
+                ),
+
+
+
+            ],
+            {
+                direction: "vertical",
+            }
+        );
+    }
+
+    //获取属性(页面4)
     function UI_getAttribute() {
         const [input1, setInput1] = CAT_UI.useState(data.input4);
         return CAT_UI.Space(
@@ -394,6 +531,7 @@
                     CAT_UI.Space([
                         CAT_UI.Router.Link("首页", { to: "/" }),
                         CAT_UI.Router.Link("闪购", { to: "/flashDeal" }),
+                        CAT_UI.Router.Link("折扣", { to: "/discount" }),
                         CAT_UI.Router.Link("属性", { to: "/getAttribute" }),
                         "v "+GM_info.script.version,//版本
                     ])
@@ -415,6 +553,10 @@
             {
                 path: "/flashDeal",
                 Component: UI_flashDeal,
+            },
+            {
+                path: "/discount",
+                Component:UI_discount,
             },
             {
                 path: "/getAttribute",
@@ -625,8 +767,8 @@
         console.log(date);
         console.log(date+3600*frequency);
 
-        let startTime=timestampToTime((date-3600)*1000);
-        let endTime=timestampToTime(((date-3600)+3600*frequency)*1000).slice(5);
+        let startTime=timestampToTime((date-3600)*1000).slice(2);
+        let endTime=timestampToTime(((date-3600)+3600*frequency)*1000).slice(7);
         if(time==1){
             endTime="24:00"
         }
@@ -914,16 +1056,65 @@
         })
     }
 
+    //折扣报名
+    function discountActivity(options){
+        let{
+            tail=null,
+            date=null,
+            content=null,
+            mode=null,//模式，1为本土，2为跨境
+        }=options
+
+        console.log("日期",date);
+
+        let today=timestampToTime((date-3600)*1000).slice(0,-6);
+        console.log("today",today);
+        let starDate=date.toString();
+        let endDate=(date+31536000).toString();//一年
+        console.log(today+" "+tail);
+
+        //console.log(endTime);
+        if(mode==1){//泰国本土
+            //还没内容
+        }else if(mode==2){//跨境
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/fixed_price/create?oec_seller_id=7495143478410054258",
+                headers: {
+                    "content-type": 'application/json',
+                },
+                data: JSON.stringify({
+                    'period': {
+                        'start_time': starDate,
+                        'end_time': endDate
+                    },
+                    'promotion_name': today+" "+tail,
+                    'promotion_limit_dimension': 1,
+                    'products_fixed_price': content,
+                    'check_overlap': true
+                }),
+                onload: function(response){
+                    let res=JSON.parse(response.responseText);
+                    console.log("成功后返回",res);
+
+                },
+                onerror: function(res){
+                    console.log("请求失败");
+                }
+            });
+        }
+    }
+
     /* 时间戳转换为时间 */
     function timestampToTime(timestamp) {
         timestamp = timestamp ? timestamp : null;
         let date = new Date(timestamp);//时间戳为10位需*1000，时间戳为13位的话不需乘1000
-
+        let Y = date.getFullYear().toString().slice(2);//两位制年份
         let M = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1);
         let D = (date.getDate() < 10 ? '0' + date.getDate() : date.getDate()) + ' ';
         let h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
         let m = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes());
-        return M + D + h + m;
+        return Y + M + D + h + m;
     }
 
     //获取年月日
