@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.0.4
+// @version      1.0.5
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -32,12 +32,28 @@
     let href=location.href;//获取当前页面网址链接
     let mode;//1为本土，2为跨境
 
+    //综合面板
+    const data = {
+        input1: "a",//闪购报名尾缀
+        input2: getDate(),//闪购报名日期
+        input3: "1",
+        input4:"700789,600017",
+        input5:"null",//闪购报名内容
+        input6:"a",//折扣报名尾缀
+        input7: getDate(),//折扣报名日期
+        input8:"null",//折扣报名内容
+        panelStatus:true,//面板缩放默认状态,默认为true，缩小
+        autoPanelStatus:0,//自动记录面板缩放状态
+
+    };
+
     //
     /**********************************函数执行区**********************************/
     get_0();//tk被锁库存
     getFlashDealProtect();//获取tk闪购商品id
     getInactive();//获取不活跃商品id
     getDeleted(); //获取被删除商品id
+    init();//数据初始化
     /**********************************函数执行区**********************************/
     (()=>{
         console.log("网址为：",href);
@@ -48,19 +64,33 @@
         }
     })()
 
+    //数据初始化
+    function init(){
+        data.autoPanelStatus = localStorage.getItem("autoPanelStatus");
+        if(data.autoPanelStatus!=null){
+            data.autoPanelStatus=JSON.parse(data.autoPanelStatus);
+        }else if(data.autoPanelStatus==null){
+            data.autoPanelStatus=0;
+            localStorage.setItem("autoPanelStatus",JSON.stringify(data.autoPanelStatus));
+        }
 
-    //综合面板
-    const data = {
-        input1: "a",//闪购报名尾缀
-        input2: getDate(),//闪购报名日期
-        input3: "1",
-        input4:"700789,600017",
-        input5:"null",//闪购报名内容
-        input6:"a",//折扣报名尾缀
-        input7: getDate(),//折扣报名日期
-        input8:"null"//折扣报名内容
+        if(data.autoPanelStatus){
+            data.panelStatus=localStorage.getItem("panelStatus");//面板缩放默认状态
+            //console.log(`data.panelStatus的值为${data.panelStatus}`);
+            if(data.panelStatus!=null){//如果有值
+                data.panelStatus=JSON.parse(localStorage.getItem("panelStatus"));//将字符串转为布尔值
+            }else if(data.panelStatus==null){//如果没值
+                data.panelStatus=true;
+                localStorage.setItem("panelStatus",JSON.stringify(data.panelStatus));
+            }
+        }
 
-    };
+
+
+    }
+
+
+
     function Home() {
 
         return CAT_UI.Space(
@@ -308,6 +338,7 @@
             }
         );
     }
+
     //折扣(页面3)
     function UI_discount(){
         const [input1, setInput1] = CAT_UI.useState(data.input6);
@@ -502,10 +533,14 @@
     }
 
     //创造UI
+    const temp={
+        data1:null,
+        data2:null,
+        data3:null,
+    }
     CAT_UI.createPanel({
         minButton: true,//minButton控制是否显示最小化按钮，默认为true
-
-        min: true,// min代表面板初始状态为最小化（仅显示header）
+        min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
         /*相当于GM_addStyle */
         appendStyle: `section {
     max-width:500px;
@@ -516,6 +551,12 @@
         //point: { x: (window.screen.width - 500) / 2, y: 20 },// 面板初始坐标
         header: {
             title() {
+                const [visible, setVisible] = CAT_UI.useState(false);
+                const [input1, setInput1] = CAT_UI.useState(data.frequency1);
+                const [input2, setInput2] = CAT_UI.useState(data.autoPanelStatus);
+                //console.log(input1);
+
+
                 return CAT_UI.el(
                     "div",
                     {
@@ -533,7 +574,109 @@
                         CAT_UI.Router.Link("闪购", { to: "/flashDeal" }),
                         CAT_UI.Router.Link("折扣", { to: "/discount" }),
                         CAT_UI.Router.Link("属性", { to: "/getAttribute" }),
+                        CAT_UI.Icon.IconSettings({ spin: false, //图标旋转
+                                                  style: { fontSize: 24},
+                                                  onClick: () => setVisible(true),
+                                                 }),
                         "v "+GM_info.script.version,//版本
+                        CAT_UI.Drawer(
+                            CAT_UI.createElement("div", { style: { textAlign: "left" } }, [
+                                CAT_UI.createElement(
+                                    "div",
+                                    {
+                                        style: {
+                                            display: "flex",
+                                            //justifyContent: "space-between",//平均分布
+                                            alignItems: "center",
+
+                                        },
+                                    },
+                                    CAT_UI.Text("采集频率："),
+                                    // CAT_UI.Input({
+                                    //     value: input1,
+                                    //     onChange(val) {
+                                    //         setInput1(val);
+                                    //         data.frequency1 = val;
+                                    //         localStorage.setItem("frequency1",val);
+                                    //         console.log("1",temp.data1)
+                                    //     },
+                                    //     style: {
+                                    //         width:"50px",
+                                    //         border: "1px solid black",
+                                    //     },
+                                    // }),
+                                    CAT_UI.Text(" 秒"),
+                                ),
+                                CAT_UI.createElement(
+                                    "div",
+                                    {
+                                        style: {
+                                            display: "flex",
+                                            //justifyContent: "space-between",//平均分布
+                                            alignItems: "center",
+
+                                        },
+                                    },
+                                    CAT_UI.Text("记录面板缩放状态："),
+                                    CAT_UI.Checkbox("",{
+                                        checked:input2,
+                                        onChange(checked){
+                                            //选中时
+                                            if(checked){
+                                                setInput2(1);//重新设置input2
+                                                localStorage.setItem("autoPanelStatus","1");
+                                                data.autoPanelStatus=1;
+
+                                            }else{
+                                                setInput2(0);
+                                                localStorage.setItem("autoPanelStatus","0");
+                                                data.autoPanelStatus=0;
+                                            }
+
+                                        },
+                                    }),
+
+                                ),
+
+
+                                CAT_UI.Divider("divider with text"),
+                                "text2",
+                                CAT_UI.Divider(null, { type: "vertical" }),
+                                "text3",
+                            ]),
+                            {
+                                title: "Basic",
+                                visible,
+                                focusLock: true,
+                                autoFocus: true,
+                                zIndex: 999999,
+                                width:500,
+                                style:{
+                                    position: "fixed"
+                                },
+                                maskStyle:{
+                                    position: "fixed"
+                                },
+                                //抽屉打开的回调
+                                afterOpen(){
+                                    temp.data1=input1;//暂存
+                                    temp.data2=input2;//暂存
+                                    //console.log("123",temp.data1)
+                                },
+                                onOk: () => {
+                                    setVisible(false);
+                                },
+                                onCancel: () => {//取消后
+                                    // data.frequency1 = temp.data1;//复原
+                                    data.autoPanelStatus=temp.data2;//复原
+                                    // setInput1(temp.data1);
+                                    setInput2(temp.data2);
+                                    // localStorage.setItem("frequency1",temp.data1);//本地存储
+                                    localStorage.setItem("autoPanelStatus",temp.data2);//本地存储
+                                    setVisible(false);
+                                },
+                            }
+                        ),
                     ])
                 );
             },
@@ -1044,7 +1187,7 @@
                         });
                     }else if(index1==self1.length-1){//最后一次遍历
                         deactivateFlashDeal({
-                        promotion_id:e1,
+                            promotion_id:e1,
                             endFlag:1,
                             mode:mode,
                         });
@@ -1173,4 +1316,38 @@
         /* 保存到文件 */
         XLSX.writeFile(book,bookName+".xlsx")
     }
+
+    //监听放大缩小按钮
+    (()=>{
+        let count1=0;
+        let interval1=setInterval(()=>{
+            count1++
+            if(count1==100){
+                //console.log(1234123213);
+                clearInterval(interval1);
+            }
+            let element1=document.querySelector("cat-ui-plan").shadowRoot.querySelector("div > div:nth-child(1) > section > header > button");//获取放大缩小按钮元素
+            if(element1!=null){//如果这个元素已经加载好了
+                //console.log("加载完成")
+                clearInterval(interval1);
+                //console.log(element1);
+                element1.onclick = function(event) {
+                    console.log("天天",data.autoPanelStatus)
+                    if(data.autoPanelStatus){//如果data.autoPanelStatus为1
+                        //console.log("验证");
+                        let attribute=element1.querySelector("svg > path").getAttribute("d");
+                        if(attribute=="M5 24h38"){
+                            //console.log("点击时是放大的，点击后是缩小的");
+                            localStorage.setItem("panelStatus","true")//最小化
+                        }else if(attribute=="M5 24h38M24 5v38"){
+                            //console.log("点击时是缩小的，点击后是放大的");
+                            localStorage.setItem("panelStatus","false")//放大化
+                        }
+                    }
+                };
+
+            }
+        },10);
+    })()
+
 })();
