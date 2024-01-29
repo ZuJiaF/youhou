@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.8
+// @version      0.4.9
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -25,8 +25,8 @@
     let array1;//存放商品信息
     let productNameErrorWord=["ลดน้ำหนัก"];//商品名称违禁词库
     let productNameErrorWord_Change=["",]//商品名称违禁词替换库
-    let describeErrorWord=["Shopee","SHOPEE","shopee","เอง","หี","เอง","https","เอง,ตัวเอง","บุหรี่","寸","ยาสูบ"];//商品描述违禁词库
-    let describeErrorWord_Change=["","","","","","","","","","นิ้ว",""]//商品描述违禁词替换库
+    let describeErrorWord=["Shopee","SHOPEE","shopee","เอง","หี","เอง","https","เอง,ตัวเอง","บุหรี่","寸","ยาสูบ","ลดน้ำหนัก","น้ำพุ่ง","Lazada"];//商品描述违禁词库
+    let describeErrorWord_Change=["","","","","","","","","","นิ้ว","","","",""]//商品描述违禁词替换库
     let VariationErrorWord=["寸"];//变体违禁词库
     let VariationErrorWord_Change=["นิ้ว"];//变体违禁替换词库
     let offset;//开端
@@ -636,7 +636,13 @@
         );
     }
 
+
     //创造UI
+    const temp={
+        data1:null,
+        data2:null,
+        data3:null,
+    }
     CAT_UI.createPanel({
         minButton: true,//minButton控制是否显示最小化按钮，默认为true
         min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
@@ -654,14 +660,6 @@
                 const [input1, setInput1] = CAT_UI.useState(data.frequency1);
                 const [input2, setInput2] = CAT_UI.useState(data.status1);
                 //console.log(input1);
-                const temp={
-                    data1:null,
-                    data2:null,
-                    data3:null,
-                }
-                temp.data1=input1;//暂存
-                temp.data2=input2;//暂存
-                //console.log(12312);
                 return CAT_UI.el(
                     "div",
                     {
@@ -745,12 +743,6 @@
                                     }),
 
                                 ),
-
-
-
-
-
-
                                 CAT_UI.Divider("divider with text"),
                                 "text2",
                                 CAT_UI.Divider(null, { type: "vertical" }),
@@ -771,13 +763,17 @@
                                 },
                                 //抽屉打开的回调
                                 afterOpen(){
-                                    //console.log("123",temp.data1)
+                                    temp.data1=input1;//暂存
+                                    temp.data2=input2;//暂存
+                                    // console.log("暂存",temp.data2);
+                                    // console.log("123",temp.data1)
                                 },
                                 onOk: () => {
                                     setVisible(false);
                                 },
                                 onCancel: () => {//取消后
                                     data.frequency1 = temp.data1;//复原
+                                    // console.log("取消后",temp.data1);
                                     data.status1=temp.data2;//复原
                                     setInput1(temp.data1);
                                     setInput2(temp.data2);
@@ -1041,7 +1037,7 @@
         if(mode==5){
             console.log(`正在执行跨店多个`);
         }
-        
+
         console.log(res);
 
         //console.log("sku数量为："+res.data.item.models.length);
