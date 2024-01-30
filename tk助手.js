@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.0.5
+// @version      1.0.6
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -44,6 +44,8 @@
         input8:"null",//折扣报名内容
         panelStatus:true,//面板缩放默认状态,默认为true，缩小
         autoPanelStatus:0,//自动记录面板缩放状态
+        autoSyncPromotionStarus:0,//自动同步折扣
+
 
     };
 
@@ -66,7 +68,15 @@
 
     //数据初始化
     function init(){
-        data.autoPanelStatus = localStorage.getItem("autoPanelStatus");
+        data.autoSyncPromotionStarus = localStorage.getItem("autoSyncPromotionStarus");//自动同步折扣
+        if(data.autoSyncPromotionStarus!=null){
+            data.autoSyncPromotionStarus=JSON.parse(data.autoSyncPromotionStarus);
+        }else if(data.autoSyncPromotionStarus==null){
+            data.autoSyncPromotionStarus=0;
+            localStorage.setItem("autoSyncPromotionStarus",JSON.stringify(data.autoSyncPromotionStarus));
+        }
+
+        data.autoPanelStatus = localStorage.getItem("autoPanelStatus");//自动记录面板缩放状态
         if(data.autoPanelStatus!=null){
             data.autoPanelStatus=JSON.parse(data.autoPanelStatus);
         }else if(data.autoPanelStatus==null){
@@ -290,6 +300,7 @@
                     CAT_UI.Button("启动", {
                         type: "primary",
                         onClick() {
+
                             let yearPart=input2.slice(0,2);
                             let month=input2.slice(2,4);
                             let day=input2.slice(4);
@@ -301,6 +312,14 @@
                             let frequency=24/time;
                             alert("点击确定，任务开始执行");
                             console.log(content);
+                            if(autoSyncPromotionStarus==1){//如果开启了折扣同步
+                                discountActivity({//折扣报名
+                                    tail:input1+"x",
+                                    date:newDate,
+                                    content:content,
+                                    mode:mode,
+                                });
+                            }
                             flashDealActivity({//报闪购
                                 tail:input1,
                                 date:newDate,
@@ -450,8 +469,8 @@
                         onClick() {
                             let r=confirm("确定删除吗?");
                             if (r==true){
-                                getFlashDealList({
-                                    date:input2.slice(2),
+                                delDiscount({//根据日期和尾缀删除折扣
+                                    date:input2,
                                     tail:input1,
                                     mode:mode,
                                 })
@@ -552,7 +571,7 @@
         header: {
             title() {
                 const [visible, setVisible] = CAT_UI.useState(false);
-                const [input1, setInput1] = CAT_UI.useState(data.frequency1);
+                const [input1, setInput1] = CAT_UI.useState(data.autoSyncPromotionStarus);
                 const [input2, setInput2] = CAT_UI.useState(data.autoPanelStatus);
                 //console.log(input1);
 
@@ -591,21 +610,24 @@
 
                                         },
                                     },
-                                    CAT_UI.Text("采集频率："),
-                                    // CAT_UI.Input({
-                                    //     value: input1,
-                                    //     onChange(val) {
-                                    //         setInput1(val);
-                                    //         data.frequency1 = val;
-                                    //         localStorage.setItem("frequency1",val);
-                                    //         console.log("1",temp.data1)
-                                    //     },
-                                    //     style: {
-                                    //         width:"50px",
-                                    //         border: "1px solid black",
-                                    //     },
-                                    // }),
-                                    CAT_UI.Text(" 秒"),
+                                    CAT_UI.Text("闪购报名是否同步到折扣报名："),
+                                    CAT_UI.Checkbox("",{
+                                        checked:input1,
+                                        onChange(checked){
+                                            //选中时
+                                            if(checked){
+                                                setInput1(1);//重新设置input1
+                                                localStorage.setItem("autoSyncPromotionStarus","1");
+                                                data.autoSyncPromotionStarus=1;
+
+                                            }else{
+                                                setInput1(0);
+                                                localStorage.setItem("autoSyncPromotionStarus","0");
+                                                data.autoSyncPromotionStarus=0;
+                                            }
+
+                                        },
+                                    }),
                                 ),
                                 CAT_UI.createElement(
                                     "div",
@@ -667,11 +689,11 @@
                                     setVisible(false);
                                 },
                                 onCancel: () => {//取消后
-                                    // data.frequency1 = temp.data1;//复原
+                                    data.autoSyncPromotionStarus = temp.data1;//复原
                                     data.autoPanelStatus=temp.data2;//复原
-                                    // setInput1(temp.data1);
+                                    setInput1(temp.data1);
                                     setInput2(temp.data2);
-                                    // localStorage.setItem("frequency1",temp.data1);//本地存储
+                                    localStorage.setItem("autoSyncPromotionStarus",temp.data1);//本地存储
                                     localStorage.setItem("autoPanelStatus",temp.data2);//本地存储
                                     setVisible(false);
                                 },
@@ -1208,8 +1230,11 @@
             mode=null,//模式，1为本土，2为跨境
         }=options
 
-        console.log("日期",date);
+        if(content[0].flash_sale_price!=undefined){//如果是闪购内容
+            content=flashExToDis(content);//闪购内容转化为折扣内容
+        }
 
+        console.log("日期",date);
         let today=timestampToTime((date-3600)*1000).slice(0,-6);
         console.log("today",today);
         let starDate=date.toString();
@@ -1239,7 +1264,160 @@
                 onload: function(response){
                     let res=JSON.parse(response.responseText);
                     console.log("成功后返回",res);
+                    alert("活动报名成功");
 
+                },
+                onerror: function(res){
+                    console.log("请求失败");
+                    alert("活动报名失败");
+                }
+            });
+        }
+    }
+
+    //将闪购内容转化为折扣内容
+    function flashExToDis(obj){
+        obj.forEach((e)=>{//同步每个商品的数据
+            e.price_limit=e.flash_sale_price;//旧属性的值赋值给新属性
+            delete e.flash_sale_price;//删除旧属性
+            e.skus.forEach((e1)=>{//删除每个sku中的多余属性
+                e1.smart_discount_type_to_value={"1":e1.fixed_price_value,"2":"30"};
+                delete e1.fixed_price;
+                delete e1.discount_percentage;
+                delete e1.flash_sale_price;
+            })
+        })
+        console.log(obj)
+        return obj;
+    }
+
+    //删除折扣
+    function delDiscount(options){
+        let{
+            date=null,
+            tail=null,
+            mode=null,
+        }=options;
+
+        if(mode==1){//本土店
+
+        }else if(mode==2){//跨境店
+            getDiscountList({//获取折扣列表
+                date:date,
+                tail:tail,
+                mode:mode
+            })
+        }
+    }
+
+    //获取折扣列表
+    function getDiscountList(options){
+        let{
+            date=null,
+            tail=null,
+            mode=null,//模式，1为本土，2为跨境
+        }=options
+
+        if(mode==1){//泰国本土
+
+        }else if(mode==2){//跨境
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/list?oec_seller_id=7495143478410054258',
+                headers: {
+                    "Content-Type": 'application/json',
+                },
+                data: JSON.stringify({
+                    'index': 0,
+                    'size': 100,
+                    'status': 1,
+                    'promotion_type': 1
+                }),
+                onload: function(response){
+                    let res=JSON.parse(response.responseText);
+                    console.log("内容为",res);
+                    getDiscountListAfter({
+                        res:res,
+                        mode:mode,
+                        tail:tail,
+                        date:date,
+                    })
+                },
+                onerror: function(res){
+                    console.log("请求失败");
+                }
+            });
+
+        }
+    }
+
+    //获取折扣列表后的处理
+    function getDiscountListAfter(options){
+        let{
+            res=null,
+            mode=null,
+            tail=null,
+            date=null,
+        }=options
+        let delDiscountIdArray=[];//需要删除的折扣id数组
+        res.data.promotions.forEach(function(e,index,self){
+            //console.log(e.id);//活动id
+            let id=e.id;
+            //console.log(e.name);//活动名字
+            let name=e.name;
+            //console.log(name.slice(0,6));//日期
+            //console.log(name.slice(7));//尾缀
+            //console.log(tail);
+            if(date==name.slice(0,6) && tail==name.slice(7)){
+                //console.log("11111111111");
+                delDiscountIdArray.push(id);
+            }
+            if(index==self.length-1){//最后一次遍历
+                delDiscountIdArray.forEach(function(e1,index1,self1){
+                    if(index1!=self1.length-1){
+                        delDiscountBranch({
+                            promotion_id:e1,
+                            mode:mode,
+                        });
+                    }else if(index1==self1.length-1){//最后一次遍历
+                        delDiscountBranch({
+                            promotion_id:e1,
+                            endFlag:1,
+                            mode:mode,
+                        });
+                    }
+                });
+            }
+
+
+        })
+    }
+
+    //删除折扣-分支
+    function delDiscountBranch(options){
+        let{
+            promotion_id=null,
+            endFlag=null,
+            mode=null,
+        }=options
+        if(mode==1){//本土店
+
+        }else if(mode==2){//跨境店
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/destroy?oec_seller_id=7495143478410054258',
+                headers: {
+                    "content-type":'application/json',
+                },
+                data: JSON.stringify({
+                    'promotion_id':promotion_id
+                }),
+                onload: function(response){
+                    let res=JSON.parse(response.responseText);
+                    console.log(res);
+                    if(endFlag==1){
+                        alert("删除完成");
+                    }
                 },
                 onerror: function(res){
                     console.log("请求失败");
