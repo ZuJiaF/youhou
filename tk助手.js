@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.3
+// @version      1.1.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -1283,7 +1283,7 @@
         })
     }
 
-    //折扣报名 #discountActivityf #discountActivity函数
+    //折扣报名 #discountActivityf #discountActivity函数 #折扣报名f
     function discountActivity(options){
         let{
             tail=null,
@@ -1328,7 +1328,7 @@
                     'check_overlap': true
                 }),
             }).success(function(res) {
-                console.log(res);
+                console.log("折扣报名成功后返回",res);
                 if(syncDelFlag!=1){
                     alert("折扣报名成功");
                 }else{
@@ -1360,7 +1360,7 @@
                 }),
                 onload: function(response){
                     let res=JSON.parse(response.responseText);
-                    console.log("折扣成功后返回",res);
+                    console.log("折扣报名成功后返回",res);
                     if(syncDelFlag!=1){
                         alert("折扣报名成功");
                     }else{
@@ -1435,7 +1435,7 @@
 
         if(mode==1){//泰国本土
             $.ajax({
-                url: 'https://seller-th.tiktok.com/api/v1/promotion/list',
+                url: 'https://seller-th.tiktok.com/api/v1/promotion/discount/list',
                 crossDomain: true,
                 method: 'post',
                 headers: {
@@ -1448,7 +1448,7 @@
                     'promotion_type': 1
                 }),
             }).success(function(res) {
-                console.log(res);
+                console.log("折扣列表内容为",res);
                 getDiscountListAfter({//获取折扣列表后要执行的操作
                     res:res,
                     mode:mode,
@@ -1500,7 +1500,13 @@
             syncDelFlag=null,
         }=options
         let delDiscountIdArray=[];//需要删除的折扣id数组
-        res.data.promotions.forEach(function(e,index,self){
+        let a;
+        if(mode==1){//本土店
+            a=res.data.seller_discounts;
+        }else if(mode==2){//跨境店
+            a=res.data.promotions;
+        }
+        a.forEach(function(e,index,self){
             //console.log(e.id);//活动id
             let id=e.id;
             //console.log(e.name);//活动名字
