@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.2
+// @version      1.1.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -361,7 +361,7 @@
                                         }
                                     },100)
                                     }else if(data.autoSyncPromotionStarus==0){//如果没开启自动同步折扣
-                                        flashDealActivity({//报闪购
+                                        flashDealActivity({//直接报闪购
                                             tail:input1,
                                             date:newDate,
                                             time:time,
@@ -792,8 +792,6 @@
         ],
 
     });
-
-
 
     //获取类目属性
     function getAttribute(id,stopFlag){
@@ -1312,7 +1310,37 @@
 
         //console.log(endTime);
         if(mode==1){//泰国本土
-            //还没内容
+            $.ajax({
+                url: 'https://seller-th.tiktok.com/api/v1/promotion/fixed_price/create',
+                crossDomain: true,
+                method: 'post',
+                headers: {
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    'period': {
+                        'start_time': starDate,
+                        'end_time': endDate
+                    },
+                    'promotion_name': today+" "+tail,
+                    'promotion_limit_dimension': 1,
+                    'products_fixed_price': content1,
+                    'check_overlap': true
+                }),
+            }).success(function(res) {
+                console.log(res);
+                if(syncDelFlag!=1){
+                    alert("折扣报名成功");
+                }else{
+                    CAT_UI.Message.info({
+                        content: "新折扣创建完成，即将进行闪购报名",
+                        closable: true,
+                        duration: 5000,
+                    });
+                    syncDelFlag2=0;
+                }
+
+            });
         }else if(mode==2){//跨境
             GM_xmlhttpRequest({
                 method: "POST",
@@ -1380,7 +1408,12 @@
         }=options;
 
         if(mode==1){//本土店
-
+            getDiscountList({//获取折扣列表
+                date:date,
+                tail:tail,
+                mode:mode,
+                syncDelFlag:syncDelFlag,
+            })
         }else if(mode==2){//跨境店
             getDiscountList({//获取折扣列表
                 date:date,
@@ -1401,7 +1434,30 @@
         }=options
 
         if(mode==1){//泰国本土
+            $.ajax({
+                url: 'https://seller-th.tiktok.com/api/v1/promotion/list',
+                crossDomain: true,
+                method: 'post',
+                headers: {
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    'index': 0,
+                    'size': 100,
+                    'status': 1,
+                    'promotion_type': 1
+                }),
+            }).success(function(res) {
+                console.log(res);
+                getDiscountListAfter({//获取折扣列表后要执行的操作
+                    res:res,
+                    mode:mode,
+                    tail:tail,
+                    date:date,
+                    syncDelFlag:syncDelFlag,
+                })
 
+            });
         }else if(mode==2){//跨境
             GM_xmlhttpRequest({
                 method: "POST",
@@ -1496,7 +1552,31 @@
         }=options
         console.log("要删除的折扣id：",promotion_id)
         if(mode==1){//本土店
+            $.ajax({
+                url: 'https://seller-th.tiktok.com/api/v1/promotion/destroy',
+                crossDomain: true,
+                method: 'post',
+                headers: {
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    'promotion_id':promotion_id
+                }),
+            }).success(function(res) {
+                console.log(res);
+                if(endFlag==1 && syncDelFlag!=1){
+                    alert("删除完成");
+                }else if(endFlag==1 && syncDelFlag==1){
+                    console.log("正常删除后复位");
+                    CAT_UI.Message.info({
+                        content: "旧折扣已删除，即将同步创建新折扣",
+                        closable: true,
+                        duration: 5000,
+                    });
+                    syncDelFlag1=0;//复位
+                }
 
+            });
         }else if(mode==2){//跨境店
             GM_xmlhttpRequest({
                 method: "POST",
