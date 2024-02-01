@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0
+// @version      1.1.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -322,7 +322,7 @@
                                         syncDelFlag:syncDelFlag1,
                                     })
                                     let a=setInterval(()=>{
-                                        console.log("重复中");
+                                        //console.log("重复中");
                                         if(syncDelFlag1==0){//如果删除已经完成
                                             clearInterval(a);
                                             setTimeout(()=>{
@@ -338,7 +338,7 @@
                                         }
                                     },100)
                                     let b=setInterval(()=>{
-                                        console.log("重复中1");
+                                        //console.log("重复中1");
                                         if(syncDelFlag2==0){//如果折扣已经完成
                                             clearInterval(b);
                                             setTimeout(()=>{
@@ -615,7 +615,7 @@
                 const [input1, setInput1] = CAT_UI.useState(data.autoSyncPromotionStarus);
                 const [input2, setInput2] = CAT_UI.useState(data.autoPanelStatus);
                 //console.log(input1);
-
+                //console.log("121123233");
 
                 return CAT_UI.el(
                     "div",
@@ -653,6 +653,11 @@
                                     },
                                     CAT_UI.Text("闪购报名是否同步到折扣报名："),
                                     CAT_UI.Checkbox("",{
+                                        //className:"123",
+                                        style:{
+                                            //fontSize: "50px",
+                                            //backgroundColor:"black",
+                                        },
                                         checked:input1,
                                         onChange(checked){
                                             //选中时
@@ -725,6 +730,11 @@
                                     temp.data1=input1;//暂存
                                     temp.data2=input2;//暂存
                                     //console.log("123",temp.data1)
+                                    let checkBoxMask=document.querySelector("cat-ui-plan").shadowRoot.querySelectorAll(".arco-checkbox-mask");//获取元素
+                                    checkBoxMask.forEach((e)=>{
+                                        e.style.width = '24px';
+                                        e.style.height = '24px';
+                                    })
                                 },
                                 onOk: () => {
                                     setVisible(false);
@@ -742,7 +752,12 @@
                         ),
                     ])
                 );
+
+
+
+
             },
+
             icon:CAT_UI.Icon.ScriptCat({
                 style: { width: "24px"},
                 draggable: "true",// 这个class控制图标旋转spin
@@ -769,7 +784,9 @@
                 Component: UI_getAttribute,
             },
         ],
+
     });
+
 
 
     //获取类目属性
@@ -1313,6 +1330,11 @@
                     if(syncDelFlag!=1){
                         alert("折扣报名成功");
                     }else{
+                        CAT_UI.Message.info({
+                            content: "新折扣创建完成，即将进行闪购报名",
+                            closable: true,
+                            duration: 5000,
+                        });
                         syncDelFlag2=0;
                     }
 
@@ -1466,7 +1488,7 @@
             mode=null,
             syncDelFlag=syncDelFlag,
         }=options
-        console.log("要删除的活动id：",promotion_id)
+        console.log("要删除的折扣id：",promotion_id)
         if(mode==1){//本土店
 
         }else if(mode==2){//跨境店
@@ -1486,6 +1508,11 @@
                         alert("删除完成");
                     }else if(endFlag==1 && syncDelFlag==1){
                         console.log("正常删除后复位");
+                        CAT_UI.Message.info({
+                            content: "旧折扣已删除，即将同步创建新折扣",
+                            closable: true,
+                            duration: 5000,
+                        });
                         syncDelFlag1=0;//复位
                     }
                 },
@@ -1616,3 +1643,5 @@
     }
 
 })();
+
+
