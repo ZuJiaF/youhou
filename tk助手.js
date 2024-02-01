@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.1
+// @version      1.1.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -191,7 +191,7 @@
         );
     }
 
-    //闪购(页面2)
+    //闪购(页面2) #闪购报名
     function UI_flashDeal() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);
         const [input2, setInput2] = CAT_UI.useState(data.input2);
@@ -302,14 +302,14 @@
                     CAT_UI.Button("启动", {
                         type: "primary",
                         onClick() {
-
                             let yearPart=input2.slice(0,2);
                             let month=input2.slice(2,4);
                             let day=input2.slice(4);
                             let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
                             //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
+                            console.log("第一个newDate:",newDate);
                             newDate=Date.parse(newDate)/1000+3600;
-                            //console.log(newDate);
+                            console.log("第二个newDate:",newDate);
                             let time=24/input3;
                             let frequency=24/time;
                             let r=confirm("点击确定，任务开始执行");
@@ -326,9 +326,15 @@
                                         if(syncDelFlag1==0){//如果删除已经完成
                                             clearInterval(a);
                                             setTimeout(()=>{
+                                                let a=getDate()
+                                                let yearPart1=a.slice(0,2);
+                                                let month1=a.slice(2,4);
+                                                let day1=a.slice(4);
+                                                let newDate1="20"+yearPart1+"-"+month1+"-"+day1+" 00:00:00";
+                                                newDate1=Date.parse(newDate1)/1000+3600;
                                                 discountActivity({//折扣报名
                                                     tail:input1+"x",
-                                                    date:newDate,
+                                                    date:newDate1,
                                                     content:content,
                                                     mode:mode,
                                                     syncDelFlag:1,
@@ -399,7 +405,7 @@
         );
     }
 
-    //折扣(页面3)
+    //折扣(页面3) #折扣报名
     function UI_discount(){
         const [input1, setInput1] = CAT_UI.useState(data.input6);
         const [input2, setInput2] = CAT_UI.useState(data.input7);
@@ -1447,7 +1453,7 @@
             //console.log(name.slice(0,6));//日期
             //console.log(name.slice(7));//尾缀
             //console.log(tail);
-            if(syncDelFlag==1 && status==2){//如果是在同步折扣并且活动为进行中
+            if(syncDelFlag==1 && (status==2 || status==3)){//如果是在同步折扣并且活动为进行中或未开始
                 delDiscountIdArray.push(id);
             }else if(date==name.slice(0,6) && tail==name.slice(7)){//如果是正常删除
                 //console.log("11111111111");
