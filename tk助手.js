@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.4
+// @version      1.1.5
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -34,6 +34,8 @@
     let syncDelFlag1;//闪购同步为折扣前的删除flag
     let syncDelFlag2;
 
+
+
     //综合面板
     const data = {
         input1: "a",//闪购报名尾缀
@@ -47,16 +49,33 @@
         panelStatus:true,//面板缩放默认状态,默认为true，缩小
         autoPanelStatus:0,//自动记录面板缩放状态
         autoSyncPromotionStarus:0,//自动同步折扣
+        discountId:null,
 
 
     };
 
-    //
+
     /**********************************函数执行区**********************************/
-    get_0();//tk被锁库存
-    getFlashDealProtect();//获取tk闪购商品id
-    getInactive();//获取不活跃商品id
-    getDeleted(); //获取被删除商品id
+    getDiscountList({mode:1}).then((data1)=>{
+        for(let i=0;i<10;i++){
+            if(data1.data.seller_discounts[i].status==2){
+                //console.log("进行中的折扣id",data1.data.seller_discounts[i].id);
+                data.discountId=data1.data.seller_discounts[i].id;
+                createPanel();//创造ui
+                break;//找到后推出循环，防止溢出
+            }
+
+        }
+    });
+
+    //get_0()//tk被锁库存
+
+    //getFlashDealProtect();//获取tk闪购商品id
+
+    //getInactive();//获取不活跃商品id
+
+    //getDeleted(); //获取被删除商品id
+
     init();//数据初始化
     /**********************************函数执行区**********************************/
     (()=>{
@@ -104,6 +123,7 @@
 
 
     function Home() {
+        const [input1, setInput1] = CAT_UI.useState(data.discountId)
 
         return CAT_UI.Space(
             [
@@ -170,11 +190,14 @@
 
                         },
                     },
-                    CAT_UI.Button("跨境店导出折扣表", {
+                    CAT_UI.Button("导出折扣表", {
                         type: "primary",
                         onClick() {
                             //alert(1);
-                            getZK();
+                            getDiscount({
+                                id:input1,
+                                mode:mode
+                            });//获得折扣表内容
                         },
                         style: {
 
@@ -182,6 +205,28 @@
                         }
                     }),
 
+
+                ),
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("折扣活动id："),
+                    CAT_UI.Input({
+                        value: input1,
+                        onChange(val) {
+                            setInput1(val);
+                            data.discountId = val;
+                        },
+                        style: {
+                            flex: 1,
+                        },
+                    }),
 
                 ),
             ],
@@ -604,194 +649,197 @@
         data2:null,
         data3:null,
     }
-    CAT_UI.createPanel({
-        minButton: true,//minButton控制是否显示最小化按钮，默认为true
-        min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
-        /*相当于GM_addStyle */
-        appendStyle: `section {
+    function createPanel(){
+        CAT_UI.createPanel({
+            minButton: true,//minButton控制是否显示最小化按钮，默认为true
+            min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
+            /*相当于GM_addStyle */
+            appendStyle: `section {
     max-width:500px;
     box-shadow:0px 0px 5px;
     position: fixed !important;
   }`,
 
-        //point: { x: (window.screen.width - 500) / 2, y: 20 },// 面板初始坐标
-        header: {
-            title() {
-                const [visible, setVisible] = CAT_UI.useState(false);
-                const [input1, setInput1] = CAT_UI.useState(data.autoSyncPromotionStarus);
-                const [input2, setInput2] = CAT_UI.useState(data.autoPanelStatus);
-                //console.log(input1);
-                //console.log("121123233");
+            //point: { x: (window.screen.width - 500) / 2, y: 20 },// 面板初始坐标
+            header: {
+                title() {
+                    const [visible, setVisible] = CAT_UI.useState(false);
+                    const [input1, setInput1] = CAT_UI.useState(data.autoSyncPromotionStarus);
+                    const [input2, setInput2] = CAT_UI.useState(data.autoPanelStatus);
+                    //console.log(input1);
+                    //console.log("121123233");
 
-                return CAT_UI.el(
-                    "div",
-                    {
-                        style: {
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                    return CAT_UI.el(
+                        "div",
+                        {
+                            style: {
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                            },
                         },
-                    },
-                    CAT_UI.Text("Gigar助手", {
-                        style: { fontSize: "16px" },
-                    }),
-                    CAT_UI.Space([
-                        CAT_UI.Router.Link("首页", { to: "/" }),
-                        CAT_UI.Router.Link("闪购", { to: "/flashDeal" }),
-                        CAT_UI.Router.Link("折扣", { to: "/discount" }),
-                        CAT_UI.Router.Link("属性", { to: "/getAttribute" }),
-                        CAT_UI.Icon.IconSettings({ spin: false, //图标旋转
-                                                  style: { fontSize: 24},
-                                                  onClick: () => setVisible(true),
-                                                 }),
-                        "v "+GM_info.script.version,//版本
-                        CAT_UI.Drawer(
-                            CAT_UI.createElement("div", { style: { textAlign: "left" } }, [
-                                CAT_UI.createElement(
-                                    "div",
-                                    {
-                                        style: {
-                                            display: "flex",
-                                            //justifyContent: "space-between",//平均分布
-                                            alignItems: "center",
+                        CAT_UI.Text("Gigar助手", {
+                            style: { fontSize: "16px" },
+                        }),
+                        CAT_UI.Space([
+                            CAT_UI.Router.Link("首页", { to: "/" }),
+                            CAT_UI.Router.Link("闪购", { to: "/flashDeal" }),
+                            CAT_UI.Router.Link("折扣", { to: "/discount" }),
+                            CAT_UI.Router.Link("属性", { to: "/getAttribute" }),
+                            CAT_UI.Icon.IconSettings({ spin: false, //图标旋转
+                                                      style: { fontSize: 24},
+                                                      onClick: () => setVisible(true),
+                                                     }),
+                            "v "+GM_info.script.version,//版本
+                            CAT_UI.Drawer(
+                                CAT_UI.createElement("div", { style: { textAlign: "left" } }, [
+                                    CAT_UI.createElement(
+                                        "div",
+                                        {
+                                            style: {
+                                                display: "flex",
+                                                //justifyContent: "space-between",//平均分布
+                                                alignItems: "center",
 
+                                            },
                                         },
+                                        CAT_UI.Text("闪购报名是否同步到折扣报名："),
+                                        CAT_UI.Checkbox("",{
+                                            //className:"123",
+                                            style:{
+                                                //fontSize: "50px",
+                                                //backgroundColor:"black",
+                                            },
+                                            checked:input1,
+                                            onChange(checked){
+                                                //选中时
+                                                if(checked){
+                                                    setInput1(1);//重新设置input1
+                                                    localStorage.setItem("autoSyncPromotionStarus","1");
+                                                    data.autoSyncPromotionStarus=1;
+
+                                                }else{
+                                                    setInput1(0);
+                                                    localStorage.setItem("autoSyncPromotionStarus","0");
+                                                    data.autoSyncPromotionStarus=0;
+                                                }
+
+                                            },
+                                        }),
+                                    ),
+                                    CAT_UI.createElement(
+                                        "div",
+                                        {
+                                            style: {
+                                                display: "flex",
+                                                //justifyContent: "space-between",//平均分布
+                                                alignItems: "center",
+
+                                            },
+                                        },
+                                        CAT_UI.Text("记录面板缩放状态："),
+                                        CAT_UI.Checkbox("",{
+                                            checked:input2,
+                                            onChange(checked){
+                                                //选中时
+                                                if(checked){
+                                                    setInput2(1);//重新设置input2
+                                                    localStorage.setItem("autoPanelStatus","1");
+                                                    data.autoPanelStatus=1;
+
+                                                }else{
+                                                    setInput2(0);
+                                                    localStorage.setItem("autoPanelStatus","0");
+                                                    data.autoPanelStatus=0;
+                                                }
+
+                                            },
+                                        }),
+
+                                    ),
+
+
+                                    CAT_UI.Divider("divider with text"),
+                                    "text2",
+                                    CAT_UI.Divider(null, { type: "vertical" }),
+                                    "text3",
+                                ]),
+                                {
+                                    title: "Basic",
+                                    visible,
+                                    focusLock: true,
+                                    autoFocus: true,
+                                    zIndex: 999999,
+                                    width:500,
+                                    style:{
+                                        position: "fixed"
                                     },
-                                    CAT_UI.Text("闪购报名是否同步到折扣报名："),
-                                    CAT_UI.Checkbox("",{
-                                        //className:"123",
-                                        style:{
-                                            //fontSize: "50px",
-                                            //backgroundColor:"black",
-                                        },
-                                        checked:input1,
-                                        onChange(checked){
-                                            //选中时
-                                            if(checked){
-                                                setInput1(1);//重新设置input1
-                                                localStorage.setItem("autoSyncPromotionStarus","1");
-                                                data.autoSyncPromotionStarus=1;
-
-                                            }else{
-                                                setInput1(0);
-                                                localStorage.setItem("autoSyncPromotionStarus","0");
-                                                data.autoSyncPromotionStarus=0;
-                                            }
-
-                                        },
-                                    }),
-                                ),
-                                CAT_UI.createElement(
-                                    "div",
-                                    {
-                                        style: {
-                                            display: "flex",
-                                            //justifyContent: "space-between",//平均分布
-                                            alignItems: "center",
-
-                                        },
+                                    maskStyle:{
+                                        position: "fixed"
                                     },
-                                    CAT_UI.Text("记录面板缩放状态："),
-                                    CAT_UI.Checkbox("",{
-                                        checked:input2,
-                                        onChange(checked){
-                                            //选中时
-                                            if(checked){
-                                                setInput2(1);//重新设置input2
-                                                localStorage.setItem("autoPanelStatus","1");
-                                                data.autoPanelStatus=1;
-
-                                            }else{
-                                                setInput2(0);
-                                                localStorage.setItem("autoPanelStatus","0");
-                                                data.autoPanelStatus=0;
-                                            }
-
-                                        },
-                                    }),
-
-                                ),
-
-
-                                CAT_UI.Divider("divider with text"),
-                                "text2",
-                                CAT_UI.Divider(null, { type: "vertical" }),
-                                "text3",
-                            ]),
-                            {
-                                title: "Basic",
-                                visible,
-                                focusLock: true,
-                                autoFocus: true,
-                                zIndex: 999999,
-                                width:500,
-                                style:{
-                                    position: "fixed"
-                                },
-                                maskStyle:{
-                                    position: "fixed"
-                                },
-                                //抽屉打开的回调
-                                afterOpen(){
-                                    temp.data1=input1;//暂存
-                                    temp.data2=input2;//暂存
-                                    //console.log("123",temp.data1)
-                                    let checkBoxMask=document.querySelector("cat-ui-plan").shadowRoot.querySelectorAll(".arco-checkbox-mask");//获取元素
-                                    checkBoxMask.forEach((e)=>{
-                                        e.style.width = '24px';
-                                        e.style.height = '24px';
-                                    })
-                                },
-                                onOk: () => {
-                                    setVisible(false);
-                                },
-                                onCancel: () => {//取消后
-                                    data.autoSyncPromotionStarus = temp.data1;//复原
-                                    data.autoPanelStatus=temp.data2;//复原
-                                    setInput1(temp.data1);
-                                    setInput2(temp.data2);
-                                    localStorage.setItem("autoSyncPromotionStarus",temp.data1);//本地存储
-                                    localStorage.setItem("autoPanelStatus",temp.data2);//本地存储
-                                    setVisible(false);
-                                },
-                            }
-                        ),
-                    ])
-                );
+                                    //抽屉打开的回调
+                                    afterOpen(){
+                                        temp.data1=input1;//暂存
+                                        temp.data2=input2;//暂存
+                                        //console.log("123",temp.data1)
+                                        let checkBoxMask=document.querySelector("cat-ui-plan").shadowRoot.querySelectorAll(".arco-checkbox-mask");//获取元素
+                                        checkBoxMask.forEach((e)=>{
+                                            e.style.width = '24px';
+                                            e.style.height = '24px';
+                                        })
+                                    },
+                                    onOk: () => {
+                                        setVisible(false);
+                                    },
+                                    onCancel: () => {//取消后
+                                        data.autoSyncPromotionStarus = temp.data1;//复原
+                                        data.autoPanelStatus=temp.data2;//复原
+                                        setInput1(temp.data1);
+                                        setInput2(temp.data2);
+                                        localStorage.setItem("autoSyncPromotionStarus",temp.data1);//本地存储
+                                        localStorage.setItem("autoPanelStatus",temp.data2);//本地存储
+                                        setVisible(false);
+                                    },
+                                }
+                            ),
+                        ])
+                    );
 
 
 
 
+                },
+
+                icon:CAT_UI.Icon.ScriptCat({
+                    style: { width: "24px"},
+                    draggable: "true",// 这个class控制图标旋转spin
+                    className: "arco-icon-loading",
+                }),
+
+                style: { background: "#e5e5ff",borderBottom: "1px solid gray" },
             },
+            routes: [
+                {
+                    path: "/",
+                    Component: Home,
+                },
+                {
+                    path: "/flashDeal",
+                    Component: UI_flashDeal,
+                },
+                {
+                    path: "/discount",
+                    Component:UI_discount,
+                },
+                {
+                    path: "/getAttribute",
+                    Component: UI_getAttribute,
+                },
+            ],
 
-            icon:CAT_UI.Icon.ScriptCat({
-                style: { width: "24px"},
-                draggable: "true",// 这个class控制图标旋转spin
-                className: "arco-icon-loading",
-            }),
+        });
+    }
 
-            style: { background: "#e5e5ff",borderBottom: "1px solid gray" },
-        },
-        routes: [
-            {
-                path: "/",
-                Component: Home,
-            },
-            {
-                path: "/flashDeal",
-                Component: UI_flashDeal,
-            },
-            {
-                path: "/discount",
-                Component:UI_discount,
-            },
-            {
-                path: "/getAttribute",
-                Component: UI_getAttribute,
-            },
-        ],
-
-    });
 
     //获取类目属性
     function getAttribute(id,stopFlag){
@@ -830,14 +878,15 @@
     }
 
     function get_0(){
-        //console.log("开始加载")
+        // 使用 $ajax 或其他异步请求方法
         $.ajax({
             url: "https://seller-th.tiktok.com/api/v1/product/local/products/list?tab_id=1&page_number=1&page_size=1000&sku_number=100",
             type: 'GET',
             //async:false,//同步操作
             success: function(res){
+
                 let length_product=res.data.products.length;//商品数量
-                //console.log("有"+length_product+"个商品");
+                console.log("有"+length_product+"个商品");
                 for(let i=0;i<length_product;i++){
                     //console.log("循环次数为第"+(i+1));
                     let length_sku=res.data.products[i].skus.length;//商品对应的sku数量
@@ -859,6 +908,8 @@
                 }
             }
         });
+        //console.log("开始加载")
+
     }
 
     function getFlashDealProtect(){
@@ -939,45 +990,74 @@
 
     }
 
-    //跨境店获得折扣内容
-    function getZK(){
-        GM_xmlhttpRequest({
-            method: "POST",
-            url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/list_products_by_cursor?oec_seller_id=7495143478410054258',
-            headers: {
-                "Content-Type": 'application/json',
-            },
-            data: JSON.stringify({
-                'promotion_id': '7323186918946604806',
-                'cursor': 0,
-                'limit': 0
-            }),
-            onload: function(response){
-                let res=JSON.parse(response.responseText);
-                console.log("折扣内容为",res);
-                let array=[["产品id","skuId","price"]];//数组
-                res.data.item_products.forEach((e,index,self)=>{//遍历每个商品
-                    e.skus.forEach((e1,index1,self1)=>{//遍历每个sku
-                        // console.log(e1);
-                        // console.log("数组长度为：",self1.length);//数组长度
-                        // console.log(index1);
-                        // console.log("产品id为：",e1.product_id);
-                        // console.log("skuId为：",e1.sku_id);
-                        // console.log("价格为：",e1.fixed_price_value);
-                        // console.log("数组",array);
-                        array.push([e1.product_id,e1.sku_id,e1.fixed_price_value])
-                        if(index==self.length-1 && index1==self1.length-1){//最后一条
-                            ex("产品折扣表",array,"Sheet1")
-                        }
-                    })
-                })
+    //获得折扣内容 #getDiscount_f
+    function getDiscount(options){
+        let{
+            id=null,
+            mode=null
+        }=options
+        new Promise((resolve)=>{
+            if(mode==1){//本土店
+                $.ajax({
+                    url: 'https://seller-th.tiktok.com/api/v1/promotion/list_products_by_cursor',
+                    crossDomain: true,
+                    method: 'post',
+                    headers: {
+                    },
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        'promotion_id': id,
+                        'cursor': 0,
+                        'limit': 0
+                    }),
+                }).success(function(res) {
+                    //console.log("获取折扣内容成功",res);
+                    resolve(res);
+
+                });
+            }else if(mode==2){//跨境店
+                GM_xmlhttpRequest({
+                    method: "POST",
+                    url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/list_products_by_cursor?oec_seller_id=7495143478410054258',
+                    headers: {
+                        "Content-Type": 'application/json',
+                    },
+                    data: JSON.stringify({
+                        'promotion_id': id,
+                        'cursor': 0,
+                        'limit': 0
+                    }),
+                    onload: function(response){
+                        let res=JSON.parse(response.responseText);
+                        //console.log("获取折扣内容成功",res);
+                        resolve(res);
 
 
-            },
-            onerror: function(res){
-                console.log("请求失败");
+
+                    },
+                    onerror: function(res){
+                        console.log("请求失败");
+                    }
+                });
             }
-        });
+        }).then((res)=>{
+            let array=[["产品id","skuId","price"]];//数组
+            res.data.item_products.forEach((e,index,self)=>{//遍历每个商品
+                e.skus.forEach((e1,index1,self1)=>{//遍历每个sku
+                    // console.log(e1);
+                    // console.log("数组长度为：",self1.length);//数组长度
+                    // console.log(index1);
+                    // console.log("产品id为：",e1.product_id);
+                    // console.log("skuId为：",e1.sku_id);
+                    // console.log("价格为：",e1.fixed_price_value);
+                    // console.log("数组",array);
+                    array.push([e1.product_id,e1.sku_id,e1.fixed_price_value])
+                    if(index==self.length-1 && index1==self1.length-1){//最后一条
+                        ex("产品折扣表",array,"Sheet1")
+                    }
+                })
+            })
+        })
     }
 
     //报闪购 #报闪购函数 #报闪购的函数
@@ -1400,6 +1480,7 @@
 
     //删除折扣 #delDiscountf #delDiscount函数
     function delDiscount(options){
+
         let{
             date=null,
             tail=null,
@@ -1407,91 +1488,96 @@
             syncDelFlag=null,
         }=options;
 
-        if(mode==1){//本土店
-            getDiscountList({//获取折扣列表
-                date:date,
-                tail:tail,
-                mode:mode,
-                syncDelFlag:syncDelFlag,
-            })
-        }else if(mode==2){//跨境店
-            getDiscountList({//获取折扣列表
-                date:date,
-                tail:tail,
-                mode:mode,
-                syncDelFlag:syncDelFlag,
-            })
-        }
+        let res;
+
+        getDiscountList({//获取折扣列表数据
+            date:date,
+            tail:tail,
+            mode:mode,
+            syncDelFlag:syncDelFlag,
+        }).then((data)=>{
+            res=data;
+        })
+
+        let delDiscountIdArray=getDelDiscountIdArray({//获取要删除的折扣id数组
+            res:res,
+            mode:mode,
+            tail:tail,
+            date:date,
+            syncDelFlag:syncDelFlag,
+        })
+
+        delDiscountIdArray.forEach(function(e,index,self){
+            if(index!=self.length-1){
+                postDelDiscount({
+                    promotion_id:e,
+                    mode:mode,
+                    syncDelFlag:syncDelFlag,
+                });
+            }else if(index==self.length-1){//最后一次遍历
+                postDelDiscount({
+                    promotion_id:e,
+                    endFlag:1,
+                    mode:mode,
+                    syncDelFlag:syncDelFlag,
+                });
+            }
+        });
+
     }
 
-    //获取折扣列表
+    //获取折扣列表 #获取折扣f #获取折扣列表f #获得折扣列表
     function getDiscountList(options){
         let{
-            date=null,
-            tail=null,
             mode=null,//模式，1为本土，2为跨境
-            syncDelFlag=null,
         }=options
-
-        if(mode==1){//泰国本土
-            $.ajax({
-                url: 'https://seller-th.tiktok.com/api/v1/promotion/discount/list',
-                crossDomain: true,
-                method: 'post',
-                headers: {
-                },
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    'index': 0,
-                    'size': 100,
-                    'status': 1,
-                    'promotion_type': 1
-                }),
-            }).success(function(res) {
-                console.log("折扣列表内容为",res);
-                getDiscountListAfter({//获取折扣列表后要执行的操作
-                    res:res,
-                    mode:mode,
-                    tail:tail,
-                    date:date,
-                    syncDelFlag:syncDelFlag,
-                })
-
-            });
-        }else if(mode==2){//跨境
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/list?oec_seller_id=7495143478410054258',
-                headers: {
-                    "Content-Type": 'application/json',
-                },
-                data: JSON.stringify({
-                    'index': 0,
-                    'size': 100,
-                    'status': 1,
-                    'promotion_type': 1
-                }),
-                onload: function(response){
-                    let res=JSON.parse(response.responseText);
-                    console.log("折扣列表内容为",res);
-                    getDiscountListAfter({//获取折扣列表后要执行的操作
-                        res:res,
-                        mode:mode,
-                        tail:tail,
-                        date:date,
-                        syncDelFlag:syncDelFlag,
-                    })
-                },
-                onerror: function(res){
-                    console.log("请求失败");
-                }
-            });
-
-        }
+        return new Promise((resolve)=>{
+            if(mode==1){//泰国本土
+                $.ajax({
+                    url: 'https://seller-th.tiktok.com/api/v1/promotion/discount/list',
+                    crossDomain: true,
+                    method: 'post',
+                    headers: {
+                    },
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        'index': 0,
+                        'size': 100,
+                        'status': 1,
+                        'promotion_type': 1
+                    }),
+                }).success(function(res) {
+                    //console.log("折扣列表内容为",res);
+                    resolve(res);
+                });
+            }else if(mode==2){//跨境
+                GM_xmlhttpRequest({
+                    method: "POST",
+                    url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/list?oec_seller_id=7495143478410054258',
+                    headers: {
+                        "Content-Type": 'application/json',
+                    },
+                    data: JSON.stringify({
+                        'index': 0,
+                        'size': 100,
+                        'status': 1,
+                        'promotion_type': 1
+                    }),
+                    onload: function(response){
+                        let res=JSON.parse(response.responseText);
+                        //console.log("折扣列表内容为",res);
+                        resolve(res);
+                    },
+                    onerror: function(res){
+                        console.log("请求失败");
+                    }
+                });
+            }
+        })
     }
 
-    //获取折扣列表后的处理
-    function getDiscountListAfter(options){
+    //获取要删除的折扣id数组
+    function getDelDiscountIdArray(options){
         let{
             res=null,
             mode=null,
@@ -1500,56 +1586,36 @@
             syncDelFlag=null,
         }=options
         let delDiscountIdArray=[];//需要删除的折扣id数组
-        let a;
+        let dataHead;//路径头
         if(mode==1){//本土店
-            a=res.data.seller_discounts;
+            dataHead=res.data.seller_discounts;
         }else if(mode==2){//跨境店
-            a=res.data.promotions;
+            dataHead=res.data.promotions;
         }
-        a.forEach(function(e,index,self){
-            //console.log(e.id);//活动id
-            let id=e.id;
-            //console.log(e.name);//活动名字
-            let name=e.name;
-            let status=e.status;//活动状态
+        dataHead.forEach(function(e,index,self){
+            let id=e.id;//折扣活动id
+            let name=e.name;//折扣活动名字
+            let status=e.status;//折扣活动状态
             //console.log(name.slice(0,6));//日期
             //console.log(name.slice(7));//尾缀
             //console.log(tail);
-            if(syncDelFlag==1 && (status==2 || status==3)){//如果是在同步折扣并且活动为进行中或未开始
+            if(syncDelFlag==1 && (status==2 || status==3)){//如果是在同步折扣，并且活动为进行中或未开始
                 delDiscountIdArray.push(id);
             }else if(date==name.slice(0,6) && tail==name.slice(7)){//如果是正常删除
-                //console.log("11111111111");
                 delDiscountIdArray.push(id);
             }
             if(index==self.length-1){//最后一次遍历
-                if(syncDelFlag==1 && delDiscountIdArray.length==0){//如果没有要删除的活动，则任务提前完成
+                if(syncDelFlag==1 && delDiscountIdArray.length==0){//如果没有要删除的折扣活动，则任务提前完成
                     syncDelFlag1=0;//复位
                     console.log("提前完成删除");
                 }
-                delDiscountIdArray.forEach(function(e1,index1,self1){
-                    if(index1!=self1.length-1){
-                        delDiscountBranch({
-                            promotion_id:e1,
-                            mode:mode,
-                            syncDelFlag:syncDelFlag,
-                        });
-                    }else if(index1==self1.length-1){//最后一次遍历
-                        delDiscountBranch({
-                            promotion_id:e1,
-                            endFlag:1,
-                            mode:mode,
-                            syncDelFlag:syncDelFlag,
-                        });
-                    }
-                });
             }
-
-
         })
+        return delDiscountIdArray;//返回要删除的折扣活动id列表
     }
 
-    //删除折扣-分支
-    function delDiscountBranch(options){
+    //发起删除折扣的请求
+    function postDelDiscount(options){
         let{
             promotion_id=null,
             endFlag=null,
@@ -1557,62 +1623,53 @@
             syncDelFlag=syncDelFlag,
         }=options
         console.log("要删除的折扣id：",promotion_id)
-        if(mode==1){//本土店
-            $.ajax({
-                url: 'https://seller-th.tiktok.com/api/v1/promotion/destroy',
-                crossDomain: true,
-                method: 'post',
-                headers: {
-                },
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    'promotion_id':promotion_id
-                }),
-            }).success(function(res) {
-                console.log(res);
-                if(endFlag==1 && syncDelFlag!=1){
-                    alert("删除完成");
-                }else if(endFlag==1 && syncDelFlag==1){
-                    console.log("正常删除后复位");
-                    CAT_UI.Message.info({
-                        content: "旧折扣已删除，即将同步创建新折扣",
-                        closable: true,
-                        duration: 5000,
-                    });
-                    syncDelFlag1=0;//复位
-                }
-
-            });
-        }else if(mode==2){//跨境店
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/destroy?oec_seller_id=7495143478410054258',
-                headers: {
-                    "content-type":'application/json',
-                },
-                data: JSON.stringify({
-                    'promotion_id':promotion_id
-                }),
-                onload: function(response){
-                    let res=JSON.parse(response.responseText);
+        new Promise(()=>{
+            if(mode==1){//本土店
+                $.ajax({
+                    url: 'https://seller-th.tiktok.com/api/v1/promotion/destroy',
+                    crossDomain: true,
+                    method: 'post',
+                    headers: {
+                    },
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        'promotion_id':promotion_id
+                    }),
+                }).success(function(res) {
                     console.log(res);
-                    if(endFlag==1 && syncDelFlag!=1){
-                        alert("删除完成");
-                    }else if(endFlag==1 && syncDelFlag==1){
-                        console.log("正常删除后复位");
-                        CAT_UI.Message.info({
-                            content: "旧折扣已删除，即将同步创建新折扣",
-                            closable: true,
-                            duration: 5000,
-                        });
-                        syncDelFlag1=0;//复位
+                });
+            }else if(mode==2){//跨境店
+                GM_xmlhttpRequest({
+                    method: "POST",
+                    url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/destroy?oec_seller_id=7495143478410054258',
+                    headers: {
+                        "content-type":'application/json',
+                    },
+                    data: JSON.stringify({
+                        'promotion_id':promotion_id
+                    }),
+                    onload: function(response){
+                        let res=JSON.parse(response.responseText);
+                        console.log(res);
+                    },
+                    onerror: function(res){
+                        console.log("请求失败");
                     }
-                },
-                onerror: function(res){
-                    console.log("请求失败");
-                }
-            });
-        }
+                });
+            }
+        }).then(()=>{
+            if(endFlag==1 && syncDelFlag!=1){
+                alert("删除完成");
+            }else if(endFlag==1 && syncDelFlag==1){
+                console.log("正常删除后复位");
+                CAT_UI.Message.info({
+                    content: "旧折扣已删除，即将同步创建新折扣",
+                    closable: true,
+                    duration: 5000,
+                });
+                syncDelFlag1=0;//复位
+            }
+        })
     }
 
     /* 时间戳转换为时间 */
@@ -1686,6 +1743,11 @@
 
     //监听放大缩小按钮
     (()=>{
+
+    })()
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 在这里放置在DOM加载完成后执行的代码
         let count1=0;
         let interval1=setInterval(()=>{
             count1++
@@ -1715,7 +1777,8 @@
 
             }
         },10);
-    })()
+
+    });
 
     //深拷贝数组或对象
     function deepCopy(obj) {
