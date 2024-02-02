@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.5
+// @version      1.1.6
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -50,20 +50,45 @@
         autoPanelStatus:0,//自动记录面板缩放状态
         autoSyncPromotionStarus:0,//自动同步折扣
         discountId:null,
-
-
     };
+    (()=>{//获取网址
+        //console.log("网址为：",href);
+        if(href.indexOf("https://seller-th.tiktok.com")!=-1){//泰国本土
+            mode=1;
+        }else if(href.indexOf("https://seller.tiktokglobalshop.com")!=-1){//跨境
+            mode=2;
+        }
+    })()
+
 
 
     /**********************************函数执行区**********************************/
-    getDiscountList({mode:1}).then((data1)=>{
+    getDiscountList({
+        mode:mode
+    }).then((data1)=>{
+        let partStr;//本土店和跨境店折扣返回内容关键字段不同
+        if(mode==1){//本土店
+            partStr="seller_discounts";
+        }else if(mode==2){//跨境点
+            partStr="promotions";
+        }
+        //let partStr1="data1.data."+partStr;
+        //console.log(1235);
         for(let i=0;i<10;i++){
-            if(data1.data.seller_discounts[i].status==2){
-                //console.log("进行中的折扣id",data1.data.seller_discounts[i].id);
-                data.discountId=data1.data.seller_discounts[i].id;
+            //console.log(data1.data[partStr][i])
+            if(data1.data[partStr][i].status==2){//如果有进行中的折扣，就获取折扣id并生成面板
+                //console.log("进行中的折扣id",data1.data[partStr][i].id);
+                data.discountId=data1.data[partStr][i].id;
                 createPanel();//创造ui
                 break;//找到后推出循环，防止溢出
             }
+            if(i==9 || i==data1.data[partStr].length+1){//如果找不到进行中的折扣，就直接生成面板
+                data.discountId="请输入折扣id";
+                createPanel();//创造ui
+                break;//退出循环，防止溢出
+            }
+
+
 
         }
     });
@@ -78,14 +103,7 @@
 
     init();//数据初始化
     /**********************************函数执行区**********************************/
-    (()=>{
-        //console.log("网址为：",href);
-        if(href.indexOf("https://seller-th.tiktok.com")!=-1){//泰国本土
-            mode=1;
-        }else if(href.indexOf("https://seller.tiktokglobalshop.com")!=-1){//跨境
-            mode=2;
-        }
-    })()
+
 
     //数据初始化
     function init(){
@@ -361,6 +379,7 @@
                             if (r==true){
                                 //console.log("content",content);
                                 if(data.autoSyncPromotionStarus==1){//如果开启了折扣同步
+                                    //console.log("Ces")
                                     syncDelFlag1=1;
                                     delDiscount({//根据日期和尾缀删除折扣
                                         mode:mode,
@@ -1480,7 +1499,6 @@
 
     //删除折扣 #delDiscountf #delDiscount函数
     function delDiscount(options){
-
         let{
             date=null,
             tail=null,
@@ -1496,42 +1514,48 @@
             mode:mode,
             syncDelFlag:syncDelFlag,
         }).then((data)=>{
+            //console.log("ces1")
             res=data;
+            //console.log("ces2")
+            let delDiscountIdArray=getDelDiscountIdArray({//获取要删除的折扣id数组
+                res:res,
+                mode:mode,
+                tail:tail,
+                date:date,
+                syncDelFlag:syncDelFlag,
+            })
+            delDiscountIdArray.forEach(function(e,index,self){
+                if(index!=self.length-1){
+                    postDelDiscount({
+                        promotion_id:e,
+                        mode:mode,
+                        syncDelFlag:syncDelFlag,
+                    });
+                }else if(index==self.length-1){//最后一次遍历
+                    postDelDiscount({
+                        promotion_id:e,
+                        endFlag:1,
+                        mode:mode,
+                        syncDelFlag:syncDelFlag,
+                    });
+                }
+            });
         })
 
-        let delDiscountIdArray=getDelDiscountIdArray({//获取要删除的折扣id数组
-            res:res,
-            mode:mode,
-            tail:tail,
-            date:date,
-            syncDelFlag:syncDelFlag,
-        })
 
-        delDiscountIdArray.forEach(function(e,index,self){
-            if(index!=self.length-1){
-                postDelDiscount({
-                    promotion_id:e,
-                    mode:mode,
-                    syncDelFlag:syncDelFlag,
-                });
-            }else if(index==self.length-1){//最后一次遍历
-                postDelDiscount({
-                    promotion_id:e,
-                    endFlag:1,
-                    mode:mode,
-                    syncDelFlag:syncDelFlag,
-                });
-            }
-        });
+
+
 
     }
 
-    //获取折扣列表 #获取折扣f #获取折扣列表f #获得折扣列表
+    //获取折扣列表 #获取折扣f #获取折扣列表f #获得折扣列表 #getDiscountList_f #getDiscountListf
     function getDiscountList(options){
         let{
             mode=null,//模式，1为本土，2为跨境
         }=options
+        //console.log("天天")
         return new Promise((resolve)=>{
+            //console.log("天天2")
             if(mode==1){//泰国本土
                 $.ajax({
                     url: 'https://seller-th.tiktok.com/api/v1/promotion/discount/list',
@@ -1551,6 +1575,7 @@
                     resolve(res);
                 });
             }else if(mode==2){//跨境
+                //console.log("天天1")
                 GM_xmlhttpRequest({
                     method: "POST",
                     url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/list?oec_seller_id=7495143478410054258',
@@ -1561,7 +1586,7 @@
                         'index': 0,
                         'size': 100,
                         'status': 1,
-                        'promotion_type': 1
+                        'promotion_type': 4
                     }),
                     onload: function(response){
                         let res=JSON.parse(response.responseText);
@@ -1592,6 +1617,7 @@
         }else if(mode==2){//跨境店
             dataHead=res.data.promotions;
         }
+        console.log("ll")
         dataHead.forEach(function(e,index,self){
             let id=e.id;//折扣活动id
             let name=e.name;//折扣活动名字
@@ -1746,39 +1772,39 @@
 
     })()
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // 在这里放置在DOM加载完成后执行的代码
-        let count1=0;
-        let interval1=setInterval(()=>{
-            count1++
-            if(count1==100){
-                //console.log(1234123213);
-                clearInterval(interval1);
-            }
-            let element1=document.querySelector("cat-ui-plan").shadowRoot.querySelector("div > div:nth-child(1) > section > header > button");//获取放大缩小按钮元素
-            if(element1!=null){//如果这个元素已经加载好了
-                //console.log("加载完成")
-                clearInterval(interval1);
-                //console.log(element1);
-                element1.onclick = function(event) {
-                    //console.log("天天",data.autoPanelStatus)
-                    if(data.autoPanelStatus){//如果data.autoPanelStatus为1
-                        //console.log("验证");
-                        let attribute=element1.querySelector("svg > path").getAttribute("d");
-                        if(attribute=="M5 24h38"){
-                            //console.log("点击时是放大的，点击后是缩小的");
-                            localStorage.setItem("panelStatus","true")//最小化
-                        }else if(attribute=="M5 24h38M24 5v38"){
-                            //console.log("点击时是缩小的，点击后是放大的");
-                            localStorage.setItem("panelStatus","false")//放大化
-                        }
-                    }
-                };
+    //     document.addEventListener('DOMContentLoaded', function() {
+    //         // 在这里放置在DOM加载完成后执行的代码
+    //         let count1=0;
+    //         let interval1=setInterval(()=>{
+    //             count1++
+    //             if(count1==100){
+    //                 //console.log(1234123213);
+    //                 clearInterval(interval1);
+    //             }
+    //             let element1=document.querySelector("cat-ui-plan").shadowRoot.querySelector("div > div:nth-child(1) > section > header > button");//获取放大缩小按钮元素
+    //             if(element1!=null){//如果这个元素已经加载好了
+    //                 //console.log("加载完成")
+    //                 clearInterval(interval1);
+    //                 //console.log(element1);
+    //                 element1.onclick = function(event) {
+    //                     //console.log("天天",data.autoPanelStatus)
+    //                     if(data.autoPanelStatus){//如果data.autoPanelStatus为1
+    //                         //console.log("验证");
+    //                         let attribute=element1.querySelector("svg > path").getAttribute("d");
+    //                         if(attribute=="M5 24h38"){
+    //                             //console.log("点击时是放大的，点击后是缩小的");
+    //                             localStorage.setItem("panelStatus","true")//最小化
+    //                         }else if(attribute=="M5 24h38M24 5v38"){
+    //                             //console.log("点击时是缩小的，点击后是放大的");
+    //                             localStorage.setItem("panelStatus","false")//放大化
+    //                         }
+    //                     }
+    //                 };
 
-            }
-        },10);
+    //             }
+    //         },10);
 
-    });
+    //     });
 
     //深拷贝数组或对象
     function deepCopy(obj) {
