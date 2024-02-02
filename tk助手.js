@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.7
+// @version      1.1.8
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -380,6 +380,11 @@
                             if (r==true){
                                 //console.log("content",content);
                                 if(data.autoSyncPromotionStarus==1){//如果开启了折扣同步
+                                     CAT_UI.Message.info({
+                                        content: "即将删除旧折扣",
+                                        closable: true,
+                                        duration: 5000,
+                                    });
                                     //console.log("Ces")
                                     syncDelFlag1=1;
                                     delDiscount({//根据日期和尾缀删除折扣
