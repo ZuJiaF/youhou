@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.6
+// @version      1.1.7
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -72,17 +72,18 @@
         }else if(mode==2){//跨境点
             partStr="promotions";
         }
-        //let partStr1="data1.data."+partStr;
         //console.log(1235);
         for(let i=0;i<10;i++){
-            //console.log(data1.data[partStr][i])
+            console.log(data1.data[partStr][i])
             if(data1.data[partStr][i].status==2){//如果有进行中的折扣，就获取折扣id并生成面板
                 //console.log("进行中的折扣id",data1.data[partStr][i].id);
                 data.discountId=data1.data[partStr][i].id;
                 createPanel();//创造ui
                 break;//找到后推出循环，防止溢出
             }
-            if(i==9 || i==data1.data[partStr].length+1){//如果找不到进行中的折扣，就直接生成面板
+            //console.log(data1.data[partStr].length)
+            if(i==9 || i==data1.data[partStr].length-1){//如果找不到进行中的折扣，就直接生成面板
+                //console.log("进行中的折扣id",data1.data[partStr][i].id);
                 data.discountId="请输入折扣id";
                 createPanel();//创造ui
                 break;//退出循环，防止溢出
@@ -1684,6 +1685,7 @@
                 });
             }
         }).then(()=>{
+            console.log("完成");
             if(endFlag==1 && syncDelFlag!=1){
                 alert("删除完成");
             }else if(endFlag==1 && syncDelFlag==1){
@@ -1768,43 +1770,39 @@
     }
 
     //监听放大缩小按钮
-    (()=>{
+    document.addEventListener('DOMContentLoaded', function() {
+        // 在这里放置在DOM加载完成后执行的代码
+        let count1=0;
+        let interval1=setInterval(()=>{
+            count1++
+            if(count1==100){
+                //console.log(1234123213);
+                clearInterval(interval1);
+            }
+            let element1=document.querySelector("cat-ui-plan").shadowRoot.querySelector("div > div:nth-child(1) > section > header > button");//获取放大缩小按钮元素
+            if(element1!=null){//如果这个元素已经加载好了
+                //console.log("加载完成")
+                clearInterval(interval1);
+                //console.log(element1);
+                element1.onclick = function(event) {
+                    //console.log("天天",data.autoPanelStatus)
+                    if(data.autoPanelStatus){//如果data.autoPanelStatus为1
+                        //console.log("验证");
+                        let attribute=element1.querySelector("svg > path").getAttribute("d");
+                        if(attribute=="M5 24h38"){
+                            //console.log("点击时是放大的，点击后是缩小的");
+                            localStorage.setItem("panelStatus","true")//最小化
+                        }else if(attribute=="M5 24h38M24 5v38"){
+                            //console.log("点击时是缩小的，点击后是放大的");
+                            localStorage.setItem("panelStatus","false")//放大化
+                        }
+                    }
+                };
 
-    })()
+            }
+        },10);
 
-    //     document.addEventListener('DOMContentLoaded', function() {
-    //         // 在这里放置在DOM加载完成后执行的代码
-    //         let count1=0;
-    //         let interval1=setInterval(()=>{
-    //             count1++
-    //             if(count1==100){
-    //                 //console.log(1234123213);
-    //                 clearInterval(interval1);
-    //             }
-    //             let element1=document.querySelector("cat-ui-plan").shadowRoot.querySelector("div > div:nth-child(1) > section > header > button");//获取放大缩小按钮元素
-    //             if(element1!=null){//如果这个元素已经加载好了
-    //                 //console.log("加载完成")
-    //                 clearInterval(interval1);
-    //                 //console.log(element1);
-    //                 element1.onclick = function(event) {
-    //                     //console.log("天天",data.autoPanelStatus)
-    //                     if(data.autoPanelStatus){//如果data.autoPanelStatus为1
-    //                         //console.log("验证");
-    //                         let attribute=element1.querySelector("svg > path").getAttribute("d");
-    //                         if(attribute=="M5 24h38"){
-    //                             //console.log("点击时是放大的，点击后是缩小的");
-    //                             localStorage.setItem("panelStatus","true")//最小化
-    //                         }else if(attribute=="M5 24h38M24 5v38"){
-    //                             //console.log("点击时是缩小的，点击后是放大的");
-    //                             localStorage.setItem("panelStatus","false")//放大化
-    //                         }
-    //                     }
-    //                 };
-
-    //             }
-    //         },10);
-
-    //     });
+    });
 
     //深拷贝数组或对象
     function deepCopy(obj) {
