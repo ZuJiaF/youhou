@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.8
+// @version      1.1.9
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -1503,7 +1503,7 @@
         return obj;
     }
 
-    //删除折扣 #delDiscountf #delDiscount函数
+    //删除折扣 #delDiscountf #delDiscount函数 #删除折扣函数
     function delDiscount(options){
         let{
             date=null,
@@ -1655,7 +1655,7 @@
             syncDelFlag=syncDelFlag,
         }=options
         console.log("要删除的折扣id：",promotion_id)
-        new Promise(()=>{
+        new Promise((resolve)=>{
             if(mode==1){//本土店
                 $.ajax({
                     url: 'https://seller-th.tiktok.com/api/v1/promotion/destroy',
@@ -1669,6 +1669,7 @@
                     }),
                 }).success(function(res) {
                     console.log(res);
+                    resolve();
                 });
             }else if(mode==2){//跨境店
                 GM_xmlhttpRequest({
@@ -1683,6 +1684,7 @@
                     onload: function(response){
                         let res=JSON.parse(response.responseText);
                         console.log(res);
+                        resolve();
                     },
                     onerror: function(res){
                         console.log("请求失败");
