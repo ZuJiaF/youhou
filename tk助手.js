@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.9
+// @version      1.1.10
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -33,7 +33,6 @@
     let mode;//1为本土，2为跨境
     let syncDelFlag1;//闪购同步为折扣前的删除flag
     let syncDelFlag2;
-
 
 
     //综合面板
@@ -255,7 +254,7 @@
         );
     }
 
-    //闪购(页面2) #闪购报名
+    //闪购(页面2) #闪购报名 #闪购报名页面 #闪购页面
     function UI_flashDeal() {
         const [input1, setInput1] = CAT_UI.useState(data.input1);
         const [input2, setInput2] = CAT_UI.useState(data.input2);
@@ -372,7 +371,8 @@
                             let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
                             //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
                             console.log("第一个newDate:",newDate);
-                            newDate=Date.parse(newDate)/1000+3600;
+                            newDate=Date.parse(newDate)/1000;
+
                             console.log("第二个newDate:",newDate);
                             let time=24/input3;
                             let frequency=24/time;
@@ -380,14 +380,14 @@
                             if (r==true){
                                 //console.log("content",content);
                                 if(data.autoSyncPromotionStarus==1){//如果开启了折扣同步
-                                     CAT_UI.Message.info({
+                                    CAT_UI.Message.info({
                                         content: "即将删除旧折扣",
                                         closable: true,
                                         duration: 5000,
                                     });
                                     //console.log("Ces")
                                     syncDelFlag1=1;
-                                    delDiscount({//根据日期和尾缀删除折扣
+                                    delDiscount({//根据活动名称中的日期和尾缀删除折扣
                                         mode:mode,
                                         syncDelFlag:syncDelFlag1,
                                     })
@@ -401,7 +401,7 @@
                                                 let month1=a.slice(2,4);
                                                 let day1=a.slice(4);
                                                 let newDate1="20"+yearPart1+"-"+month1+"-"+day1+" 00:00:00";
-                                                newDate1=Date.parse(newDate1)/1000+3600;
+                                                newDate1=Date.parse(newDate1)/1000;
                                                 discountActivity({//折扣报名
                                                     tail:input1+"x",
                                                     date:newDate1,
@@ -568,7 +568,7 @@
                             let day=input2.slice(4);
                             let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
                             //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
-                            newDate=Date.parse(newDate)/1000+3600;//+3600是转换成泰国时间
+                            newDate=Date.parse(newDate)/1000;//获取时间戳
                             //console.log(newDate);
                             alert("点击确定，任务开始执行");
                             //console.log(content);
@@ -1085,7 +1085,7 @@
         })
     }
 
-    //报闪购 #报闪购函数 #报闪购的函数
+    //报闪购 #报闪购函数 #报闪购的函数 #flashDealActivityf #flashDealActivity_f
     function flashDealActivity(options){
         let{
             tail=null,
@@ -1097,19 +1097,20 @@
         }=options
         console.log("报闪购的内容：",content)
         //console.log(date);
-        //console.log(date+3600*frequency);
+        //console.log(date*frequency);
 
-        let startTime=timestampToTime((date-3600)*1000).slice(2);
-        let endTime=timestampToTime(((date-3600)+3600*frequency)*1000).slice(7);
+        let startTime=timestampToTime(date*1000).slice(2);
+        let endTime=timestampToTime((date+3600*frequency)*1000).slice(7);
         if(time==1){
             endTime="24:00"
         }
-        let starDate=date.toString();
-        let endDate=(date+3600*frequency).toString();
+
         //console.log(startTime+"-"+endTime+" "+tail);
 
         //console.log(endTime);
         if(mode==1){//泰国本土
+            let starDate=date.toString();
+            let endDate=(date+3600*frequency).toString();
             $.ajax({
                 url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
                 crossDomain: true,
@@ -1148,6 +1149,8 @@
 
             });
         }else if(mode==2){//跨境
+            let starDate=(date+3600).toString();
+            let endDate=((date+3600)+3600*frequency).toString();
             GM_xmlhttpRequest({
                 method: "POST",
                 url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/flash_sale/create?oec_seller_id=7495143478410054258",
@@ -1407,14 +1410,14 @@
         }
 
         //console.log("日期",date);
-        let today=timestampToTime((date-3600)*1000).slice(0,-6);
+        let today=timestampToTime(date*1000).slice(0,-6);
         //console.log("today",today);
-        let starDate=date.toString();
-        let endDate=(date+31536000).toString();//一年
         //console.log(today+" "+tail);
 
-        //console.log(endTime);
+ 
         if(mode==1){//泰国本土
+            let starDate=date.toString();
+            let endDate=(date+31536000).toString();//一年
             $.ajax({
                 url: 'https://seller-th.tiktok.com/api/v1/promotion/fixed_price/create',
                 crossDomain: true,
@@ -1447,6 +1450,8 @@
 
             });
         }else if(mode==2){//跨境
+            let starDate=(date+3600).toString();
+            let endDate=((date+3600)+31536000).toString();//一年
             GM_xmlhttpRequest({
                 method: "POST",
                 url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/fixed_price/create?oec_seller_id=7495143478410054258",
@@ -1719,7 +1724,7 @@
         return Y + M + D + h + m;
     }
 
-    //获取年月日
+    //获取年月日 #getDate_f
     function getDate(){
 
         //获取当前日期
