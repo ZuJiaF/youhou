@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.10
+// @version      1.1.11
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -1149,8 +1149,8 @@
 
             });
         }else if(mode==2){//跨境
-            let starDate=(date+3600).toString();
-            let endDate=((date+3600)+3600*frequency).toString();
+            let starDate=date.toString();
+            let endDate=(date+3600*frequency).toString();
             GM_xmlhttpRequest({
                 method: "POST",
                 url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/flash_sale/create?oec_seller_id=7495143478410054258",
@@ -1391,7 +1391,7 @@
         })
     }
 
-    //折扣报名 #discountActivityf #discountActivity函数 #折扣报名f
+    //折扣报名 #discountActivityf #discountActivity函数 #折扣报名f #报折扣
     function discountActivity(options){
         let{
             tail=null,
@@ -1450,8 +1450,8 @@
 
             });
         }else if(mode==2){//跨境
-            let starDate=(date+3600).toString();
-            let endDate=((date+3600)+31536000).toString();//一年
+            let starDate=date.toString();
+            let endDate=(date+31536000).toString();//一年
             GM_xmlhttpRequest({
                 method: "POST",
                 url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/fixed_price/create?oec_seller_id=7495143478410054258",
