@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.11
+// @version      1.1.12
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -1085,7 +1085,7 @@
         })
     }
 
-    //报闪购 #报闪购函数 #报闪购的函数 #flashDealActivityf #flashDealActivity_f
+    //报闪购 #报闪购函数 #报闪购的函数 #flashDealActivityf #flashDealActivity_f #闪购函数 #闪购报名函数
     function flashDealActivity(options){
         let{
             tail=null,
@@ -1104,13 +1104,13 @@
         if(time==1){
             endTime="24:00"
         }
-
+let starDate=date.toString();
+            let endDate=(date+3600*frequency).toString();
         //console.log(startTime+"-"+endTime+" "+tail);
 
         //console.log(endTime);
         if(mode==1){//泰国本土
-            let starDate=date.toString();
-            let endDate=(date+3600*frequency).toString();
+            
             $.ajax({
                 url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
                 crossDomain: true,
@@ -1149,8 +1149,6 @@
 
             });
         }else if(mode==2){//跨境
-            let starDate=date.toString();
-            let endDate=(date+3600*frequency).toString();
             GM_xmlhttpRequest({
                 method: "POST",
                 url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/flash_sale/create?oec_seller_id=7495143478410054258",
@@ -1391,7 +1389,7 @@
         })
     }
 
-    //折扣报名 #discountActivityf #discountActivity函数 #折扣报名f #报折扣
+    //折扣报名 #discountActivityf #discountActivity函数 #折扣报名f #报折扣 #折扣函数
     function discountActivity(options){
         let{
             tail=null,
@@ -1413,11 +1411,11 @@
         let today=timestampToTime(date*1000).slice(0,-6);
         //console.log("today",today);
         //console.log(today+" "+tail);
-
+let starDate=date.toString();
+            let endDate=(date+31536000).toString();//一年
  
         if(mode==1){//泰国本土
-            let starDate=date.toString();
-            let endDate=(date+31536000).toString();//一年
+            
             $.ajax({
                 url: 'https://seller-th.tiktok.com/api/v1/promotion/fixed_price/create',
                 crossDomain: true,
@@ -1450,8 +1448,6 @@
 
             });
         }else if(mode==2){//跨境
-            let starDate=date.toString();
-            let endDate=(date+31536000).toString();//一年
             GM_xmlhttpRequest({
                 method: "POST",
                 url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/fixed_price/create?oec_seller_id=7495143478410054258",
