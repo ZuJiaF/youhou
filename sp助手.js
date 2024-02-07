@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.9
+// @version      0.4.10
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -1391,6 +1391,34 @@
         return now;
     }
 
+    //获取年月日6位日期 #getDate_f #getDatef
+    function getDate(){
+
+        //获取当前日期
+        let date = new Date();
+
+        // 获取当前月份
+        let nowMonth = date.getMonth() + 1;
+
+
+        // 获取当前是几号
+        let strDate = date.getDate();
+
+
+        // 对月份进行处理，1-9月在前面添加一个“0”
+        if (nowMonth >= 1 && nowMonth <= 9) {
+            nowMonth = "0" + nowMonth;
+        }
+
+        // 对月份进行处理，1-9号在前面添加一个“0”
+        if (strDate >= 0 && strDate <= 9) {
+            strDate = "0" + strDate;
+        }
+        //console.log(date.getFullYear());
+        // 最后拼接字符串，得到一个格式为(yyMMdd)的日期
+        return date.getFullYear().toString().slice(2) + nowMonth + strDate;
+    }
+
     //导出二维数组为表格
     function ex(bookName,array1,sheetName1,array2,sheetName2,array3,sheetName3){
         /* 把转换JS数据数组的数组为工作表 */
@@ -1417,7 +1445,7 @@
         }
 
         /* 保存到文件 */
-        XLSX.writeFile(book,bookName+".xlsx")
+        XLSX.writeFile(book,getDate()+bookName+".xlsx")
         return 0;
     }
 
