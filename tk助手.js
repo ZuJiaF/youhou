@@ -1077,9 +1077,9 @@
                     // console.log("skuId为：",e1.sku_id);
                     // console.log("价格为：",e1.fixed_price_value);
                     // console.log("数组",array);
-                    array.push([e1.product_id,e1.sku_id,e1.fixed_price_value],e1.inventory_quantity)
+                    array.push([e1.product_id,e1.sku_id,e1.fixed_price_value,e1.inventory_quantity])
                     if(index==self.length-1 && index1==self1.length-1){//最后一条
-                        ex("产品折扣表",array,"Sheet1")
+                        ex("产品折扣表",array,"Sheet1")//导出折扣表
                     }
                 })
             })
