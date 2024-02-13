@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.12
+// @version      1.1.13
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -1015,7 +1015,7 @@
 
     }
 
-    //获得折扣内容 #getDiscount_f
+    //获得折扣内容 #getDiscount_f #getDiscountf
     function getDiscount(options){
         let{
             id=null,
@@ -1066,17 +1066,18 @@
                 });
             }
         }).then((res)=>{
-            let array=[["产品id","skuId","price"]];//数组
+            let array=[["产品id","skuId","price","stock"]];//数组
             res.data.item_products.forEach((e,index,self)=>{//遍历每个商品
                 e.skus.forEach((e1,index1,self1)=>{//遍历每个sku
-                    // console.log(e1);
+                    console.log(e1);
+                    // console.log("库存为：",e1.inventory_quantity)
                     // console.log("数组长度为：",self1.length);//数组长度
                     // console.log(index1);
                     // console.log("产品id为：",e1.product_id);
                     // console.log("skuId为：",e1.sku_id);
                     // console.log("价格为：",e1.fixed_price_value);
                     // console.log("数组",array);
-                    array.push([e1.product_id,e1.sku_id,e1.fixed_price_value])
+                    array.push([e1.product_id,e1.sku_id,e1.fixed_price_value],e1.inventory_quantity)
                     if(index==self.length-1 && index1==self1.length-1){//最后一条
                         ex("产品折扣表",array,"Sheet1")
                     }
