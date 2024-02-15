@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.13
+// @version      1.1.14
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -93,7 +93,7 @@
         }
     });
 
-    //get_0()//tk被锁库存
+    getProductsInfo()//tk获取商品信息
 
     //getFlashDealProtect();//获取tk闪购商品id
 
@@ -902,39 +902,57 @@
         });
     }
 
-    function get_0(){
-        // 使用 $ajax 或其他异步请求方法
-        $.ajax({
-            url: "https://seller-th.tiktok.com/api/v1/product/local/products/list?tab_id=1&page_number=1&page_size=1000&sku_number=100",
-            type: 'GET',
-            //async:false,//同步操作
-            success: function(res){
+    //获取产品信息 #getProductsInfof #getProductsInfo_f
+    function getProductsInfo(){
+        if(mode==1){//本土
+            // 使用 $ajax 或其他异步请求方法
+            $.ajax({
+                url: "https://seller-th.tiktok.com/api/v1/product/local/products/list?tab_id=1&page_number=1&page_size=1000&sku_number=100",
+                type: 'GET',
+                //async:false,//同步操作
+                success: function(res){
 
-                let length_product=res.data.products.length;//商品数量
-                console.log("有"+length_product+"个商品");
-                for(let i=0;i<length_product;i++){
-                    //console.log("循环次数为第"+(i+1));
-                    let length_sku=res.data.products[i].skus.length;//商品对应的sku数量
-                    //console.log("sku数量为"+length_sku);
-                    for(let j=0;j<length_sku;j++){
-                        array1.push([res.data.products[i].skus[j].id+","+res.data.products[i].skus[j].quantities[0].reserved_quantity]);
-                        //console.log(res.data.products[i].skus[j].id+","+res.data.products[i].skus[j].quantities[0].reserved_quantity);
-                        count++;
-                        //console.log("正在加载第"+count+"个");
-                    }
-                    if(i==length_product-1){
-                        end_flag1=1;//结束标志位
-                        //console.log("i为"+i+"是最后一个");
-                        //console.log(array1);
+                    let length_product=res.data.products.length;//商品数量
+                    console.log("有"+length_product+"个商品");
+                    for(let i=0;i<length_product;i++){
+                        //console.log("循环次数为第"+(i+1));
+                        let length_sku=res.data.products[i].skus.length;//商品对应的sku数量
+                        //console.log("sku数量为"+length_sku);
+                        for(let j=0;j<length_sku;j++){
+                            array1.push([res.data.products[i].skus[j].id+","+res.data.products[i].skus[j].quantities[0].reserved_quantity]);
+                            //console.log(res.data.products[i].skus[j].id+","+res.data.products[i].skus[j].quantities[0].reserved_quantity);
+                            count++;
+                            //console.log("正在加载第"+count+"个");
+                        }
+                        if(i==length_product-1){
+                            end_flag1=1;//结束标志位
+                            //console.log("i为"+i+"是最后一个");
+                            //console.log(array1);
 
 
 
+                        }
                     }
                 }
-            }
-        });
-        //console.log("开始加载")
-
+            });
+            //console.log("开始加载")
+        }else if(mode==2){//跨境
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/product/local/products/list?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_lsmetzh3_pSV9rBde_55Pm_4SCO_BAdp_Tnr35tzPsywb&device_platform=web&cookie_enabled=true&screen_width=1536&screen_height=864&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F121.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FShanghai&tab_id=1&page_number=1&page_size=50&sku_number=1&product_sort_fields=3&product_sort_types=0&msToken=-vX9W5jciwJ9HAU7xFdnIK72p96x7NKhozA4IwCZAA4VvGrgoJBeSkgw-3AZ9cLPUqEW_tU9pNGzowxWsIkf6O6FgGoRtH_KaqxhmlmIe9_NsDzmPoCXSQ==&X-Bogus=DFSzswjLVAsANC/VtqLSBGjErrO8&_signature=_02B4Z6wo00001S2W7uwAAIDAK2Zw9WyMVl0tluJAAC6rc9',
+                headers: {
+                    'authority': 'api16-normal-useast1a.tiktokglobalshop.com',
+                    'accept': '*/*',
+                    'accept-language': 'zh-CN,zh;q=0.9',
+                    'x-tt-oec-region': 'TH'
+                },
+                onload: function(response){
+                },
+                onerror: function(res){
+                    console.log("请求失败");
+                }
+            });
+        }
     }
 
     function getFlashDealProtect(){
@@ -1105,13 +1123,13 @@
         if(time==1){
             endTime="24:00"
         }
-let starDate=date.toString();
-            let endDate=(date+3600*frequency).toString();
+        let starDate=date.toString();
+        let endDate=(date+3600*frequency).toString();
         //console.log(startTime+"-"+endTime+" "+tail);
 
         //console.log(endTime);
         if(mode==1){//泰国本土
-            
+
             $.ajax({
                 url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
                 crossDomain: true,
@@ -1412,11 +1430,11 @@ let starDate=date.toString();
         let today=timestampToTime(date*1000).slice(0,-6);
         //console.log("today",today);
         //console.log(today+" "+tail);
-let starDate=date.toString();
-            let endDate=(date+31536000).toString();//一年
- 
+        let starDate=date.toString();
+        let endDate=(date+31536000).toString();//一年
+
         if(mode==1){//泰国本土
-            
+
             $.ajax({
                 url: 'https://seller-th.tiktok.com/api/v1/promotion/fixed_price/create',
                 crossDomain: true,
