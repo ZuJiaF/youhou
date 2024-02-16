@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.1.14
+// @version      1.2.0
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -16,11 +16,9 @@
 // ==/UserScript==
 
 (function() {
-    let end_flag1=0;//tk被锁库存结束标志位
     let FlashDealProtect_EndFlag=0;//tk闪购商品id结束标志位
     let getInactiveEndFlag=0;//tk不活跃商品id结束标志位
     let getDeletedEndFlag=0;//tk被删除商品id结束标志位
-    let array1=[];//tk被锁库存
     let array2=[];//tk闪购商品id
     let array3=[];//tk不活跃商品id
     let array4=[];//tk被删除商品id
@@ -93,7 +91,6 @@
         }
     });
 
-    getProductsInfo()//tk获取商品信息
 
     //getFlashDealProtect();//获取tk闪购商品id
 
@@ -154,15 +151,15 @@
                             alignItems: "center",
                         },
                     },
-                    CAT_UI.Button("导出被锁库存", {
+                    CAT_UI.Button("导出部分商品信息", {
                         type: "primary",
                         onClick() {
-                            if(end_flag1==1){
-                                ex("tk被锁库存",array1,"Sheet1");//导出表格
-                            }
-                            else if(end_flag1==0){
-                                alert('加载中，请稍等');
-                            }
+                            getProductsInfo(1)//tk获取商品信息中的可用库存
+                            CAT_UI.Message.info({
+                                        content: "正在导出部分商品信息，请稍等",
+                                        closable: true,
+                                        duration: 5000,
+                                    });
                         },
                         style: {
                             flex: 1,
@@ -184,7 +181,7 @@
                         type: "primary",
                         onClick() {
                             if(FlashDealProtect_EndFlag==1 && getInactiveEndFlag==1 && getDeletedEndFlag==1){
-                                ex("活动辅助表",array2,"全年闪购的商品id",array3,"不活跃的商品id",array4,"被删除商品id");//导出表格
+                                ex("活动辅助表",array2,"全年闪购的商品id",array3,"不活跃的商品id",array4,"被删除商品id")
                             }
                             else if(FlashDealProtect_EndFlag==0 || getInactiveEndFlag==0 || getDeletedEndFlag==0){
                                 alert('加载中，请稍等');
@@ -902,57 +899,69 @@
         });
     }
 
-    //获取产品信息 #getProductsInfof #getProductsInfo_f
-    function getProductsInfo(){
-        if(mode==1){//本土
-            // 使用 $ajax 或其他异步请求方法
-            $.ajax({
-                url: "https://seller-th.tiktok.com/api/v1/product/local/products/list?tab_id=1&page_number=1&page_size=1000&sku_number=100",
-                type: 'GET',
-                //async:false,//同步操作
-                success: function(res){
+    //获取产品信息 #getProductsInfof #getProductsInfo_f #获取商品信息 #商品信息函数 #产品信息函数
+    function getProductsInfo(type){
+        let array;
+        if(type==1){//可用库存
+            array=[["skuID","可用库存"]]
+        }else if(type==2){//被锁库存
+            array=[["skuID","被锁库存"]]
+        }
+        new Promise((resolve)=>{
+            if(mode==1){//本土
+                // 使用 $ajax 或其他异步请求方法
+                $.ajax({
+                    url: "https://seller-th.tiktok.com/api/v1/product/local/products/list?tab_id=1&page_number=1&page_size=1000&sku_number=100",
+                    type: 'GET',
+                    //async:false,//同步操作
+                    success: function(res){
+                        console.log(res);
+                        resolve(res);
+                    }
+                });
+                //console.log("开始加载")
+            }else if(mode==2){//跨境
+                GM_xmlhttpRequest({
+                    method: "GET",
+                    url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/product/local/products/list?oec_seller_id=7495143478410054258&tab_id=1&page_number=1&page_size=1000&sku_number=100',
+                    headers: {
+                        'authority': 'api16-normal-useast1a.tiktokglobalshop.com',
+                        'accept': '*/*',
+                        'accept-language': 'zh-CN,zh;q=0.9',
+                        'x-tt-oec-region': 'TH'
+                    },
+                    onload: function(response){
+                        let res = JSON.parse(response.responseText);
+                        //console.log("1",res);
+                        resolve(res);
+                    },
+                    onerror: function(res){
+                        console.log("请求失败");
 
-                    let length_product=res.data.products.length;//商品数量
-                    console.log("有"+length_product+"个商品");
-                    for(let i=0;i<length_product;i++){
-                        //console.log("循环次数为第"+(i+1));
-                        let length_sku=res.data.products[i].skus.length;//商品对应的sku数量
-                        //console.log("sku数量为"+length_sku);
-                        for(let j=0;j<length_sku;j++){
-                            array1.push([res.data.products[i].skus[j].id+","+res.data.products[i].skus[j].quantities[0].reserved_quantity]);
-                            //console.log(res.data.products[i].skus[j].id+","+res.data.products[i].skus[j].quantities[0].reserved_quantity);
-                            count++;
-                            //console.log("正在加载第"+count+"个");
-                        }
-                        if(i==length_product-1){
-                            end_flag1=1;//结束标志位
-                            //console.log("i为"+i+"是最后一个");
-                            //console.log(array1);
+                    }
+                });
+            }
+        }).then((res)=>{
+            console.log("123",res)
+            res.data.products.forEach((e,index,self)=>{
+                e.skus.forEach((e1,index1,self1)=>{
+                    if(type==1){//可用库存
+                        array.push([e1.id,e1.quantities[0].open_quantity]);//可用库存
+                    }else if(type==2){//被锁库存
+                        array.push([e1.id,e1.quantities[0].reserved_quantity]);//被锁库存
+                    }
 
-
-
-                        }
+                })
+                if(index==self.length-1){
+                    if(type==1){//可用库存
+                        ex("商品可用库存表",array)
+                    }else if(type==2){//被锁库存
+                        ex("商品被锁库存表",array)
                     }
                 }
-            });
-            //console.log("开始加载")
-        }else if(mode==2){//跨境
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/product/local/products/list?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_lsmetzh3_pSV9rBde_55Pm_4SCO_BAdp_Tnr35tzPsywb&device_platform=web&cookie_enabled=true&screen_width=1536&screen_height=864&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F121.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FShanghai&tab_id=1&page_number=1&page_size=50&sku_number=1&product_sort_fields=3&product_sort_types=0&msToken=-vX9W5jciwJ9HAU7xFdnIK72p96x7NKhozA4IwCZAA4VvGrgoJBeSkgw-3AZ9cLPUqEW_tU9pNGzowxWsIkf6O6FgGoRtH_KaqxhmlmIe9_NsDzmPoCXSQ==&X-Bogus=DFSzswjLVAsANC/VtqLSBGjErrO8&_signature=_02B4Z6wo00001S2W7uwAAIDAK2Zw9WyMVl0tluJAAC6rc9',
-                headers: {
-                    'authority': 'api16-normal-useast1a.tiktokglobalshop.com',
-                    'accept': '*/*',
-                    'accept-language': 'zh-CN,zh;q=0.9',
-                    'x-tt-oec-region': 'TH'
-                },
-                onload: function(response){
-                },
-                onerror: function(res){
-                    console.log("请求失败");
-                }
-            });
-        }
+            })
+        })
+
     }
 
     function getFlashDealProtect(){
@@ -1097,7 +1106,7 @@
                     // console.log("数组",array);
                     array.push([e1.product_id,e1.sku_id,e1.fixed_price_value,e1.inventory_quantity])
                     if(index==self.length-1 && index1==self1.length-1){//最后一条
-                        ex("产品折扣表",array,"Sheet1")//导出折扣表
+                        ex("产品折扣表",array)//导出折扣表
                     }
                 })
             })
@@ -1767,33 +1776,35 @@
         return date.getFullYear().toString().slice(2) + nowMonth + strDate;
     }
 
-    //导出二维数组为表格
-    function ex(bookName,array1,sheetName1,array2,sheetName2,array3,sheetName3){
+    //导出二维数组为表格 #exf #ex_f
+    function ex(bookName,...array){
+        let forT;//将要循环的次数
+
+        if(array.length%2==0){//偶数
+            forT=array.length/2;
+        }else if(array.length%2==1){//奇数，缺少最后一个工作表的表名
+            forT=array.length==1 ? 1:(array.length+1)/2
+            array.push("Sheet"+array.length);//补充缺失的表名
+        }
+        /* 生成工作簿并 */
+        const book = XLSX.utils.book_new()//生成一个空白的工作簿
+        let sheetDataArray=[];//存放工作表数据的数组
         /* 把转换JS数据数组的数组为工作表 */
-        const sheet0= XLSX.utils.aoa_to_sheet(array1);
 
-        let sheet1;
-        if(array2!=undefined&&sheetName2!=undefined){
-            sheet1= XLSX.utils.aoa_to_sheet(array2);
-        }
+        for(let i=0;i<forT;i++){
+            console.log("cc")
+            sheetDataArray[i]=XLSX.utils.aoa_to_sheet(array[i*2])
+            try{
+                XLSX.utils.book_append_sheet(book,sheetDataArray[i],array[i*2+1])
+            }catch{
+                XLSX.utils.book_append_sheet(book,sheetDataArray[i],"Sheetx"+i+1)
+            }
 
-        let sheet2;
-        if(array3!=undefined&&sheetName3!=undefined){
-            sheet2= XLSX.utils.aoa_to_sheet(array3);
-        }
-
-        /* 生成工作簿并添加工作表 */
-        const book = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(book,sheet0,sheetName1 )
-        if(array2!=undefined&&sheetName2!=undefined){
-            XLSX.utils.book_append_sheet(book,sheet1,sheetName2 )
-        }
-        if(array3!=undefined&&sheetName3!=undefined){
-            XLSX.utils.book_append_sheet(book,sheet2,sheetName3 )
         }
 
         /* 保存到文件 */
         XLSX.writeFile(book,bookName+".xlsx")
+        console.log("cc")
     }
 
     //监听放大缩小按钮
