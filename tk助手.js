@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.0
+// @version      1.2.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -39,10 +39,8 @@
         input2: getDate(),//闪购报名日期
         input3: "1",
         input4:"700789,600017",
-        input5:"null",//闪购报名内容
         input6:"a",//折扣报名尾缀
         input7: getDate(),//折扣报名日期
-        input8:"null",//折扣报名内容
         panelStatus:true,//面板缩放默认状态,默认为true，缩小
         autoPanelStatus:0,//自动记录面板缩放状态
         autoSyncPromotionStarus:0,//自动同步折扣
@@ -156,10 +154,10 @@
                         onClick() {
                             getProductsInfo(1)//tk获取商品信息中的可用库存
                             CAT_UI.Message.info({
-                                        content: "正在导出部分商品信息，请稍等",
-                                        closable: true,
-                                        duration: 5000,
-                                    });
+                                content: "正在导出部分商品信息，请稍等",
+                                closable: true,
+                                duration: 5000,
+                            });
                         },
                         style: {
                             flex: 1,
@@ -256,7 +254,7 @@
         const [input1, setInput1] = CAT_UI.useState(data.input1);
         const [input2, setInput2] = CAT_UI.useState(data.input2);
         const [input3, setInput3] = CAT_UI.useState(data.input3);
-        const [input4, setInput4] = CAT_UI.useState(data.input5);
+        const [input4, setInput4] = CAT_UI.useState("null");
         return CAT_UI.Space(
             [
                 CAT_UI.createElement(
@@ -339,9 +337,6 @@
                         value: input4,
                         onChange(val) {
                             setInput4(val);
-                            data.input4 = val;
-                            content=JSON.parse(val);
-
                         },
                         style: {
                             flex: 1,
@@ -362,85 +357,91 @@
                     CAT_UI.Button("启动", {
                         type: "primary",
                         onClick() {
-                            let yearPart=input2.slice(0,2);
-                            let month=input2.slice(2,4);
-                            let day=input2.slice(4);
-                            let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
-                            //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
-                            console.log("第一个newDate:",newDate);
-                            newDate=Date.parse(newDate)/1000;
-
-                            console.log("第二个newDate:",newDate);
-                            let time=24/input3;
-                            let frequency=24/time;
-                            let r=confirm("点击确定，任务开始执行");
-                            if (r==true){
-                                //console.log("content",content);
-                                if(data.autoSyncPromotionStarus==1){//如果开启了折扣同步
-                                    CAT_UI.Message.info({
-                                        content: "即将删除旧折扣",
-                                        closable: true,
-                                        duration: 5000,
-                                    });
-                                    //console.log("Ces")
-                                    syncDelFlag1=1;
-                                    delDiscount({//根据活动名称中的日期和尾缀删除折扣
-                                        mode:mode,
-                                        syncDelFlag:syncDelFlag1,
-                                    })
-                                    let a=setInterval(()=>{
-                                        //console.log("重复中");
-                                        if(syncDelFlag1==0){//如果删除已经完成
-                                            clearInterval(a);
-                                            setTimeout(()=>{
-                                                let a=getDate()
-                                                let yearPart1=a.slice(0,2);
-                                                let month1=a.slice(2,4);
-                                                let day1=a.slice(4);
-                                                let newDate1="20"+yearPart1+"-"+month1+"-"+day1+" 00:00:00";
-                                                newDate1=Date.parse(newDate1)/1000;
-                                                discountActivity({//折扣报名
-                                                    tail:input1+"x",
-                                                    date:newDate1,
-                                                    content:content,
-                                                    mode:mode,
-                                                    syncDelFlag:1,
-                                                });
-                                            },5000);
-
-                                        }
-                                    },100)
-                                    let b=setInterval(()=>{
-                                        //console.log("重复中1");
-                                        if(syncDelFlag2==0){//如果折扣已经完成
-                                            clearInterval(b);
-                                            setTimeout(()=>{
-                                                flashDealActivity({//报闪购
-                                                    tail:input1,
-                                                    date:newDate,
-                                                    time:time,
-                                                    frequency:frequency,
-                                                    content:content,
-                                                    mode:mode,
-                                                });
-                                            },5000);
-
-                                        }
-                                    },100)
-                                    }else if(data.autoSyncPromotionStarus==0){//如果没开启自动同步折扣
-                                        flashDealActivity({//直接报闪购
-                                            tail:input1,
-                                            date:newDate,
-                                            time:time,
-                                            frequency:frequency,
-                                            content:content,
-                                            mode:mode,
-                                        });
-                                    }
-
-
+                            if(input4=="null" || input4==""){
+                                alert("内容为空，请检查")
                             }else{
+                                let content=JSON.parse(input4);
+                                let yearPart=input2.slice(0,2);
+                                let month=input2.slice(2,4);
+                                let day=input2.slice(4);
+                                let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
+                                //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
+                                console.log("第一个newDate:",newDate);
+                                newDate=Date.parse(newDate)/1000;
+
+                                console.log("第二个newDate:",newDate);
+                                let time=24/input3;
+                                let frequency=24/time;
+                                let r=confirm("点击确定，任务开始执行");
+                                if (r==true){
+                                    //console.log("content",content);
+                                    if(data.autoSyncPromotionStarus==1){//如果开启了折扣同步
+                                        CAT_UI.Message.info({
+                                            content: "即将删除旧折扣",
+                                            closable: true,
+                                            duration: 5000,
+                                        });
+                                        //console.log("Ces")
+                                        syncDelFlag1=1;
+                                        delDiscount({//根据活动名称中的日期和尾缀删除折扣
+                                            mode:mode,
+                                            syncDelFlag:syncDelFlag1,
+                                        })
+                                        let a=setInterval(()=>{
+                                            //console.log("重复中");
+                                            if(syncDelFlag1==0){//如果删除已经完成
+                                                clearInterval(a);
+                                                setTimeout(()=>{
+                                                    let a=getDate()
+                                                    let yearPart1=a.slice(0,2);
+                                                    let month1=a.slice(2,4);
+                                                    let day1=a.slice(4);
+                                                    let newDate1="20"+yearPart1+"-"+month1+"-"+day1+" 00:00:00";
+                                                    newDate1=Date.parse(newDate1)/1000;
+                                                    discountActivity({//折扣报名
+                                                        tail:input1+"x",
+                                                        date:newDate1,
+                                                        content:content,
+                                                        mode:mode,
+                                                        syncDelFlag:1,
+                                                    });
+                                                },5000);
+
+                                            }
+                                        },100)
+                                        let b=setInterval(()=>{
+                                            //console.log("重复中1");
+                                            if(syncDelFlag2==0){//如果折扣已经完成
+                                                clearInterval(b);
+                                                setTimeout(()=>{
+                                                    flashDealActivity({//报闪购
+                                                        tail:input1,
+                                                        date:newDate,
+                                                        time:time,
+                                                        frequency:frequency,
+                                                        content:content,
+                                                        mode:mode,
+                                                    });
+                                                },5000);
+
+                                            }
+                                        },100)
+                                        }else if(data.autoSyncPromotionStarus==0){//如果没开启自动同步折扣
+                                            flashDealActivity({//直接报闪购
+                                                tail:input1,
+                                                date:newDate,
+                                                time:time,
+                                                frequency:frequency,
+                                                content:content,
+                                                mode:mode,
+                                            });
+                                        }
+
+
+                                }else{
+                                }
                             }
+
 
                         },
                     }),
@@ -476,7 +477,7 @@
     function UI_discount(){
         const [input1, setInput1] = CAT_UI.useState(data.input6);
         const [input2, setInput2] = CAT_UI.useState(data.input7);
-        const [input3, setInput3] = CAT_UI.useState(data.input8);
+        const [input3, setInput3] = CAT_UI.useState("null");
         return CAT_UI.Space(
             [
                 CAT_UI.createElement(
@@ -537,9 +538,6 @@
                         value: input3,
                         onChange(val) {
                             setInput3(val);
-                            data.input8 = val;
-                            content=JSON.parse(val);
-
                         },
                         style: {
                             flex: 1,
@@ -560,21 +558,28 @@
                     CAT_UI.Button("启动", {
                         type: "primary",
                         onClick() {
-                            let yearPart=input2.slice(0,2);
-                            let month=input2.slice(2,4);
-                            let day=input2.slice(4);
-                            let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
-                            //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
-                            newDate=Date.parse(newDate)/1000;//获取时间戳
-                            //console.log(newDate);
-                            alert("点击确定，任务开始执行");
-                            //console.log(content);
-                            discountActivity({
-                                tail:input1,
-                                date:newDate,
-                                content:content,
-                                mode:mode,
-                            });
+
+                            if(input3=="null" || input3==""){
+
+                            }else{
+                                let content=JSON.parse(input3);
+                                let yearPart=input2.slice(0,2);
+                                let month=input2.slice(2,4);
+                                let day=input2.slice(4);
+                                let newDate="20"+yearPart+"-"+month+"-"+day+" 00:00:00";
+                                //console.log("20"+yearPart+"-"+month+"-"+day+" 00:00:00");
+                                newDate=Date.parse(newDate)/1000;//获取时间戳
+                                //console.log(newDate);
+                                alert("点击确定，任务开始执行");
+                                //console.log(content);
+                                discountActivity({
+                                    tail:input1,
+                                    date:newDate,
+                                    content:content,
+                                    mode:mode,
+                                });
+                            }
+
 
                         },
                     }),
