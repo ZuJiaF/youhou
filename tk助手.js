@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.1
+// @version      1.2.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -414,6 +414,7 @@
                                             if(syncDelFlag2==0){//如果折扣已经完成
                                                 clearInterval(b);
                                                 setTimeout(()=>{
+                                                    console.log("123",content)
                                                     flashDealActivity({//报闪购
                                                         tail:input1,
                                                         date:newDate,
@@ -1142,133 +1143,101 @@
         //console.log(startTime+"-"+endTime+" "+tail);
 
         //console.log(endTime);
-        if(mode==1){//泰国本土
-
-            $.ajax({
-                url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
-                crossDomain: true,
-                method: 'post',
-                headers: {
-                    'authority': 'seller-th.tiktok.com',
-                    'accept': '*/*',
-                    'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-                    'x-secsdk-csrf-token': '000100000001d04de9dd1e0747c74b503daa0a43886da2f27d31095dd19f8e503d432d05f5151794f6970cac8e89',
-                    'x-tt-oec-region': 'TH'
-                },
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    'promotion_name': startTime+"-"+endTime+" "+tail,
-                    'period': {
-                        'start_time': starDate,
-                        'end_time': endDate
+        new Promise((resolve)=>{
+            if(mode==1){//泰国本土
+                $.ajax({
+                    url: 'https://seller-th.tiktok.com/api/v1/promotion/flash_sale/create?',
+                    crossDomain: true,
+                    method: 'post',
+                    headers: {
+                        'authority': 'seller-th.tiktok.com',
+                        'accept': '*/*',
+                        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+                        'x-secsdk-csrf-token': '000100000001d04de9dd1e0747c74b503daa0a43886da2f27d31095dd19f8e503d432d05f5151794f6970cac8e89',
+                        'x-tt-oec-region': 'TH'
                     },
-                    'pre_launch_day': 0,
-                    'flash_sale_products':content,
-                    'promotion_limit_dimension': 1
-                })
-            }).success(function(res) {
-                console.log(res);
-                flashDealActivitySuccess({
-                    res:res,
-                    startTime:startTime,
-                    endTime:endTime,
-                    tail:tail,
-                    date:date,
-                    time:time,
-                    frequency:frequency,
-                    mode:mode,
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        'promotion_name': startTime+"-"+endTime+" "+tail,
+                        'period': {
+                            'start_time': starDate,
+                            'end_time': endDate
+                        },
+                        'pre_launch_day': 0,
+                        'flash_sale_products':content,
+                        'promotion_limit_dimension': 1
+                    })
+                }).success(function(res) {
+                    console.log(res);
+                    resolve(res);
 
-                });//请求成功后要执行的
 
-            });
-        }else if(mode==2){//跨境
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/flash_sale/create?oec_seller_id=7495143478410054258",
-                headers: {
-                    'x-secsdk-csrf-token': '000100000001baa41e98f68a44c055ceaf54be2456ab4d49fbd9ba23c001b1eda3573a1b3e5017ab23c6ad8b1e1f',//会变动
-                    "Content-Type": 'application/json',
-                },
-                data: JSON.stringify({
-                    'promotion_name': startTime+"-"+endTime+" "+tail,
-                    'period': {
-                        'start_time': starDate,
-                        'end_time': endDate
+                });
+            }else if(mode==2){//跨境
+                GM_xmlhttpRequest({
+                    method: "POST",
+                    url: "https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/promotion/flash_sale/create?oec_seller_id=7495143478410054258",
+                    headers: {
+                        'x-secsdk-csrf-token': '000100000001baa41e98f68a44c055ceaf54be2456ab4d49fbd9ba23c001b1eda3573a1b3e5017ab23c6ad8b1e1f',//会变动
+                        "Content-Type": 'application/json',
                     },
-                    'display_channels': [
-                        1
-                    ],
-                    'effective_time_type': 1,
-                    'flash_sale_products': content,
-                    'promotion_limit_dimension': 1
-                }),
-                onload: function(response){
-                    let res=JSON.parse(response.responseText);
-                    console.log("闪购报名请求成功返回内容：",res);
-                    flashDealActivitySuccess({
-                        res:res,
-                        startTime:startTime,
-                        endTime:endTime,
-                        tail:tail,
-                        date:date,
-                        time:time,
-                        frequency:frequency,
-                        mode:mode,
-
-                    });//请求成功后要执行的
-
-                },
-                onerror: function(res){
-                    console.log("请求失败");
+                    data: JSON.stringify({
+                        'promotion_name': startTime+"-"+endTime+" "+tail,
+                        'period': {
+                            'start_time': starDate,
+                            'end_time': endDate
+                        },
+                        'display_channels': [
+                            1
+                        ],
+                        'effective_time_type': 1,
+                        'flash_sale_products': content,
+                        'promotion_limit_dimension': 1
+                    }),
+                    onload: function(response){
+                        let res=JSON.parse(response.responseText);
+                        console.log("闪购报名请求成功返回内容：",res);
+                        resolve(res);
+                    },
+                    onerror: function(res){
+                        console.log("请求失败");
+                    }
+                });
+            }
+        }).then((res)=>{
+            if(res.message=="success" || res.message=="promotion invalid time period"){
+                let status;
+                if(res.message=="success"){
+                    status=" 报名成功"
+                }else if(res.message=="promotion invalid time period"){
+                    status=" 时段冲突，跳过"
                 }
-            });
-        }
+                CAT_UI.Message.info({
+                    content: startTime+"-"+endTime+" "+tail+status,
+                    closable: true,
+                    duration: 5000,
+                });
+                if(time!=1){
+                    flashDealActivity({
+                        tail:tail,
+                        date:date+3600*frequency,
+                        time:time-1,
+                        frequency:frequency,
+                        content:content,
+                        mode:mode,
+                    })
+                }else if(time==1){
+                    alert("闪购报名成功");
+                }
+            }else if(res.message=="The promotion name already exists"){
+                alert("闪购名已经存在");
 
-    }
-
-    //报闪购成功后要执行的内容
-    function flashDealActivitySuccess(options){
-        let{
-            res=null,
-            startTime=null,
-            endTime=null,
-            tail=null,
-            date=null,
-            time=null,
-            frequency=null,
-            mode=null,
-
-        }=options
-        if(res.message=="success" || res.message=="promotion invalid time period"){
-            let status;
-            if(res.message=="success"){
-                status=" 报名成功"
-            }else if(res.message=="promotion invalid time period"){
-                status=" 时段冲突，跳过"
+            }else{
+                alert("闪购报名失败！！！！！！");
             }
-            CAT_UI.Message.info({
-                content: startTime+"-"+endTime+" "+tail+status,
-                closable: true,
-                duration: 5000,
-            });
-            if(time!=1){
-                flashDealActivity({
-                    tail:tail,
-                    date:date+3600*frequency,
-                    time:time-1,
-                    frequency:frequency,
-                    content:content,
-                    mode:mode,
-                })
-            }else if(time==1){
-                alert("闪购报名成功");
-            }
-        }else if(res.message=="The promotion name already exists"){
-            alert("闪购名已经存在");
+        })
 
-        }else{
-            alert("闪购报名失败！！！！！！");
-        }
+
     }
 
     //删除指定天数指定代号的闪购
