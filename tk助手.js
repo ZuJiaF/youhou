@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.2
+// @version      1.2.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -152,12 +152,28 @@
                     CAT_UI.Button("导出部分商品信息", {
                         type: "primary",
                         onClick() {
-                            getProductsInfo(1)//tk获取商品信息中的可用库存
-                            CAT_UI.Message.info({
-                                content: "正在导出部分商品信息，请稍等",
-                                closable: true,
-                                duration: 5000,
-                            });
+                            console.log("[]")
+                            getProductsInfo().then((res)=>{//tk获取商品信息中的可用库存
+                                console.log("ttt")
+                                let array=[["skuID","可用库存"]];//数组
+                                CAT_UI.Message.info({
+                                    content: "正在导出部分商品信息，请稍等",
+                                    closable: true,
+                                    duration: 5000,
+                                });
+                                console.log("123",res)
+                                res.data.products.forEach((e,index,self)=>{
+                                    e.skus.forEach((e1,index1,self1)=>{
+                                        array.push([e1.id,e1.quantities[0].open_quantity]);//可用库存
+                                    })
+                                    if(index==self.length-1){
+                                        console.log("look",array)
+                                        ex("商品可用库存表",array)
+                                    }
+                                })
+
+                            })
+
                         },
                         style: {
                             flex: 1,
@@ -906,15 +922,10 @@
     }
 
     //获取产品信息 #getProductsInfof #getProductsInfo_f #获取商品信息 #商品信息函数 #产品信息函数
-    function getProductsInfo(type){
-        let array;
-        if(type==1){//可用库存
-            array=[["skuID","可用库存"]]
-        }else if(type==2){//被锁库存
-            array=[["skuID","被锁库存"]]
-        }
-        new Promise((resolve)=>{
+    function getProductsInfo(){
+        return new Promise((resolve)=>{
             if(mode==1){//本土
+                console.log("abb")
                 // 使用 $ajax 或其他异步请求方法
                 $.ajax({
                     url: "https://seller-th.tiktok.com/api/v1/product/local/products/list?tab_id=1&page_number=1&page_size=1000&sku_number=100",
@@ -947,26 +958,8 @@
                     }
                 });
             }
-        }).then((res)=>{
-            console.log("123",res)
-            res.data.products.forEach((e,index,self)=>{
-                e.skus.forEach((e1,index1,self1)=>{
-                    if(type==1){//可用库存
-                        array.push([e1.id,e1.quantities[0].open_quantity]);//可用库存
-                    }else if(type==2){//被锁库存
-                        array.push([e1.id,e1.quantities[0].reserved_quantity]);//被锁库存
-                    }
-
-                })
-                if(index==self.length-1){
-                    if(type==1){//可用库存
-                        ex("商品可用库存表",array)
-                    }else if(type==2){//被锁库存
-                        ex("商品被锁库存表",array)
-                    }
-                }
-            })
         })
+
 
     }
 
@@ -1100,22 +1093,47 @@
             }
         }).then((res)=>{
             let array=[["产品id","skuId","price","stock"]];//数组
-            res.data.item_products.forEach((e,index,self)=>{//遍历每个商品
-                e.skus.forEach((e1,index1,self1)=>{//遍历每个sku
-                    console.log(e1);
-                    // console.log("库存为：",e1.inventory_quantity)
-                    // console.log("数组长度为：",self1.length);//数组长度
-                    // console.log(index1);
-                    // console.log("产品id为：",e1.product_id);
-                    // console.log("skuId为：",e1.sku_id);
-                    // console.log("价格为：",e1.fixed_price_value);
-                    // console.log("数组",array);
-                    array.push([e1.product_id,e1.sku_id,e1.fixed_price_value,e1.inventory_quantity])
-                    if(index==self.length-1 && index1==self1.length-1){//最后一条
-                        ex("产品折扣表",array)//导出折扣表
+            getProductsInfo().then((res1)=>{
+                console.log("ttt")
+                let array1=[["skuID","可用库存"]];//数组
+                CAT_UI.Message.info({
+                    content: "正在导出部分商品信息，请稍等",
+                    closable: true,
+                    duration: 5000,
+                });
+                console.log("123",res1)
+                res1.data.products.forEach((e,index,self)=>{
+                    e.skus.forEach((e1,index1,self1)=>{
+                        array1.push([e1.id,e1.quantities[0].open_quantity]);//可用库存
+                    })
+                    if(index==self.length-1){
+                        console.log("look",array1)
                     }
                 })
+                res.data.item_products.forEach((e,index,self)=>{//遍历每个商品
+                    e.skus.forEach((e1,index1,self1)=>{//遍历每个sku
+                        array1.forEach((e2,index2,self2)=>{
+                            //console.log("胡",e2[0])
+                            if(e2[0]==e1.sku_id){
+                                array.push([e1.product_id,e1.sku_id,e1.fixed_price_value,e2[1]])
+                            }
+                        })
+                        console.log(e1);
+                        // console.log("库存为：",e1.inventory_quantity)
+                        // console.log("数组长度为：",self1.length);//数组长度
+                        // console.log(index1);
+                        // console.log("产品id为：",e1.product_id);
+                        // console.log("skuId为：",e1.sku_id);
+                        // console.log("价格为：",e1.fixed_price_value);
+                        // console.log("数组",array);
+
+                        if(index==self.length-1 && index1==self1.length-1){//最后一条
+                            ex("产品折扣表",array)//导出折扣表
+                        }
+                    })
+                })
             })
+
         })
     }
 
