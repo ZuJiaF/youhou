@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.3
+// @version      1.2.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -43,7 +43,7 @@
         input7: getDate(),//折扣报名日期
         panelStatus:true,//面板缩放默认状态,默认为true，缩小
         autoPanelStatus:0,//自动记录面板缩放状态
-        autoSyncPromotionStarus:0,//自动同步折扣
+        autoSyncPromotionStarus:null,//自动同步折扣
         discountId:null,
     };
     (()=>{//获取网址
@@ -1426,6 +1426,7 @@
         if(content1[0].flash_sale_price!=undefined){//如果是闪购内容
             content1=flashExToDis(content1);//闪购内容转化为折扣内容
         }
+        console.log("折扣报名内容：",content1)
 
         //console.log("日期",date);
         let today=timestampToTime(date*1000).slice(0,-6);
