@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.4
+// @version      1.2.5
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -431,6 +431,11 @@
                                                 clearInterval(b);
                                                 setTimeout(()=>{
                                                     console.log("123",content)
+                                                    CAT_UI.Message.info({
+                                                        content: "即将开始闪购报名",
+                                                        closable: true,
+                                                        duration: 5000,
+                                                    });
                                                     flashDealActivity({//报闪购
                                                         tail:input1,
                                                         date:newDate,
@@ -444,6 +449,11 @@
                                             }
                                         },100)
                                         }else if(data.autoSyncPromotionStarus==0){//如果没开启自动同步折扣
+                                            CAT_UI.Message.info({
+                                                content: "即将开始闪购报名",
+                                                closable: true,
+                                                duration: 5000,
+                                            });
                                             flashDealActivity({//直接报闪购
                                                 tail:input1,
                                                 date:newDate,
