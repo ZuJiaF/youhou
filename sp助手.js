@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.10
+// @version      0.4.12
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -21,7 +21,7 @@
     let item_id=22346379044;
     let item_idArray=[];//存放商品id
     let finishItemIdArray=[];//已经完成的商品id
-    let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主要产品图片","产品图片2","产品图片3","产品图片4","产品图片5","产品图片6","产品图片7","产品图片8","产品图片9","sku代码","来源","库存","是否预购","model_id"];
+    let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主图","图2","图3","图4","图5","图6","图7","图8","图9","采集编码","商品编码","sku编码","来源","库存","是否预购","model_id","详情图1","详情图2","详情图3","详情图4","详情图5","详情图6","详情图7","详情图8","详情图9"];
     let array1;//存放商品信息
     let productNameErrorWord=["ลดน้ำหนัก"];//商品名称违禁词库
     let productNameErrorWord_Change=["",]//商品名称违禁词替换库
@@ -926,7 +926,7 @@
 
         });
     }
-    //获取单个商品详情
+    //获取单个商品详情 #getItemInformationf #getItemInformation函数
     function getItemInformation(options){
         let{
             shop_id=null,//商店id
@@ -970,7 +970,6 @@
             }
             finishItemIdArray.push(item_id);//已完成的itemId
             if(mode==4){
-
                 if(item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) ).length==0){//去除已经成功的
                     alert("全部商品加载完成")
                     reloadFlag=0;//重置状态
@@ -1097,6 +1096,8 @@
 
         let model_id;//组合id
 
+        let xqImages=[];//详情图片
+
         for(let i=0;i<length;i++){
             //console.log(i);
             let categoriesLength=res.data.item.categories.length;
@@ -1201,13 +1202,13 @@
             for(let i2=0;i2<9;i2++){
                 if(i2==8){
                     if(firstSkuImage==null){//如果没有sku图片
-                        description=description+"<img src='"+image+"' width='800' height='800'>"
+                        xqImages.push(image);//添加图片
                     }else{//如果有sku图片
-                        description=description+"<img src='"+firstSkuImage+"' width='800' height='800'>"
+                        xqImages[i2]=firstSkuImage
                     }
 
                 }else if(images[i2+1]!=null){
-                    description=description+"<img src='"+images[i2+1]+"' width='800' height='800'>"
+                    xqImages[i2]=images[i2+1];
 
 
                 }
@@ -1269,7 +1270,7 @@
             //组合id
             model_id=res.data.item.models[i].model_id.toString();//#modelId #modelid
 
-            array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,from,stock,is_pre_order,model_id]);
+            array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,"",skucode,from,stock,is_pre_order,model_id,xqImages[0],xqImages[1],xqImages[2],xqImages[3],xqImages[4],xqImages[5],xqImages[6],xqImages[7],xqImages[8]]);
 
 
 
