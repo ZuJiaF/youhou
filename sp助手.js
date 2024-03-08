@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.13
+// @version      0.4.14
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -964,13 +964,19 @@
                 'item_id': item_id
             }
         }).success(function(res) {
-            if(mode==3){
+            if(mode==3){//单个
 
-            }else{
+            }else{//其他
                 console.log(`正在加载第${getItemInformationCount}个`);
+                CAT_UI.Message.info({
+                    content: "正在加载第"+getItemInformationCount+"个",
+                    closable: true,
+                    duration: 3000,
+                });
+
             }
             finishItemIdArray.push(item_id);//已完成的itemId
-            if(mode==4){
+            if(mode==4){//同店多个
                 if(item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) ).length==0){//去除已经成功的
                     alert("全部商品加载完成")
                     reloadFlag=0;//重置状态
