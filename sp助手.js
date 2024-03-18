@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.14
+// @version      0.4.15
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -185,16 +185,26 @@
                     CAT_UI.Button("查询", {
                         type: "primary",
                         onClick() {
-                            shop_id=input1;
-                            getItemInformationIndex=0;//索引
-                            getItemInformationCount=1;//计数
-                            limit=30;//极限
-                            offset=0;//开端
-                            item_idArray=[];
-                            array1=[arrayId,array1Head];
-                            //CAT_UI.Message.info("我被点击了,你输入了：" + input+",赋值后shop_id为："+shop_id);
-                            abcCount=0;
-                            abc(shop_id,1);
+                            let r=confirm("点击确定，任务开始执行");
+                            if (r==true){
+                                CAT_UI.Message.info({
+                                    content: "即将开始任务",
+                                    closable: true,
+                                    duration: 5000,
+                                });
+                                shop_id=input1;
+                                getItemInformationIndex=0;//索引
+                                getItemInformationCount=1;//计数
+                                limit=30;//极限
+                                offset=0;//开端
+                                item_idArray=[];
+                                array1=[arrayId,array1Head];
+                                //CAT_UI.Message.info("我被点击了,你输入了：" + input+",赋值后shop_id为："+shop_id);
+                                abcCount=0;
+                                abc(shop_id,1);
+                            }else{
+                            }
+
                         },
                     }),
 
