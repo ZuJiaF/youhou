@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.15
+// @version      0.4.16
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -182,7 +182,7 @@
                             flex: 1,
                         },
                     }),
-                    CAT_UI.Button("查询", {
+                    CAT_UI.Button("采集", {
                         type: "primary",
                         onClick() {
                             let r=confirm("点击确定，任务开始执行");
@@ -299,7 +299,7 @@
                             alignItems: "center",
                         },
                     },
-                    CAT_UI.Button("查询", {
+                    CAT_UI.Button("采集", {
                         type: "primary",
                         onClick() {
                             shop_id=input1;
@@ -357,7 +357,7 @@
                             flex: 1,
                         },
                     }),
-                    CAT_UI.Button("查询", {
+                    CAT_UI.Button("采集", {
                         type: "primary",
                         onClick() {
                             shop_id=input1;
@@ -515,7 +515,7 @@
                     }),
 
                 ),
-                CAT_UI.Button("查询", {
+                CAT_UI.Button("采集", {
                     type: "primary",
                     onClick() {
                         if(mode==4){
@@ -576,7 +576,7 @@
                     }),
 
                 ),
-                CAT_UI.Button("查询", {
+                CAT_UI.Button("采集", {
                     type: "primary",
                     onClick() {
                         shop_id=othersArray[0];
@@ -627,7 +627,7 @@
                             flex: 1,
                         },
                     }),
-                    CAT_UI.Button("查询", {
+                    CAT_UI.Button("采集", {
                         type: "primary",
                         onClick() {
                             //console.log(JSON.parse(input1));
@@ -934,6 +934,8 @@
             }
         }).error(function(res) {
             console.log("失败失败失败");
+            alert("采集失败，请检查网络环境")
+
 
         });
     }
