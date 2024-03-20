@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.5
+// @version      1.2.6
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -757,7 +757,7 @@
 
                                             },
                                         },
-                                        CAT_UI.Text("闪购报名是否同步到折扣报名："),
+                                        CAT_UI.Text("闪购报名同步到折扣报名："),
                                         CAT_UI.Checkbox("",{
                                             //className:"123",
                                             style:{
@@ -813,13 +813,79 @@
                                     ),
 
 
-                                    CAT_UI.Divider("divider with text"),
-                                    "text2",
-                                    CAT_UI.Divider(null, { type: "vertical" }),
-                                    "text3",
+                                    CAT_UI.Divider("首页设置"),
+                                    CAT_UI.createElement(
+                                        "div",
+                                        {
+                                            style: {
+                                                display: "flex",
+                                                //justifyContent: "space-between",//平均分布
+                                                alignItems: "center",
+
+                                            },
+                                        },
+                                        CAT_UI.Text("折扣表价格减1："),
+                                        CAT_UI.Checkbox("",{
+                                            //className:"123",
+                                            style:{
+                                                //fontSize: "50px",
+                                                //backgroundColor:"black",
+                                            },
+                                            checked:input1,
+                                            onChange(checked){
+                                                //选中时
+                                                if(checked){
+                                                    setInput1(1);//重新设置input1
+                                                    localStorage.setItem("autoSyncPromotionStarus","1");
+                                                    data.autoSyncPromotionStarus=1;
+
+                                                }else{
+                                                    setInput1(0);
+                                                    localStorage.setItem("autoSyncPromotionStarus","0");
+                                                    data.autoSyncPromotionStarus=0;
+                                                }
+
+                                            },
+                                        }),
+                                    ),
+                                    CAT_UI.createElement(
+                                        "div",
+                                        {
+                                            style: {
+                                                display: "flex",
+                                                //justifyContent: "space-between",//平均分布
+                                                alignItems: "center",
+
+                                            },
+                                        },
+                                        CAT_UI.Text("折扣表库存为1或0："),
+                                        CAT_UI.Checkbox("",{
+                                            //className:"123",
+                                            style:{
+                                                //fontSize: "50px",
+                                                //backgroundColor:"black",
+                                            },
+                                            checked:input1,
+                                            onChange(checked){
+                                                //选中时
+                                                if(checked){
+                                                    setInput1(1);//重新设置input1
+                                                    localStorage.setItem("autoSyncPromotionStarus","1");
+                                                    data.autoSyncPromotionStarus=1;
+
+                                                }else{
+                                                    setInput1(0);
+                                                    localStorage.setItem("autoSyncPromotionStarus","0");
+                                                    data.autoSyncPromotionStarus=0;
+                                                }
+
+                                            },
+                                        }),
+                                    ),
+                                    
                                 ]),
                                 {
-                                    title: "Basic",
+                                    title: "设置",
                                     visible,
                                     focusLock: true,
                                     autoFocus: true,
