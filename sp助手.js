@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.17
+// @version      0.4.18
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -13,6 +13,7 @@
 // @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
 // @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
 // @connect 	 www.ip.cn
+// @connect      fc-mp-7fe76973-5165-4172-ac40-382e23e02a8d.next.bspapp.com
 // ==/UserScript==
 
 (function() {
@@ -1489,16 +1490,19 @@
     }
 
     function postRequest(){
-GM_xmlhttpRequest({
-                method: "GET",
-                url: "https://www.ip.cn/api/index?ip&type=0",
+        getLocalInfo().then((res)=>{
+            console.log(res);
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: "https://fc-mp-7fe76973-5165-4172-ac40-382e23e02a8d.next.bspapp.com/uploadInfo/uploadInfo1",
                 headers: {
                     "content-type": 'application/json',
                 },
+                data:JSON.stringify(res),
 
                 onload: function(response){
-                    let res=JSON.parse(response.responseText);
-                    console.log("获取本机ip和地址成功",res);
+                    let res1=JSON.parse(response.responseText);
+                    console.log("上传本机信息成功",res1)
 
 
 
@@ -1508,6 +1512,32 @@ GM_xmlhttpRequest({
 
                 }
             });
+        })
+
+    }
+    //获取本地信息
+    function getLocalInfo(){
+        return new Promise((resolve)=>{
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: "https://www.ip.cn/api/index?ip&type=0",
+                headers: {
+                    "content-type": 'application/json',
+                },
+
+                onload: function(response){
+                    let res=JSON.parse(response.responseText);
+                    console.log("获取本机ip和地址成功",res);
+                    resolve(res);
+
+
+                },
+                onerror: function(res){
+                    console.log("请求失败");
+
+                }
+            });
+        })
     }
 
     //监听放大缩小按钮
