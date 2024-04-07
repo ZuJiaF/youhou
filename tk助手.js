@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.6
+// @version      1.2.7
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -16,6 +16,7 @@
 // ==/UserScript==
 
 (function() {
+    /**********************************全局变量定义区-START**********************************/
     let FlashDealProtect_EndFlag=0;//tk闪购商品id结束标志位
     let getInactiveEndFlag=0;//tk不活跃商品id结束标志位
     let getDeletedEndFlag=0;//tk被删除商品id结束标志位
@@ -31,10 +32,44 @@
     let mode;//1为本土，2为跨境
     let syncDelFlag1;//闪购同步为折扣前的删除flag
     let syncDelFlag2;
+    /**********************************全局变量定义区-END**********************************/
 
+    /**********************************函数定义区-START**********************************/
+    //数据初始化
+    function init(){
+        homeData.autoSyncPromotionStarus = localStorage.getItem("autoSyncPromotionStarus");//自动同步折扣
+        if(homeData.autoSyncPromotionStarus!=null){
+            homeData.autoSyncPromotionStarus=JSON.parse(homeData.autoSyncPromotionStarus);
+        }else if(homeData.autoSyncPromotionStarus==null){
+            homeData.autoSyncPromotionStarus=0;
+            localStorage.setItem("autoSyncPromotionStarus",JSON.stringify(homeData.autoSyncPromotionStarus));
+        }
+
+        homeData.autoPanelStatus = localStorage.getItem("autoPanelStatus");//自动记录面板缩放状态
+        if(homeData.autoPanelStatus!=null){
+            homeData.autoPanelStatus=JSON.parse(homeData.autoPanelStatus);
+        }else if(homeData.autoPanelStatus==null){
+            homeData.autoPanelStatus=0;
+            localStorage.setItem("autoPanelStatus",JSON.stringify(data.autoPanelStatus));
+        }
+
+        if(homeData.autoPanelStatus){
+            homeData.panelStatus=localStorage.getItem("panelStatus");//面板缩放默认状态
+            //console.log(`homeData.panelStatus的值为${homeData.panelStatus}`);
+            if(homeData.panelStatus!=null){//如果有值
+                homeData.panelStatus=JSON.parse(localStorage.getItem("panelStatus"));//将字符串转为布尔值
+            }else if(homeData.panelStatus==null){//如果没值
+                homeData.panelStatus=true;
+                localStorage.setItem("panelStatus",JSON.stringify(homeData.panelStatus));
+            }
+        }
+
+
+
+    }
 
     //综合面板
-    const data = {
+    const homeData = {
         input1: "a",//闪购报名尾缀
         input2: getDate(),//闪购报名日期
         input3: "1",
@@ -45,98 +80,13 @@
         autoPanelStatus:0,//自动记录面板缩放状态
         autoSyncPromotionStarus:null,//自动同步折扣
         discountId:null,
+        startDate:"240301",//起始日期
+        endDate:"240331",//结束日期
     };
-    (()=>{//获取网址
-        //console.log("网址为：",href);
-        if(href.indexOf("https://seller-th.tiktok.com")!=-1){//泰国本土
-            mode=1;
-        }else if(href.indexOf("https://seller.tiktokglobalshop.com")!=-1){//跨境
-            mode=2;
-        }
-    })()
-
-
-
-    /**********************************函数执行区**********************************/
-    getDiscountList({
-        mode:mode
-    }).then((data1)=>{
-        let partStr;//本土店和跨境店折扣返回内容关键字段不同
-        if(mode==1){//本土店
-            partStr="seller_discounts";
-        }else if(mode==2){//跨境点
-            partStr="promotions";
-        }
-        //console.log(1235);
-        for(let i=0;i<10;i++){
-            console.log(data1.data[partStr][i])
-            if(data1.data[partStr][i].status==2){//如果有进行中的折扣，就获取折扣id并生成面板
-                //console.log("进行中的折扣id",data1.data[partStr][i].id);
-                data.discountId=data1.data[partStr][i].id;
-                createPanel();//创造ui
-                break;//找到后推出循环，防止溢出
-            }
-            //console.log(data1.data[partStr].length)
-            if(i==9 || i==data1.data[partStr].length-1){//如果找不到进行中的折扣，就直接生成面板
-                //console.log("进行中的折扣id",data1.data[partStr][i].id);
-                data.discountId="请输入折扣id";
-                createPanel();//创造ui
-                break;//退出循环，防止溢出
-            }
-
-
-
-        }
-    });
-
-
-    //getFlashDealProtect();//获取tk闪购商品id
-
-    //getInactive();//获取不活跃商品id
-
-    //getDeleted(); //获取被删除商品id
-
-    init();//数据初始化
-    /**********************************函数执行区**********************************/
-
-
-    //数据初始化
-    function init(){
-        data.autoSyncPromotionStarus = localStorage.getItem("autoSyncPromotionStarus");//自动同步折扣
-        if(data.autoSyncPromotionStarus!=null){
-            data.autoSyncPromotionStarus=JSON.parse(data.autoSyncPromotionStarus);
-        }else if(data.autoSyncPromotionStarus==null){
-            data.autoSyncPromotionStarus=0;
-            localStorage.setItem("autoSyncPromotionStarus",JSON.stringify(data.autoSyncPromotionStarus));
-        }
-
-        data.autoPanelStatus = localStorage.getItem("autoPanelStatus");//自动记录面板缩放状态
-        if(data.autoPanelStatus!=null){
-            data.autoPanelStatus=JSON.parse(data.autoPanelStatus);
-        }else if(data.autoPanelStatus==null){
-            data.autoPanelStatus=0;
-            localStorage.setItem("autoPanelStatus",JSON.stringify(data.autoPanelStatus));
-        }
-
-        if(data.autoPanelStatus){
-            data.panelStatus=localStorage.getItem("panelStatus");//面板缩放默认状态
-            //console.log(`data.panelStatus的值为${data.panelStatus}`);
-            if(data.panelStatus!=null){//如果有值
-                data.panelStatus=JSON.parse(localStorage.getItem("panelStatus"));//将字符串转为布尔值
-            }else if(data.panelStatus==null){//如果没值
-                data.panelStatus=true;
-                localStorage.setItem("panelStatus",JSON.stringify(data.panelStatus));
-            }
-        }
-
-
-
-    }
-
-
-
     function Home() {
-        const [input1, setInput1] = CAT_UI.useState(data.discountId)
+        const [input1, setInput1] = CAT_UI.useState(homeData.discountId)
+        const [input2, setInput2] = CAT_UI.useState(homeData.startDate)
+        const [input3, setInput3] = CAT_UI.useState(homeData.endDate)
 
         return CAT_UI.Space(
             [
@@ -250,7 +200,7 @@
                         value: input1,
                         onChange(val) {
                             setInput1(val);
-                            data.discountId = val;
+                            homeData.discountId = val;
                         },
                         style: {
                             flex: 1,
@@ -258,6 +208,119 @@
                     }),
 
                 ),
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexDirection:"column",
+                        },
+                    },
+                    CAT_UI.Text("----------根据订单创建日期导出结算数据(未完成)----------"),
+                    CAT_UI.createElement(
+                        "div",
+                        {
+                            style: {
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+
+                            },
+                        },
+                        CAT_UI.createElement(
+                            "div",
+                            {
+                                style: {
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    flexDirection:"column",
+                                },
+                            },
+                            CAT_UI.createElement(
+                                "div",
+                                {
+                                    style: {
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                    },
+                                },
+                                CAT_UI.Text("起始日期："),
+                                CAT_UI.Input({
+                                    value: input2,
+                                    onChange(val) {
+                                        setInput2(val);
+                                        homeData.startDate = val;
+                                    },
+                                    style: {
+                                        flex: 1,
+                                    },
+                                }),
+
+                            ),
+                            CAT_UI.createElement(
+                                "div",
+                                {
+                                    style: {
+                                        marginTop:"5px",
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                    },
+                                },
+                                CAT_UI.Text("结束日期："),
+                                CAT_UI.Input({
+                                    value: input3,
+                                    onChange(val) {
+                                        setInput3(val);
+                                        homeData.endDate = val;
+                                    },
+                                    style: {
+                                        flex: 1,
+                                    },
+                                }),
+
+                            ),
+
+                        ),
+
+                        CAT_UI.createElement(
+                            "div",
+                            {
+                                style: {
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+
+                                },
+                            },
+                            CAT_UI.Button("导出", {
+                                type: "primary",
+                                onClick() {
+                                    let startTime=stringToTimestamp(input2)+3600000//时间字符串转化为时间戳，再转化为泰国时间戳
+                                    let endTime=stringToTimestamp(input3)+3600000-1//时间字符串转化为时间戳，再转化为泰国时间戳
+                                    //console.log(startTime)
+                                    //console.log(endTime)
+                                    getJiesuanData(startTime,endTime)
+                                },
+                                style: {
+
+                                    flex: 1,
+                                }
+                            }),
+
+
+                        ),
+
+                    ),
+
+
+
+                ),
+
             ],
             {
                 direction: "vertical",
@@ -267,9 +330,9 @@
 
     //闪购(页面2) #闪购报名 #闪购报名页面 #闪购页面
     function UI_flashDeal() {
-        const [input1, setInput1] = CAT_UI.useState(data.input1);
-        const [input2, setInput2] = CAT_UI.useState(data.input2);
-        const [input3, setInput3] = CAT_UI.useState(data.input3);
+        const [input1, setInput1] = CAT_UI.useState(homeData.input1);
+        const [input2, setInput2] = CAT_UI.useState(homeData.input2);
+        const [input3, setInput3] = CAT_UI.useState(homeData.input3);
         const [input4, setInput4] = CAT_UI.useState("null");
         return CAT_UI.Space(
             [
@@ -287,7 +350,7 @@
                         value: input1,
                         onChange(val) {
                             setInput1(val);
-                            data.input1 = val;
+                            homeData.input1 = val;
                         },
                         style: {
                             flex: 1,
@@ -309,7 +372,7 @@
                         value: input2,
                         onChange(val) {
                             setInput2(val);
-                            data.input2 = val;
+                            homeData.input2 = val;
                         },
                         style: {
                             flex: 1,
@@ -331,7 +394,7 @@
                         value: input3,
                         onChange(val) {
                             setInput3(val);
-                            data.input3 = val;
+                            homeData.input3 = val;
                         },
                         style: {
                             flex: 1,
@@ -391,7 +454,7 @@
                                 let r=confirm("点击确定，任务开始执行");
                                 if (r==true){
                                     //console.log("content",content);
-                                    if(data.autoSyncPromotionStarus==1){//如果开启了折扣同步
+                                    if(homeData.autoSyncPromotionStarus==1){//如果开启了折扣同步
                                         CAT_UI.Message.info({
                                             content: "即将删除旧折扣",
                                             closable: true,
@@ -448,7 +511,7 @@
 
                                             }
                                         },100)
-                                        }else if(data.autoSyncPromotionStarus==0){//如果没开启自动同步折扣
+                                        }else if(homeData.autoSyncPromotionStarus==0){//如果没开启自动同步折扣
                                             CAT_UI.Message.info({
                                                 content: "即将开始闪购报名",
                                                 closable: true,
@@ -502,8 +565,8 @@
 
     //折扣(页面3) #折扣报名
     function UI_discount(){
-        const [input1, setInput1] = CAT_UI.useState(data.input6);
-        const [input2, setInput2] = CAT_UI.useState(data.input7);
+        const [input1, setInput1] = CAT_UI.useState(homeData.input6);
+        const [input2, setInput2] = CAT_UI.useState(homeData.input7);
         const [input3, setInput3] = CAT_UI.useState("null");
         return CAT_UI.Space(
             [
@@ -521,7 +584,7 @@
                         value: input1,
                         onChange(val) {
                             setInput1(val);
-                            data.input6 = val;
+                            homeData.input6 = val;
                         },
                         style: {
                             flex: 1,
@@ -543,7 +606,7 @@
                         value: input2,
                         onChange(val) {
                             setInput2(val);
-                            data.input7 = val;
+                            homeData.input7 = val;
                         },
                         style: {
                             flex: 1,
@@ -640,7 +703,7 @@
 
     //获取属性(页面4)
     function UI_getAttribute() {
-        const [input1, setInput1] = CAT_UI.useState(data.input4);
+        const [input1, setInput1] = CAT_UI.useState(homeData.input4);
         return CAT_UI.Space(
             [
                 CAT_UI.createElement(
@@ -657,7 +720,7 @@
                         value: input1,
                         onChange(val) {
                             setInput1(val);
-                            data.input1 = val;
+                            homeData.input1 = val;
                             array5=val.split(",");
                             //console.log(array5);
                         },
@@ -706,7 +769,7 @@
     function createPanel(){
         CAT_UI.createPanel({
             minButton: true,//minButton控制是否显示最小化按钮，默认为true
-            min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
+            min: homeData.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
             /*相当于GM_addStyle */
             appendStyle: `section {
     max-width:500px;
@@ -718,8 +781,8 @@
             header: {
                 title() {
                     const [visible, setVisible] = CAT_UI.useState(false);
-                    const [input1, setInput1] = CAT_UI.useState(data.autoSyncPromotionStarus);
-                    const [input2, setInput2] = CAT_UI.useState(data.autoPanelStatus);
+                    const [input1, setInput1] = CAT_UI.useState(homeData.autoSyncPromotionStarus);
+                    const [input2, setInput2] = CAT_UI.useState(homeData.autoPanelStatus);
                     //console.log(input1);
                     //console.log("121123233");
 
@@ -770,12 +833,12 @@
                                                 if(checked){
                                                     setInput1(1);//重新设置input1
                                                     localStorage.setItem("autoSyncPromotionStarus","1");
-                                                    data.autoSyncPromotionStarus=1;
+                                                    homeData.autoSyncPromotionStarus=1;
 
                                                 }else{
                                                     setInput1(0);
                                                     localStorage.setItem("autoSyncPromotionStarus","0");
-                                                    data.autoSyncPromotionStarus=0;
+                                                    homeData.autoSyncPromotionStarus=0;
                                                 }
 
                                             },
@@ -799,12 +862,12 @@
                                                 if(checked){
                                                     setInput2(1);//重新设置input2
                                                     localStorage.setItem("autoPanelStatus","1");
-                                                    data.autoPanelStatus=1;
+                                                    homeData.autoPanelStatus=1;
 
                                                 }else{
                                                     setInput2(0);
                                                     localStorage.setItem("autoPanelStatus","0");
-                                                    data.autoPanelStatus=0;
+                                                    homeData.autoPanelStatus=0;
                                                 }
 
                                             },
@@ -837,12 +900,12 @@
                                                 if(checked){
                                                     setInput1(1);//重新设置input1
                                                     localStorage.setItem("autoSyncPromotionStarus","1");
-                                                    data.autoSyncPromotionStarus=1;
+                                                    homeData.autoSyncPromotionStarus=1;
 
                                                 }else{
                                                     setInput1(0);
                                                     localStorage.setItem("autoSyncPromotionStarus","0");
-                                                    data.autoSyncPromotionStarus=0;
+                                                    homeData.autoSyncPromotionStarus=0;
                                                 }
 
                                             },
@@ -871,18 +934,18 @@
                                                 if(checked){
                                                     setInput1(1);//重新设置input1
                                                     localStorage.setItem("autoSyncPromotionStarus","1");
-                                                    data.autoSyncPromotionStarus=1;
+                                                    homeData.autoSyncPromotionStarus=1;
 
                                                 }else{
                                                     setInput1(0);
                                                     localStorage.setItem("autoSyncPromotionStarus","0");
-                                                    data.autoSyncPromotionStarus=0;
+                                                    homeData.autoSyncPromotionStarus=0;
                                                 }
 
                                             },
                                         }),
                                     ),
-                                    
+
                                 ]),
                                 {
                                     title: "设置",
@@ -912,8 +975,8 @@
                                         setVisible(false);
                                     },
                                     onCancel: () => {//取消后
-                                        data.autoSyncPromotionStarus = temp.data1;//复原
-                                        data.autoPanelStatus=temp.data2;//复原
+                                        homeData.autoSyncPromotionStarus = temp.data1;//复原
+                                        homeData.autoPanelStatus=temp.data2;//复原
                                         setInput1(temp.data1);
                                         setInput2(temp.data2);
                                         localStorage.setItem("autoSyncPromotionStarus",temp.data1);//本地存储
@@ -1805,6 +1868,40 @@
         })
     }
 
+    //时间字符串转化为时间戳，输入格式为"240407或240407120000"
+    function stringToTimestamp(dateString) {
+        var year, month, day, hour, minute, second;
+        // 如果时间字符串长度为 6，则精确到日期
+        if (dateString.length === 6) {
+            year = parseInt(dateString.substring(0, 2)) + 2000; // 假设年份是 2000 年之后
+            month = parseInt(dateString.substring(2, 4)) - 1; // 月份是从 0 到 11 的，所以要减去 1
+            day = parseInt(dateString.substring(4, 6));
+            // 设置时分秒为 0
+            hour = 0;
+            minute = 0;
+            second = 0;
+        } else if (dateString.length === 12) { // 如果时间字符串长度为 12，则精确到秒
+            year = parseInt(dateString.substring(0, 2)) + 2000; // 假设年份是 2000 年之后
+            month = parseInt(dateString.substring(2, 4)) - 1; // 月份是从 0 到 11 的，所以要减去 1
+            day = parseInt(dateString.substring(4, 6));
+            hour = parseInt(dateString.substring(6, 8));
+            minute = parseInt(dateString.substring(8, 10));
+            second = parseInt(dateString.substring(10, 12));
+        } else {
+            // 如果时间字符串长度不是 6 或 12，则抛出错误
+            throw "Invalid input string length. It should be either 6 or 12 characters long.";
+        }
+
+        // 使用年、月、日、时、分、秒的值创建 Date 对象
+        var dateObject = new Date(year, month, day, hour, minute, second);
+
+        // 获取时间戳（毫秒）
+        var timestamp = dateObject.getTime();
+
+        // 返回时间戳
+        return timestamp;
+    }
+
     /* 时间戳转换为时间 */
     function timestampToTime(timestamp) {
         timestamp = timestamp ? timestamp : null;
@@ -1845,7 +1942,7 @@
         return date.getFullYear().toString().slice(2) + nowMonth + strDate;
     }
 
-    //导出二维数组为表格 #exf #ex_f
+    //导出二维数组为表格 #exf #ex_f 'ex("活动辅助表",array2,"全年闪购的商品id",array3,"不活跃的商品id",array4,"被删除商品id")'
     function ex(bookName,...array){
         let forT;//将要循环的次数
 
@@ -1893,7 +1990,7 @@
                 //console.log(element1);
                 element1.onclick = function(event) {
                     //console.log("天天",data.autoPanelStatus)
-                    if(data.autoPanelStatus){//如果data.autoPanelStatus为1
+                    if(homeData.autoPanelStatus){//如果data.autoPanelStatus为1
                         //console.log("验证");
                         let attribute=element1.querySelector("svg > path").getAttribute("d");
                         if(attribute=="M5 24h38"){
@@ -1928,6 +2025,150 @@
         return copy;
     }
 
+    //获取订单结算数据表格
+    function getJiesuanData(place_time_lower,place_time_upper){
+        getJiesuanDataList(place_time_lower,place_time_upper).then((res)=>{
+            // 声明一个数组，用于存储异步操作结果
+            let arrays=[["订单id","重量(g)"]]
+
+            res.data.order_records.forEach((e,index,self)=>{
+                let array=getJiesuanDataDtail(e.statement_detail_id).then((res1)=>{
+
+                    console.log("ggg",e.statement_detail_id)
+                    //console.log("描述",res1.data.order_record.out_come.fee_list[2].sub_fees);
+                    console.log("111",res1.data.order_record.trade_order_id);
+                    console.log("日记第"+index+"个",res1.data.order_record.out_come.fee_list)
+
+                    let inputString;
+                    let weight;
+                    if(res1.data.order_record.out_come.fee_list.length!=4){
+                        console.log("没有")
+                        weight="没有"
+                    }else{
+                        inputString=res1.data.order_record.out_come.fee_list[2].sub_fees[0].description
+                        weight = parseInt(inputString.match(/\d+/)[0]);
+                    }
+                    let trade_order_id=res1.data.order_record.trade_order_id;
+                    console.log("现在是第"+index)
+                    console.log("222",weight);
+                    return [trade_order_id, weight];
+                })
+                // 将每次异步操作返回的 Promise 对象存入数组
+                arrays.push(array);
+            })
+            // 使用 Promise.all() 等待所有异步操作完成
+            Promise.all(arrays).then((results) => {
+                console.log("所有异步操作已完成");
+                console.log("结果数组:", results);
+                // 在这里执行你想要在所有异步操作完成后执行的代码
+                ex("订单结算数据", results, "Sheet1");
+            }).catch((error) => {
+                console.error("发生错误：", error);
+            });
+        })
+
+    }
+
+    //获取订单结算数据列表
+    function getJiesuanDataList(place_time_lower,place_time_upper){
+        return new Promise((resolve)=>{
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/pay/statement/order/list?oec_seller_id=7495143478410054258&size=500&page_type=10&place_time_lower='+place_time_lower+'&place_time_upper='+place_time_upper,
+                headers: {
+
+                },
+                onload: function(response){
+                    let res = JSON.parse(response.responseText);
+                    console.log("1",res);
+                    resolve(res);
+
+
+                },
+                onerror: function(res){
+                    console.log("请求失败");
+
+                }
+            });
+        })
+
+    }
+
+    //获取订单结束数据详情
+    function getJiesuanDataDtail(statement_detail_id){
+        return new Promise((resolve)=>{
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: 'https://api16-normal-useast1a.tiktokglobalshop.com/api/v1/pay/statement/transaction/detail?oec_seller_id=7495143478410054258&page_type=8&statement_detail_id='+statement_detail_id,
+                headers: {
+
+                },
+                onload: function(response){
+                    let res = JSON.parse(response.responseText);
+                    resolve(res)
+
+                },
+                onerror: function(res){
+                    console.log("请求失败");
+
+                }
+            });
+        })
+
+
+    }
+    /**********************************函数定义区-END**********************************/
+
+    /**********************************函数执行区-START**********************************/
+    (()=>{//获取网址
+        //console.log("网址为：",href);
+        if(href.indexOf("https://seller-th.tiktok.com")!=-1){//泰国本土
+            mode=1;
+        }else if(href.indexOf("https://seller.tiktokglobalshop.com")!=-1){//跨境
+            mode=2;
+        }
+    })()
+
+    getDiscountList({
+        mode:mode
+    }).then((data1)=>{
+        let partStr;//本土店和跨境店折扣返回内容关键字段不同
+        if(mode==1){//本土店
+            partStr="seller_discounts";
+        }else if(mode==2){//跨境点
+            partStr="promotions";
+        }
+        //console.log(1235);
+        for(let i=0;i<10;i++){
+            console.log(data1.data[partStr][i])
+            if(data1.data[partStr][i].status==2){//如果有进行中的折扣，就获取折扣id并生成面板
+                //console.log("进行中的折扣id",data1.data[partStr][i].id);
+                homeData.discountId=data1.data[partStr][i].id;
+                createPanel();//创造ui
+                break;//找到后推出循环，防止溢出
+            }
+            //console.log(data1.data[partStr].length)
+            if(i==9 || i==data1.data[partStr].length-1){//如果找不到进行中的折扣，就直接生成面板
+                //console.log("进行中的折扣id",data1.data[partStr][i].id);
+                homeData.discountId="请输入折扣id";
+                createPanel();//创造ui
+                break;//退出循环，防止溢出
+            }
+
+
+
+        }
+    });
+
+
+    //getFlashDealProtect();//获取tk闪购商品id
+
+    //getInactive();//获取不活跃商品id
+
+    //getDeleted(); //获取被删除商品id
+
+    init();//数据初始化
+    /**********************************函数执行区-END**********************************/
 })();
 
 
