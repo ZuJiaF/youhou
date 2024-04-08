@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.7
+// @version      1.2.8
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -2041,11 +2041,16 @@
 
                     let inputString;
                     let weight;
-                    if(res1.data.order_record.out_come.fee_list.length!=4){
+                    // 查找 type 属性值为 "seller_shipping_fee" 的对象
+                    var objWithSellerShippingFee = res1.data.order_record.out_come.fee_list.find(obj => obj.type === "seller_shipping_fee");
+
+                    // 输出结果
+                    console.log("找到了"+index+":",objWithSellerShippingFee);
+                    if(objWithSellerShippingFee==undefined){
                         console.log("没有")
                         weight="没有"
                     }else{
-                        inputString=res1.data.order_record.out_come.fee_list[2].sub_fees[0].description
+                        inputString=objWithSellerShippingFee.sub_fees[0].description
                         weight = parseInt(inputString.match(/\d+/)[0]);
                     }
                     let trade_order_id=res1.data.order_record.trade_order_id;
@@ -2078,6 +2083,7 @@
                 headers: {
 
                 },
+
                 onload: function(response){
                     let res = JSON.parse(response.responseText);
                     console.log("1",res);
