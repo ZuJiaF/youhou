@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.18
+// @version      0.4.19
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -19,12 +19,12 @@
 (function() {
     /*********全局变量*********/
     let shop_name="x1gj1oxbyg";
-    let shop_id=607032669;
-    let item_id=22346379044;
+    let shop_id=606796547;
+    let item_id=15080437046;
     let item_idArray=[];//存放商品id
     let finishItemIdArray=[];//已经完成的商品id
-    let arrayId=["ID001","ID002","ID003","ID004","ID005","ID006","ID007","ID008","ID009","ID010","ID011","ID012","ID013","ID014","ID015","ID016","ID017","ID018","ID019","ID020","ID021","ID022","ID023","ID024","ID025","ID026","ID027","ID028","ID029","ID030","ID031","ID032","ID033","ID034","ID035"]
-    let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主图","图2","图3","图4","图5","图6","图7","图8","图9","采集编码","商品编码","sku编码","来源","库存","是否预购","model_id","详情图1","详情图2","详情图3","详情图4","详情图5","详情图6","详情图7","详情图8","详情图9"];
+    let arrayId=["ID001","ID002","ID003","ID004","ID005","ID006","ID007","ID008","ID009","ID010","ID011","ID012","ID013","ID014","ID015","ID016","ID017","ID018","ID019","ID020","ID021","ID022","ID023","ID024","ID025","ID026","ID027","ID028","ID029","ID030","ID031","ID032","ID033","ID034","ID035","ID036","ID037"]
+    let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主图","图2","图3","图4","图5","图6","图7","图8","图9","采集编码","商品编码","sku编码","来源","库存","是否预购","model_id","详情图1","详情图2","详情图3","详情图4","详情图5","详情图6","详情图7","详情图8","详情图9","sku销量","总销量"];
     let array1;//存放商品信息
     let productNameErrorWord=["ลดน้ำหนัก"];//商品名称违禁词库
     let productNameErrorWord_Change=["",]//商品名称违禁词替换库
@@ -402,7 +402,7 @@
                                 let index1;
                                 let index3;
                                 let index2;
-                                if(href.indexOf("shopee.co.th/product")!=-1){//本土站情况
+                                if(href.indexOf("shopee.co.th")!=-1){//本土站情况
                                     console.log("本土链接")
                                     index1=href.indexOf("product/");
                                     href=href.slice(index1+8);
@@ -1120,6 +1120,11 @@
 
         let xqImages=[];//详情图片
 
+        let skuSold;//sku销量
+
+let solds;//总销量
+
+        //对每个sku进行循环
         for(let i=0;i<length;i++){
             //console.log(i);
             let categoriesLength=res.data.item.categories.length;
@@ -1292,7 +1297,14 @@
             //组合id
             model_id=res.data.item.models[i].model_id.toString();//#modelId #modelid
 
-            array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,"",skucode,from,stock,is_pre_order,model_id,xqImages[0],xqImages[1],xqImages[2],xqImages[3],xqImages[4],xqImages[5],xqImages[6],xqImages[7],xqImages[8]]);
+            //sku销量
+            skuSold=res.data.item.models[i].sold;
+
+            //总销量
+            solds=res.data.product_review.global_sold;
+
+            //获取完后组合
+            array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,"",skucode,from,stock,is_pre_order,model_id,xqImages[0],xqImages[1],xqImages[2],xqImages[3],xqImages[4],xqImages[5],xqImages[6],xqImages[7],xqImages[8],skuSold,solds]);
 
 
 
