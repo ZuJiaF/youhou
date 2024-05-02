@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.19
+// @version      0.4.20
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -635,7 +635,12 @@
                         onClick() {
                             //console.log(JSON.parse(input1));
                             array1=[arrayId,array1Head];
-                            offLine_getItemInformation(JSON.parse(input1),"","",6);//线下获取
+                            offLine_getItemInformation({
+
+                                res:JSON.parse(input1),
+                                mode:6
+
+                        });//线下获取
                         },
                     }),
                 ),
@@ -960,16 +965,16 @@
                 'accept': 'application/json',
                 'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
                 /*会变动*/
-                //'af-ac-enc-dat': 'AAczLjMuMC0yAAABjJTANqMAABA1AzAAAAAAAAAAAv0CU/Zr/uvprC/Du0pGpP8uZO2Bl/82EyfDx/bVRcPaaRvYm5f/NhMnw8f21UXD2mkb2JuN5GavmK9Le0WHfSLZ9v+VwVHl4XjXL5Vuk8zoRatVjK82ncQN3M6nEn+TX92kqm93Klz0SQJAiMqSWXTebQiMBSCy14MigrBSynoPM/sJ55f/NhMnw8f21UXD2mkb2Jtn/ITcW+wLKZcVOXYrFuPG8oyOVk+CDzd2jz4zfQgqkxN5QCFuh0m2a7iQsFUA38j67cDTfmPTkKWfUZwGpXmJ0RySdhyhKzToeXrsCr/7VhqGwctYFue5E9TPO5YUqWOi64TImIt+ZarJPMqBJLQq/ZaWvPGalyjKeTtfwQlVJOCQI4hQAKyjaYSF6bcF806xLwaFmyJcAkO5+qOuucdnaoo2CY25LIyt6wMpQ+l2qCnWI1LozFhgDlcarbKS8KUFfHa8SKQ1OmY/Jijj0EUgLaPmcjGwGdD15dVE/NbApQ7kzL3gRGGMPpQYugB7di11yWs8g5EXgCo7x09f4CdFtnPtlij76RsT4FDcPIJJ1PDFHN+XHd766Bnkt0QCKaigodbiVL9qSo74ztGOsQ5iGxTXPkx2ZaMjX+FrjRfleFECX6tytQBtRKSjutepLYsG2Oz/ShzC+mkLReBZSnesCGe7oH//pJSowu3Ex+7EfMG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00XrTLz3ewduDtG2yVdVJklsG19vqGwWdBbeyLXP6cNFqeyakW0IuKjgX1+ZffSi00GsfH4howtDgf0tg2xUf0T8LFzTWE8itx0swhqFf+AV1HJH5/2qmdhFATAtz74Bv1GM+kXYPGv5UM32qTEZcA8WB+qCUm1JxbxQXbfg7WXidHJH5/2qmdhFATAtz74Bv1I5KRJpVPyuhhS/7enx8SIQ1WBaSo9Wet29HogIHkfkSB+3GQVnvilyYpBGbYpbPZmsMJj8kZXQzRp7lDmAtZliZ7xHIi74kk0Kr0yHi1esAf7hAth/5Qo0wWU7m7iaZYAwk0wNlo/s+J+SOH0sN6Ezuan3BqEhMd3XnfDUwK5o0=',
+                //'af-ac-enc-dat': 'bd59d705a12840dd',
                 /*会变动*/
-                //'af-ac-enc-sz-token':'mzk2PH9Q5e7v/hPk3H/05Q==|yd+88oZoo/BZTT1pk0XwDcTtAI59iJv1Q5QKac56Kj9s59ghwbj+NQ6yDbNt1IQulqLTSssxeZJ9ag==|YvfNbf1XlfKJbNe1|08|3' ,
+                //'af-ac-enc-sz-token':'WBCPORY3c7K4MqP//nRrgA==|sbJ2WrRXyAc9ZwpcDINUWgJnU5fa83QuzriJtd1qmQiy7jMqT1Y3NaSXd4sA6sFz+dZUh5lOvZCzPA==|TPtWS6t+CanvfJHs|08|3' ,
                 'x-api-source': 'pc',
                 'x-csrftoken': 'r6a7YaiI3qg0JcJdP9juOB51NY0oW3lc',
                 'x-requested-with': 'XMLHttpRequest',
                 /*会变动*/
-                //'x-sap-ri': '4d7960659f4f3f74a7138a3b01019fbdc322263b7e2c8ad72d51',
+                //'x-sap-ri': '8a5d3366da6c18efbb6aa53d0301bb249b1ca415332939dfe67e',
                 /*会变动*/
-                //'x-sap-sec': '2JxTLTycvgyRVgyR1My6VgTR1MyRVgTRVgyQVgyRTgaRVbTdVgyNVgyRNaPnBPdRVgmNV8yROgiRVx3tjRLPQsz9gbE5in4eAyGIVu//GQ4x0VwU1GC+qRxMvahOR27lhV8/3qk7Rw+N2REpfWYNfHrUPw0UkV/ZAe+Gh/lcqTVZbKT6whIpjaoMYosIzSIsWYXpgr2t7NKDQ/YCM70kAsh2zd6+mYRUU5hmffKisDsnrTCHMsgsDBdyb6q+RI1F1hu065mFTBRU/YD8igHhb4D6I5QFW4N0UR2byoQW1GL2sxbhMZE1g6tA2l5ywe5c1FOx+jk3oh84I78OwxVq8lni9Wg6uvwf0syMmAXWTTfaxpBoEFmLuHW9zdSLQlOxXD76ZIXb/KHcYuzdbYyoeltu76UwMXYMUFdal8fH/RydYRQX22Cv3+g7U7ZfrHnvvYuduueoyF5EpxKAD6VvsvzqOvsQPgALE+zKxCFQ+86pJNCpxvlShxsb0xt08bIfGJnjsitvUB5/1qbi/RbXLtBqAhQDQYitGe4mJZuKMCcbOTN84+vLYodtgkx/OwK3d/fxlH1PUifrf4SAo18mTC39yBrm0bDr4md+0pTqanaQ2j4ub2n3Ds8seY43UewhCvrJfG/0vSRmGcdoYxrhyrtFmWcSGMdRVgyF99yD89RgzPyRVgm2BShnUgyRVf4RVgyrVgyRm+LnTXFvVtRiCoks94/OQ7l5uy96VgyR89999izgz9aRVgyRUgy2VgdR1gy6VgyRUgyRVf4RVgyrVgyR/dBEz2jvOa9j95aNRMez08p/Mwk6VgyRX9i9X+wlyz1RVgyR',
+                //'x-sap-sec': 'u7AaGFNdZFX+aFX+bJX0aFj+bJX+aFj+aFXMaFX+HFV+aUjMaFXdaFX+qqBUPcr+aF9yacX+tFV+a8J3+enrbYlx7mCAJHzFstPj94P+W4VO1fVFaeG13KJFUnJSaGgUUehimV6A8h/roj1LqjNebjzW1pkC69u356Xf13NDkJ8XMD4kHxE0Qnihyy7HdSLgjlvjTYB4Jiom0nJMXLm5qWleVtM5xzEmocmE/7NSS6FXeY3FZiSXdrcthnkAVn34RAfusmj4e7vrPzKcyy3TEa3Qyb/Kkm73T3qM9/phgGjJ1RtCDe8mR4pbl0S2lr8fOSjJsnD3kc8W6XMg78qSuFtvsO9MObhqsQW65SWO7+HmbhNEv2CGz2e4MvJ6rWt7HheAzFJdg+PornsOSUXxHi/I03a4sUWlfHBVuKZ7Q3Lxqe00pQTipb6jci8HV2d1IvFQDJx8wYmOJooFB6H92v+R9oR4QKMKpg2pqqY1JY8CLI6P4bBLeA0qYYSe2Jy2SXarWkKIVgOnjuXNkfKIf3Nq5xLCeO7TA03urcAjPSjVUw2MMd4qBG3aJuAbTE0wujJ2OF2ANapGDzncEZu0heA21W+VUyNpAe0bY1csork0ue1ESk/o6ip7OPCqwhWbvqFC41YV+kUdECARFYFBnnKWtoXw1ocfbK3vxEG3Cj7PefmkdVzqit0Ay/zP30YHgmNiSkT1/UU4Xg0qL5Lls/wn9pH8y+Dm5kaBo4hYz8/nLTpc0ifbxYwPLI2inE3pVXah/1jXlLymw70cl38/q1Dl+dU5K+n5Z393Y5Uhxp1f/hIXKuTgaJrFX8XpnEfqVwzkuBhyty6gRXBONi627ecwKqhEZVCqW88og5PoegPmNmulNJ7Q2QrFCuWzbYmmLpcyHSqrw3mObJSKuLLAlXL0b4fAB6I58TxbkmQPI2DoHuqc3VyIr+TzTF36fI5+o6legT05RDqTNpk6N38xkPGtDc85EkfA7eG5A7lVJmjP0ovmttoWpCfArz21/AC9w3ld8QGLKRHcK+8fkI2rnvyMYKy6kYomWXhfPTJzg8SHG/0IeMXvzgJWYEnloNFqpECSVMQ3Q0BBfK5N8mar7KYwhRTW2rxRoBVB16Ach0JMdYKzcoDeaU+8L919aAG5ggUnCqhONeF3QoUg04jp2UXxuJElcNTHFhPYWN8/jCwil3xJvVh+nP4Nq17BfbeHgYdDn7dwxFX+aTyjfybDjrwuaFX+atBUP060aFX+GFX+aDj+aFXaMgYtbgkbHTseBiAL7fHQHom0JJr+aFX8i4kffjjDfmX+aFX0aFN+xFXdaFr+aFX0aFX+GFX+aDj+aFWvwzRu4avX81Dl03v+mCfZAEC8wcb+aFXAAyylijiyan==',
                 'x-shopee-language': 'th',
                 'x-sz-sdk-version': '3.1.0-2&1.6.0'
             },
@@ -1010,7 +1015,7 @@
             });
 
         }).error(function(res) {
-            console.log("加载失败了");
+            console.log("采集失败了",res.responseJSON);
             item_idArray = item_idArray.filter( ( el ) => !finishItemIdArray.includes( el ) );//去除已经成功的
             console.log(item_idArray);
             ex(`整店产品信息(未完成)`,array1,"Sheet1",listToMatrix(item_idArray,1),"Sheet2");
@@ -1036,7 +1041,7 @@
         });
     }
 
-    //获取单个商品详情后处理
+    //获取单个商品详情后处理 #offLine_getItemInformation函数
     function offLine_getItemInformation(options){
         let{
             res=null,//返回的数据
