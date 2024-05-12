@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.25
+// @version      0.4.26
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
