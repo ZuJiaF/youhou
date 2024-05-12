@@ -10,8 +10,8 @@
 // @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @grant        GM_xmlhttpRequest
-// @downloadURL  https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
-// @updateURL    https://raw.githubusercontent.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
+// @downloadURL  https://raw.gitmirror.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
+// @updateURL    https://raw.gitmirror.com/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
 // @connect 	 www.ip.cn
 // @connect      fc-mp-7fe76973-5165-4172-ac40-382e23e02a8d.next.bspapp.com
 // ==/UserScript==
