@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.26
+// @version      0.4.27
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -23,8 +23,9 @@
     let item_id=15080437046;
     let item_idArray=[];//存放商品id
     let finishItemIdArray=[];//已经完成的商品id
-    let arrayId=["ID001","ID002","ID003","ID004","ID005","ID006","ID007","ID008","ID009","ID010","ID011","ID012","ID013","ID014","ID015","ID016","ID017","ID018","ID019","ID020","ID021","ID022","ID023","ID024","ID025","ID026","ID027","ID028","ID029","ID030","ID031","ID032","ID033","ID034","ID035","ID036","ID037","ID038"]
-    let array1Head=["品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主图","图2","图3","图4","图5","图6","图7","图8","图9","采集编码","商品编码","sku编码","来源","库存","是否预购","model_id","详情图1","详情图2","详情图3","详情图4","详情图5","详情图6","详情图7","详情图8","详情图9","sku销量","总销量","上架时间"];
+    let arrayId=["ID036","ID001","ID002","ID003","ID004","ID005","ID006","ID007","ID008","ID009","ID010","ID011","ID012","ID013","ID014","ID015","ID016","ID017","ID018","ID019","ID020","ID021","ID022","ID023","ID024","ID025","ID026","ID027","ID028","ID029","ID030","ID031","ID032","ID033","ID034","ID035","ID039","ID037","ID038","ID040"]
+    let arrayDescribed=["","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""]
+    let array1Head=["备注","品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主图","图2","图3","图4","图5","图6","图7","图8","图9","采集编码","商品编码","sku编码","来源","库存","是否预购","model_id","详情图1","详情图2","详情图3","详情图4","详情图5","详情图6","详情图7","详情图8","详情图9","sku销量","总销量","链接上架时间","店铺注册时间"];
     let array1;//存放商品信息
     let productNameErrorWord=["ลดน้ำหนัก"];//商品名称违禁词库
     let productNameErrorWord_Change=["",]//商品名称违禁词替换库
@@ -201,7 +202,7 @@
                                 limit=30;//极限
                                 offset=0;//开端
                                 item_idArray=[];
-                                array1=[arrayId,array1Head];
+                                array1=[arrayId,arrayDescribed,array1Head];
                                 //CAT_UI.Message.info("我被点击了,你输入了：" + input+",赋值后shop_id为："+shop_id);
                                 abcCount=0;
                                 abc(shop_id,1);
@@ -309,7 +310,7 @@
                             offset=input3*30-30;//开端
                             limit=30;//上限
                             item_idArray=[];
-                            array1=[arrayId,array1Head];
+                            array1=[arrayId,arrayDescribed,array1Head];
                             //CAT_UI.Message.info("我被点击了,你输入了：" + input+",赋值后shop_id为："+shop_id);
                             abcCount=0;
                             abc(shop_id,2);
@@ -365,7 +366,7 @@
                         onClick() {
                             shop_id=input1;
                             item_id=input2;
-                            array1=[arrayId,array1Head];
+                            array1=[arrayId,arrayDescribed,array1Head];
                             getItemInformation({shop_id:shop_id,item_id:item_id,mode:3});
                             console.log("shop_id为："+shop_id);
                             console.log("item_id为："+item_id);
@@ -425,7 +426,7 @@
                                 console.log(item_id);
 
 
-                                array1=[arrayId,array1Head];
+                                array1=[arrayId,arrayDescribed,array1Head];
                                 getItemInformation({shop_id:shop_id,item_id:item_id,mode:3});
                                 // console.log("本次要加载的shop_id为："+shop_id);
                                 // console.log("本次要加载的item_id为："+item_id);
@@ -526,7 +527,7 @@
                         }else if(mode==null){
                             shop_id=input1;
                             item_id=item_idArray[0];//从数组的第一个开始
-                            array1=[arrayId,array1Head];//标题头
+                            array1=[arrayId,arrayDescribed,array1Head];//标题头
                             getItemInformation({
                                 shop_id:shop_id,
                                 item_id:item_id,
@@ -584,7 +585,7 @@
                     onClick() {
                         shop_id=othersArray[0];
                         item_id=othersArray[1];
-                        array1=[arrayId,array1Head];
+                        array1=[arrayId,arrayDescribed,array1Head];
                         getItemInformation({
                             shop_id:shop_id,
                             item_id:item_id,
@@ -634,7 +635,7 @@
                         type: "primary",
                         onClick() {
                             //console.log(JSON.parse(input1));
-                            array1=[arrayId,array1Head];
+                            array1=[arrayId,arrayDescribed,array1Head];
                             offLine_getItemInformation({
 
                                 res:JSON.parse(input1),
@@ -1314,7 +1315,7 @@
             ctime=res.data.item.ctime;
 
             //获取完后组装
-            array1.push([catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,"",skucode,from,stock,is_pre_order,model_id,xqImages[0],xqImages[1],xqImages[2],xqImages[3],xqImages[4],xqImages[5],xqImages[6],xqImages[7],xqImages[8],skuSold,solds,ctime]);
+            array1.push(["",catid,brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,"",skucode,from,stock,is_pre_order,model_id,xqImages[0],xqImages[1],xqImages[2],xqImages[3],xqImages[4],xqImages[5],xqImages[6],xqImages[7],xqImages[8],skuSold,solds,ctime]);
 
 
 
