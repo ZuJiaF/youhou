@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.30
+// @version      0.4.31
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -1322,10 +1322,11 @@
             solds=res.data.product_review.global_sold;
 
             //链接上架时间
-            listingCtime=res.data.item.ctime;
+            listingCtime=timestampToTime(res.data.item.ctime)
 
             //店铺注册时间
-            shopCtime=res.data.shop_detailed.ctime
+            shopCtime=timestampToTime(res.data.shop_detailed.ctime)
+            console.log("123453",shopCtime)
 
 
             //获取完后组装
@@ -1507,6 +1508,37 @@
         /* 保存到文件 */
         XLSX.writeFile(book,getDate()+bookName+".xlsx")
         return 0;
+    }
+
+
+    function timestampToTime(timestamp) {
+        // 处理时间戳未提供或无效的情况
+        if (!timestamp || isNaN(timestamp)) {
+            return 'Invalid timestamp';
+        }
+
+        // 如果时间戳是10位（秒级），将其转换为13位（毫秒级）
+        if (timestamp.toString().length === 10) {
+            timestamp *= 1000;
+        } else if (timestamp.toString().length !== 13) {
+            return 'Invalid timestamp';
+        }
+
+        let date = new Date(Number(timestamp));
+
+        // 验证日期对象是否有效
+        if (isNaN(date.getTime())) {
+            return 'Invalid date';
+        }
+
+        let Y = date.getFullYear().toString(); // 四位数年份
+        let M = (date.getMonth() + 1).toString().padStart(2, '0'); // 月份，补零
+        let D = date.getDate().toString().padStart(2, '0'); // 日期，补零
+        let h = date.getHours().toString().padStart(2, '0'); // 小时，补零
+        let m = date.getMinutes().toString().padStart(2, '0'); // 分钟，补零
+        let s = date.getSeconds().toString().padStart(2, '0'); // 秒，补零
+
+        return `${Y}-${M}-${D} ${h}:${m}:${s}`;
     }
 
     // 数组变二维数组方法
