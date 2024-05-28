@@ -1325,7 +1325,7 @@
             listingCtime=res.data.item.ctime;
 
             //店铺注册时间
-            shopCtime=data.shop_detailed.ctime
+            shopCtime=res.data.shop_detailed.ctime
 
 
             //获取完后组装
