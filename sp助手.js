@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.29
+// @version      0.4.30
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
+// @match        https://shopee.tw/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=xiapibuy.com
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
@@ -23,9 +24,9 @@
     let item_id=15080437046;
     let item_idArray=[];//存放商品id
     let finishItemIdArray=[];//已经完成的商品id
-    let arrayId=["ID036","ID001","ID046","ID002","ID003","ID004","ID005","ID006","ID007","ID008","ID009","ID010","ID011","ID012","ID013","ID014","ID015","ID016","ID017","ID018","ID019","ID020","ID021","ID022","ID023","ID024","ID025","ID026","ID027","ID028","ID029","ID030","ID031","ID032","ID033","ID034","ID035","ID039","ID037","ID038","ID040"]
-    let arrayDescribed=["","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""]
-    let array1Head=["备注","sp品类代码","lz品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主图","图2","图3","图4","图5","图6","图7","图8","图9","采集编码","商品编码","sku编码","来源","库存","是否预购","model_id","详情图1","详情图2","详情图3","详情图4","详情图5","详情图6","详情图7","详情图8","详情图9","sku销量","总销量","链接上架时间","店铺注册时间"];
+    let arrayId=["ID036","ID001","ID046","ID002","ID003","ID004","ID005","ID006","ID007","ID008","ID009","ID010","ID011","ID012","ID013","ID014","ID015","ID016","ID017","ID018","ID019","ID020","ID021","ID022","ID023","ID024","ID025","ID026","ID027","ID028","ID029","ID030","ID031","ID032","ID033","ID034","ID035","ID039","ID037","ID038","ID040","ID041","ID042","ID043","ID044","ID045","ID047"]
+    let arrayDescribed=["","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","sp和lz上架专用，勿删"]
+    let array1Head=["备注","sp品类代码","lz品类代码","品牌","标题","商品描述","sku名称","变体1","变体2","sku图像","sku价格","打折前sku价格","主图","图2","图3","图4","图5","图6","图7","图8","图9","采集编码","商品编码","sku编码","来源","库存","是否预购","model_id","详情图1","详情图2","详情图3","详情图4","详情图5","详情图6","详情图7","详情图8","详情图9","sku销量","总销量","链接上架时间","店铺注册时间","识别号","重量(g)","长(cm)","宽(cm)","高(cm)","视频"];
     let array1;//存放商品信息
     let productNameErrorWord=["ลดน้ำหนัก"];//商品名称违禁词库
     let productNameErrorWord_Change=["",]//商品名称违禁词替换库
@@ -1042,7 +1043,7 @@
         });
     }
 
-    //获取单个商品详情后处理 #offLine_getItemInformation函数
+    //获取单个商品详情后处理 #offLine_getItemInformation函数 #offLine_getItemInformationf
     function offLine_getItemInformation(options){
         let{
             res=null,//返回的数据
@@ -1051,6 +1052,13 @@
             mode=null,//模式
         }=options;
         //console.log("101",getItemInformationCount);
+        if(JSON.stringify(res).slice(2,6)=="item"){
+            let temp=res;
+            res={};
+            res.data=temp
+            console.log("666",res)
+            console.log("3232",JSON.stringify(res).slice(2,6))
+        }
         if(mode==6){
             console.log(`正在执行线下获取`);
         }
@@ -1130,7 +1138,9 @@
 
         let solds;//总销量
 
-        let ctime;//上架时间
+        let listingCtime;//链接上架时间，data.item.ctime
+
+        let shopCtime;//店铺注册时间，data.shop_detailed.ctime
 
         //对每个sku进行循环
         for(let i=0;i<length;i++){
@@ -1311,11 +1321,15 @@
             //总销量
             solds=res.data.product_review.global_sold;
 
-            //上架时间
-            ctime=res.data.item.ctime;
+            //链接上架时间
+            listingCtime=res.data.item.ctime;
+
+            //店铺注册时间
+            shopCtime=data.shop_detailed.ctime
+
 
             //获取完后组装
-            array1.push(["",catid,"",brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,"",skucode,from,stock,is_pre_order,model_id,xqImages[0],xqImages[1],xqImages[2],xqImages[3],xqImages[4],xqImages[5],xqImages[6],xqImages[7],xqImages[8],skuSold,solds,ctime]);
+            array1.push(["",catid,"",brand,title,description,name,name1,name2,image,price,price_before_discount,images[0],images[1],images[2],images[3],images[4],images[5],images[6],images[7],images[8],skucode,"",skucode,from,stock,is_pre_order,model_id,xqImages[0],xqImages[1],xqImages[2],xqImages[3],xqImages[4],xqImages[5],xqImages[6],xqImages[7],xqImages[8],skuSold,solds,listingCtime,shopCtime]);
 
 
 
