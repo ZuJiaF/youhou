@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.31
+// @version      0.4.32
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -19,6 +19,8 @@
 
 (function() {
     /*********全局变量*********/
+    let href=location.href;
+    //console.log("当前页面链接："+href)
     let shop_name="x1gj1oxbyg";
     let shop_id=606796547;
     let item_id=15080437046;
@@ -64,8 +66,54 @@
     /*********函数*********/
     init();
     postRequest();
+    pagesChange();
+    creatPage();
+
     /*********函数*********/
 
+    //监听页面链接
+    function pagesChange(){
+        let old=history.pushState
+        history.pushState=function(...arg){
+
+            let t1=setInterval(()=>{
+                if(location.href!=href){
+                    href=location.href
+                    console.log('路由改变',href);
+                    creatPage();
+                    clearInterval(t1)
+
+                }
+
+            },1)
+
+
+            return old.call(this,...arg)
+        }
+    }
+
+    //在关注页面创造东西
+    function creatPage(){
+        if(href.indexOf("https://shopee.co.th/search_user") != -1){
+            console.log("已在关注页面")
+            let t1=setInterval(()=>{
+                let dom = document.querySelector("div.shopee-header-section__content > div:nth-child(1) > a > div.shopee-search-user-item__follow-count > span:nth-child(1)")
+                if(dom!=null){
+                    console.log("成功",dom)
+                    // 获取目标元素
+                    let length = document.querySelector("#main > div > div:nth-child(3) > div > div > div.shopee-header-section.shopee-header-section--simple > div.shopee-header-section__content").childElementCount
+
+
+                    console.log("长度"+length)
+                    for(let i = 1;i<=length;i++){
+                        dom=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > a > div.shopee-search-user-item__follow-count > span:nth-child(1)")
+                        console.log("成功1",dom.innerHTML)
+                    }
+                    clearInterval(t1);
+                }
+            },50)
+            }
+    }
 
     //数据初始化
     //混密1st
@@ -1586,6 +1634,7 @@
     }
     //获取本地信息
     function getLocalInfo(){
+        let date=new Date();
         return new Promise((resolve)=>{
             GM_xmlhttpRequest({
                 method: "GET",
@@ -1596,6 +1645,10 @@
 
                 onload: function(response){
                     let res=JSON.parse(response.responseText);
+
+                    let date1=JSON.stringify(date)
+                    console.log("时间：",JSON.stringify(date1))
+                    res.time=date
                     console.log("获取本机ip和地址成功",res);
                     resolve(res);
 
