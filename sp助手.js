@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.32
+// @version      0.5.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
 // @match        https://shopee.tw/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=xiapibuy.com
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
-// @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
+// @require      https://zujia.online/ZuJiaF/youhou/main/scriptCatUi.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @grant        GM_xmlhttpRequest
 // @downloadURL  https://zujia.online/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
@@ -55,10 +55,51 @@
         input4:1,
         input5:"546172073,20633481965",//跨店多个输入框初始值
         input6:"null",
-        frequency1:"30",//频率
-        panelStatus:null,//面板缩放默认状态
-        status1:0,//同店多个自动模式的开关,默认为关
+        //频率
+        frequency1:()=>{
+            let data = localStorage.getItem("frequency1");
+            if(data!=null){
+
+                return Number(data);
+            }else if(data.frequency1==null){
+                return Number(30)
+            }
+        },
+        //面板缩放默认状态
+        panelStatus:()=>{
+            let data=localStorage.getItem("panelStatus");
+
+            if(data!=null){//如果有值
+
+                return JSON.parse(data);//将字符串转为布尔值
+            }else if(data==null){//如果没值
+                data=true;
+                localStorage.setItem("panelStatus",JSON.stringify(data));
+                return data
+            }
+        },
+        //同店多个自动模式的开关,默认为关
+        status1:()=>{
+            let data = localStorage.getItem("status1");
+            if(data!=null){
+                return JSON.parse(data)
+            }else if(data==null){
+                return 0
+            }
+        },
+
+        //关注模块是否出现的开关
+        status2:()=>{
+            let data = localStorage.getItem("status2");
+            if(data!=null){
+                //console.log("学",data);
+                return JSON.parse(data)
+            }else if(data==null){
+                return 0
+            }
+        },
     };
+
 
 
     /*********全局变量*********/
@@ -67,7 +108,6 @@
     init();
     postRequest();
     pagesChange();
-    creatPage();
 
     /*********函数*********/
 
@@ -79,8 +119,8 @@
             let t1=setInterval(()=>{
                 if(location.href!=href){
                     href=location.href
-                    console.log('路由改变',href);
-                    creatPage();
+                    console.log('路由改变，做点什么',href);
+
                     clearInterval(t1)
 
                 }
@@ -92,57 +132,11 @@
         }
     }
 
-    //在关注页面创造东西
-    function creatPage(){
-        if(href.indexOf("https://shopee.co.th/search_user") != -1){
-            console.log("已在关注页面")
-            let t1=setInterval(()=>{
-                let dom = document.querySelector("div.shopee-header-section__content > div:nth-child(1) > a > div.shopee-search-user-item__follow-count > span:nth-child(1)")
-                if(dom!=null){
-                    console.log("成功",dom)
-                    // 获取目标元素
-                    let length = document.querySelector("#main > div > div:nth-child(3) > div > div > div.shopee-header-section.shopee-header-section--simple > div.shopee-header-section__content").childElementCount
 
-
-                    console.log("长度"+length)
-                    for(let i = 1;i<=length;i++){
-                        dom=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > a > div.shopee-search-user-item__follow-count > span:nth-child(1)")
-                        console.log("成功1",dom.innerHTML)
-                    }
-                    clearInterval(t1);
-                }
-            },50)
-            }
-    }
 
     //数据初始化
     //混密1st
     function init(){
-        data.frequency1 = localStorage.getItem("frequency1");
-        if(data.frequency1!=null){
-            data.frequency1=Number(data.frequency1);
-        }else if(data.frequency1==null){
-            data.frequency1=30;
-            localStorage.setItem("frequency1",JSON.stringify(data.frequency1));
-        }
-
-        data.status1 = localStorage.getItem("status1");
-        if(data.status1!=null){
-            data.status1=JSON.parse(data.status1);
-        }else if(data.status1==null){
-            data.status1=0;
-            localStorage.setItem("status1",JSON.stringify(data.status1));
-        }
-
-        data.panelStatus=localStorage.getItem("panelStatus");
-        //console.log(`data.panelStatus的值为${data.panelStatus}`);
-        if(data.panelStatus!=null){//如果有值
-            data.panelStatus=JSON.parse(localStorage.getItem("panelStatus"));//将字符串转为布尔值
-        }else if(data.panelStatus==null){//如果没值
-            data.panelStatus=true;
-            localStorage.setItem("panelStatus",JSON.stringify(data.panelStatus));
-        }
-
         shop_id=localStorage.getItem("shop_id");
         if(shop_id!=null && shop_id!=""){//如果有值
             //console.log("1237",shop_id)
@@ -705,6 +699,82 @@
         );
     }
 
+    //关注店铺模块
+    const followPageData={
+        fans:()=>{
+            let data = localStorage.getItem("fans");
+            if(data!=null){
+                return JSON.parse(data)
+            }else if(data==null){
+                return 0
+            }
+        },
+        pages:()=>{
+            let data = localStorage.getItem("pages");
+            console.log("sk",data)
+            if(data!=null){
+                return JSON.parse(data)
+            }else if(data==null){
+                console.log("喂")
+                return 1
+            }
+        }
+    }
+    function followPage(){
+        const [input1, setInput1] = CAT_UI.useState(followPageData.fans);
+        const [value, setInput2] = CAT_UI.useState(followPageData.pages);
+
+        console.log("猴")
+        return CAT_UI.Space(
+            [
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("关注粉丝数上限："),
+                    CAT_UI.Input({
+                        value: input1,
+                        onChange(val) {
+                            setInput1(val);
+                            localStorage.setItem("fans",val);
+                        },
+                        style: {
+                            flex: 1,
+                        },
+                    }),
+                    CAT_UI.Button("开始关注", {
+                        type: "primary",
+                        onClick() {
+                            startFollow(value,input1);
+                        },
+                    }),
+                ),
+                CAT_UI.createElement(
+                    "div",
+                    {
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        },
+                    },
+                    CAT_UI.Text("目前进行到第"+value+"页"),
+                ),
+
+
+
+
+            ],
+            {
+                direction: "vertical",
+            }
+        );
+    }
 
     //创造UI
     const temp={
@@ -728,7 +798,8 @@
                 const [visible, setVisible] = CAT_UI.useState(false);
                 const [input1, setInput1] = CAT_UI.useState(data.frequency1);
                 const [input2, setInput2] = CAT_UI.useState(data.status1);
-                //console.log(input1);
+                const [input3, setInput3] = CAT_UI.useState(data.status2);
+                console.log("寻寻觅觅",input3);
                 return CAT_UI.el(
                     "div",
                     {
@@ -748,6 +819,9 @@
                         CAT_UI.Router.Link("同店多个", { to: "/many" }),
                         CAT_UI.Router.Link("跨店多个", { to: "/other" }),
                         CAT_UI.Router.Link("线下单个", { to: "/offLine" }),
+                        console.log("路",input3),
+                        input3?CAT_UI.Router.Link("关注店铺", { to: "/followPage" }):null,
+
                         CAT_UI.Icon.IconSettings({ spin: false, //图标旋转
                                                   style: { fontSize: 24},
                                                   onClick: () => setVisible(true),
@@ -800,19 +874,52 @@
                                             if(checked){
                                                 setInput2(1);//重新设置input2
                                                 localStorage.setItem("status1","1");
-                                                //data.status1=1;
+
 
                                             }else{
                                                 setInput2(0);
                                                 localStorage.setItem("status1","0");
-                                                data.status1=0;
+
                                             }
 
                                         },
                                     }),
 
                                 ),
-                                CAT_UI.Divider("divider with text"),
+
+                                CAT_UI.Divider("开启功能"),
+                                CAT_UI.createElement(
+                                    "div",
+                                    {
+                                        style: {
+                                            display: "flex",
+                                            //justifyContent: "space-between",//平均分布
+                                            alignItems: "center",
+
+                                        },
+                                    },
+                                    CAT_UI.Text("关注店铺："),
+                                    CAT_UI.Checkbox("",{
+                                        checked:input3,
+                                        onChange(checked){
+                                            //选中时
+                                            console.log("关于",checked)
+                                            if(checked){
+                                                setInput3(1);//重新设置input2
+                                                localStorage.setItem("status2","1");
+                                                console.log("名")
+
+
+                                            }else{
+                                                setInput3(0);
+                                                localStorage.setItem("status2","0");
+
+                                            }
+
+                                        },
+                                    }),
+
+                                ),
                                 "text2",
                                 CAT_UI.Divider(null, { type: "vertical" }),
                                 "text3",
@@ -894,6 +1001,11 @@
                 path: "/offLine",
                 Component: OffLine,
             },
+            {
+
+                path: "/followPage",
+                Component: followPage,
+            },
 
         ],
 
@@ -905,6 +1017,75 @@
     /*********函数调用区start*********/
 
     /*********函数调用区end*********/
+
+    // 生成一个从min到max（不包含max）的随机整数
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    //在关注页面做点什么 #startFollowf
+    function startFollow(page,fans){
+console.log("开始执行关注任务")
+        if(href.indexOf("https://shopee.co.th/search_user") != -1){
+            console.log("已在关注页面的第"+page+"页")
+
+            if(href.indexOf("page="+(page-1)) == -1){
+                //console.log("准备跳转至https://shopee.co.th/search_user/?keyword=%E0%B8%A1%E0%B9%88%E0%B8%B2%E0%B8%99&page="+(page-1))
+                location.href="https://shopee.co.th/search_user/?keyword=%E0%B8%A1%E0%B9%88%E0%B8%B2%E0%B8%99&page="+(page-1)
+            }
+
+
+
+            // 获取目标元素
+            let length = document.querySelector("#main > div > div:nth-child(3) > div > div > div.shopee-header-section.shopee-header-section--simple > div.shopee-header-section__content").childElementCount
+
+
+            console.log("长度"+length)
+            new Promise((resolve)=>{
+                for(let i = 1;i<=length;i++){
+                    let fansDom=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > a > div.shopee-search-user-item__follow-count > span:nth-child(1)")
+                    let user=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > a > div.shopee-search-user-item__nickname")
+                    let followDom=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > div.shopee-search-user-item__buttons > button")
+                    console.log("成功1",fansDom.innerHTML)
+                    let fansDomValue=fansDom.innerHTML
+                    let index=fansDomValue.indexOf("k")
+                    if(index != -1){
+                        fansDomValue=Number(fansDomValue.slice(0,index))*1000
+                        console.log("粉丝",fansDomValue)
+                    }
+
+                    if(fansDomValue>fans && followDom.innerHTML!="FOLLOWING"){
+                        //点击
+                        let range=getRandomInt(2000,3000)
+                        setTimeout(()=>{
+                            console.log("as",i*range)
+                            followDom.click()
+                            CAT_UI.Message.info({
+                                content: "成功关注"+user.innerHTML+"，耗时"+range+"毫秒",
+                                closable: true,
+                                duration: 1000,
+                            });
+                            if(i==length){
+                            resolve()
+                            }
+                        },i*range)
+
+                    }
+                }
+            }).then((res)=>{
+                alter("可以按下一页")
+            })
+
+
+
+
+
+
+        }else{
+            alert("似乎不在关注页面")
+        }
+    }
+
     function abc(shop_id,mode){
         abcCount++;
         console.log(`abc()执行第${abcCount}次`);
@@ -1662,7 +1843,7 @@
         })
     }
 
-    //监听放大缩小按钮
+    //监听放大缩小按钮 #面板
     let count1=0;
     let interval1=setInterval(()=>{
         count1++
@@ -1680,10 +1861,10 @@
                 let attribute=element1.querySelector("svg > path").getAttribute("d");
 
                 if(attribute=="M5 24h38"){
-                    //console.log("点击时是放大的，点击后是缩小的");
+                    //console.log("点击时是放大的，点击后默认缩小");
                     localStorage.setItem("panelStatus","true")//最小化
                 }else if(attribute=="M5 24h38M24 5v38"){
-                    //console.log("点击时是缩小的，点击后是放大的");
+                    console.log("点击时是缩小的，点击后默认放大");
                     localStorage.setItem("panelStatus","false")//放大化
                 }
             };
