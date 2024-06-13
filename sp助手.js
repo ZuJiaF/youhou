@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.5.1
+// @version      0.5.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
 // @match        https://shopee.tw/*
+// @match        https://seller.shopee.co.th/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=xiapibuy.com
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @require      https://zujia.online/ZuJiaF/youhou/main/scriptCatUi.js
@@ -20,8 +21,14 @@
 (function() {
     /*********全局变量*********/
     let href=location.href;
-    //console.log("当前页面链接："+href)
-    let shop_name="x1gj1oxbyg";
+
+    console.log("当前页面链接："+href)
+    if(href.includes("seller")){
+    //商家后台页面
+
+    }else{
+    //前台页面
+        let shop_name="x1gj1oxbyg";
     let shop_id=606796547;
     let item_id=15080437046;
     let item_idArray=[];//存放商品id
@@ -120,7 +127,7 @@
                 if(location.href!=href){
                     href=location.href
                     console.log('路由改变，做点什么',href);
-
+                    followTask()
                     clearInterval(t1)
 
                 }
@@ -137,6 +144,8 @@
     //数据初始化
     //混密1st
     function init(){
+d
+
         shop_id=localStorage.getItem("shop_id");
         if(shop_id!=null && shop_id!=""){//如果有值
             //console.log("1237",shop_id)
@@ -150,7 +159,7 @@
         item_idArray=localStorage.getItem("item_idArray");
         if(item_idArray!=null){//如果有值
             item_idArray=JSON.parse(localStorage.getItem("item_idArray"));//将字符串转为对象
-            console.log("未加载的商品列表为：",item_idArray)
+            //console.log("未加载的商品列表为：",item_idArray)
         }else if(item_idArray==null){//如果没值
             //console.log("1235")
             item_idArray=[];
@@ -699,8 +708,8 @@
         );
     }
 
-    //关注店铺模块
-    const followPageData={
+    //关注店铺模块(页面7)
+    const followPageData={//数据
         fans:()=>{
             let data = localStorage.getItem("fans");
             if(data!=null){
@@ -711,18 +720,30 @@
         },
         pages:()=>{
             let data = localStorage.getItem("pages");
-            console.log("sk",data)
+            //console.log("sk",data)
             if(data!=null){
                 return JSON.parse(data)
             }else if(data==null){
                 console.log("喂")
                 return 1
             }
+        },
+        aimPages:()=>{
+            let data = localStorage.getItem("paaimPagesges");
+
+            if(data!=null){
+                return JSON.parse(data)
+            }else if(data==null){
+
+                return 1
+            }
         }
     }
+    //函数
     function followPage(){
         const [input1, setInput1] = CAT_UI.useState(followPageData.fans);
         const [value, setInput2] = CAT_UI.useState(followPageData.pages);
+        const [input2, setInput3] = CAT_UI.useState(followPageData.aimPages);
 
         console.log("猴")
         return CAT_UI.Space(
@@ -734,10 +755,25 @@
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                        },
+                        }
                     },
-                    CAT_UI.Text("关注粉丝数上限："),
-                    CAT_UI.Input({
+                    CAT_UI.createElement("div",{
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexDirection:"column",
+                        }
+                    },
+                                         CAT_UI.createElement("div",{
+                        style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }
+                    },
+                                                              CAT_UI.Text("关注粉丝数上限："),
+                                                              CAT_UI.Input({
                         value: input1,
                         onChange(val) {
                             setInput1(val);
@@ -747,6 +783,32 @@
                             flex: 1,
                         },
                     }),
+                                                             ),
+
+                                         CAT_UI.createElement("div",{
+                        style: {
+                            marginLeft:"30px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }
+                    },
+                                                              CAT_UI.Text("执行多少页："),
+                                                              CAT_UI.Input({
+                        value: input2,
+                        onChange(val) {
+                            setInput3(val);
+                            localStorage.setItem("aimPages",val);
+                        },
+                        style: {
+                            marginTop:"10px",
+                            flex: 1,
+                        },
+                    }),
+                                                             ),
+
+                                        ),
+
                     CAT_UI.Button("开始关注", {
                         type: "primary",
                         onClick() {
@@ -782,6 +844,7 @@
         data2:null,
         data3:null,
     }
+
     CAT_UI.createPanel({
         minButton: true,//minButton控制是否显示最小化按钮，默认为true
         min: data.panelStatus,// min代表面板初始状态为最小化,默认为true（仅显示header）
@@ -799,7 +862,7 @@
                 const [input1, setInput1] = CAT_UI.useState(data.frequency1);
                 const [input2, setInput2] = CAT_UI.useState(data.status1);
                 const [input3, setInput3] = CAT_UI.useState(data.status2);
-                console.log("寻寻觅觅",input3);
+                //console.log("寻寻觅觅",input3);
                 return CAT_UI.el(
                     "div",
                     {
@@ -819,7 +882,7 @@
                         CAT_UI.Router.Link("同店多个", { to: "/many" }),
                         CAT_UI.Router.Link("跨店多个", { to: "/other" }),
                         CAT_UI.Router.Link("线下单个", { to: "/offLine" }),
-                        console.log("路",input3),
+                        //console.log("路",input3),
                         input3?CAT_UI.Router.Link("关注店铺", { to: "/followPage" }):null,
 
                         CAT_UI.Icon.IconSettings({ spin: false, //图标旋转
@@ -1023,13 +1086,55 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    //在关注页面做点什么 #startFollowf
+    const startFollowData={
+        status1:()=>{
+            //console.log("咕咕a")
+            let data=localStorage.getItem("aimPages")
+            console.log(`剩余关注任务为${data}页`)
+            if(data!=null & data>=1){
+
+                startFollow(followPageData.pages(),followPageData.fans())
+
+
+            }else if(data==null){
+
+            }
+        }
+    }
+    function followTask(){
+        // (1)、内容加载完成执行
+        let t1 = setInterval(()=>{
+            let dom = document.querySelector("#main > div > div:nth-child(3) > div > div > div.shopee-header-section.shopee-header-section--simple > div.shopee-header-section__content > div:nth-child(6) > div.shopee-search-user-item__buttons > button")
+            if(dom!=null){
+                clearInterval(t1)
+                if(href.indexOf("https://shopee.co.th/search_user") != -1){
+                    startFollowData.status1()
+
+                }
+            }
+
+        },200)
+        }
+    followTask()
+
+
+    //在关注页面做点什么 #startFollowf #关注函数 #关注功能
     function startFollow(page,fans){
-console.log("开始执行关注任务")
+        console.log("即将开始执行关注任务")
+        CAT_UI.Message.info({
+            content: "即将开始执行关注任务，请不要用本网页进行其它操作",
+            closable: true,
+            duration: 5000,
+        });
         if(href.indexOf("https://shopee.co.th/search_user") != -1){
-            console.log("已在关注页面的第"+page+"页")
+            let searchWord=document.querySelector("#main > div > div:nth-child(3) > div > header > div.container-wrapper.header-with-search-wrapper > div > div.header-with-search__search-section > form > div > div.shopee-searchbar-input > input")
+            //console.log("已在关注页面的第"+page+"页")
+            //console.log("搜索词为："+searchWord)
+            //console.log("证明还没翻页：https://shopee.co.th/search_user?keyword="+searchWord.value)
+            //console.log("证明还没翻页对比："+href)
 
             if(href.indexOf("page="+(page-1)) == -1){
+                localStorage.setItem("startFollowStatus1","1")
                 //console.log("准备跳转至https://shopee.co.th/search_user/?keyword=%E0%B8%A1%E0%B9%88%E0%B8%B2%E0%B8%99&page="+(page-1))
                 location.href="https://shopee.co.th/search_user/?keyword=%E0%B8%A1%E0%B9%88%E0%B8%B2%E0%B8%99&page="+(page-1)
             }
@@ -1040,40 +1145,67 @@ console.log("开始执行关注任务")
             let length = document.querySelector("#main > div > div:nth-child(3) > div > div > div.shopee-header-section.shopee-header-section--simple > div.shopee-header-section__content").childElementCount
 
 
-            console.log("长度"+length)
+            //console.log("长度"+length)
             new Promise((resolve)=>{
+                let aimFansList=[]
                 for(let i = 1;i<=length;i++){
                     let fansDom=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > a > div.shopee-search-user-item__follow-count > span:nth-child(1)")
-                    let user=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > a > div.shopee-search-user-item__nickname")
+
                     let followDom=document.querySelector("div.shopee-header-section__content > div:nth-child("+i+") > div.shopee-search-user-item__buttons > button")
-                    console.log("成功1",fansDom.innerHTML)
+                    //console.log("成功1",fansDom.innerHTML)
                     let fansDomValue=fansDom.innerHTML
                     let index=fansDomValue.indexOf("k")
                     if(index != -1){
                         fansDomValue=Number(fansDomValue.slice(0,index))*1000
-                        console.log("粉丝",fansDomValue)
+                        //console.log("粉丝",fansDomValue)
                     }
 
-                    if(fansDomValue>fans && followDom.innerHTML!="FOLLOWING"){
-                        //点击
-                        let range=getRandomInt(2000,3000)
-                        setTimeout(()=>{
-                            console.log("as",i*range)
-                            followDom.click()
-                            CAT_UI.Message.info({
-                                content: "成功关注"+user.innerHTML+"，耗时"+range+"毫秒",
-                                closable: true,
-                                duration: 1000,
-                            });
-                            if(i==length){
-                            resolve()
-                            }
-                        },i*range)
-
+//console.log("检查"+fansDomValue)
+                    if(fansDomValue>=fans && followDom.innerHTML!="FOLLOWING"){
+                        console.log("有进来吗")
+                        aimFansList.push(i)
                     }
                 }
+                console.log("数组长度为："+aimFansList.length)
+aimFansList.length==0?resolve():0
+                aimFansList.forEach((e,index,self)=>{
+                    //点击
+                    let range=getRandomInt(2000,3000)
+                    let user=document.querySelector("div.shopee-header-section__content > div:nth-child("+e+") > a > div.shopee-search-user-item__nickname")
+                    let followDom=document.querySelector("div.shopee-header-section__content > div:nth-child("+e+") > div.shopee-search-user-item__buttons > button")
+                    setTimeout(()=>{
+
+                        console.log("as",index*range)
+                        followDom.click()
+                        CAT_UI.Message.info({
+                            content: "成功关注"+user.innerHTML+"，耗时"+range+"毫秒",
+                            closable: true,
+                            duration: 2000,
+                        });
+                        if(index+1==self.length){
+                            resolve()
+                        }
+                    },(index+1)*range)
+                })
+
+
+
+
             }).then((res)=>{
-                alter("可以按下一页")
+                console.log("游戏")
+                let dom= document.querySelector("#main > div > div:nth-child(3) > div > div > div.shopee-page-controller > button.shopee-icon-button.shopee-icon-button--right")
+                let aimPages=JSON.parse(localStorage.getItem("aimPages"))-1
+                console.log("游戏1")
+                localStorage.setItem("aimPages",aimPages)
+                localStorage.setItem("pages",page+1)
+                console.log(`本页任务完成后剩余关注任务量为${aimPages}`)
+                let range=getRandomInt(2000,3000)
+                setTimeout(()=>{
+                    aimPages?dom.click():alert("此次关注任务完成")
+                },range)
+
+
+
             })
 
 
@@ -1800,7 +1932,7 @@ console.log("开始执行关注任务")
 
                 onload: function(response){
                     let res1=JSON.parse(response.responseText);
-                    console.log("上传本机信息成功",res1)
+                    //console.log("上传本机信息成功",res1)
 
 
 
@@ -1828,9 +1960,9 @@ console.log("开始执行关注任务")
                     let res=JSON.parse(response.responseText);
 
                     let date1=JSON.stringify(date)
-                    console.log("时间：",JSON.stringify(date1))
+                    //console.log("时间：",JSON.stringify(date1))
                     res.time=date
-                    console.log("获取本机ip和地址成功",res);
+                    //console.log("获取本机ip和地址成功",res);
                     resolve(res);
 
 
@@ -1872,6 +2004,8 @@ console.log("开始执行关注任务")
         }
     },10);
 
+    }
+    
 
 
 })();
