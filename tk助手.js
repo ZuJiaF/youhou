@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.8
+// @version      1.2.9
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -1375,14 +1375,15 @@
                     duration: 5000,
                 });
                 if(time!=1){
-                    flashDealActivity({
+                    setTimeout(()=>{flashDealActivity({
                         tail:tail,
                         date:date+3600*frequency,
                         time:time-1,
                         frequency:frequency,
                         content:content,
                         mode:mode,
-                    })
+                    })},5000)
+                    
                 }else if(time==1){
                     alert("闪购报名成功");
                 }
