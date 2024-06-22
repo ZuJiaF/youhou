@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.9
+// @version      1.2.10
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -1291,12 +1291,12 @@
         //console.log(date*frequency);
 
         let startTime=timestampToTime(date*1000).slice(2);
-        let endTime=timestampToTime((date+3600*frequency)*1000).slice(7);
+        let endTime=timestampToTime((date+3600*frequency)*1000-1).slice(7);
         if(time==1){
-            endTime="24:00"
+            endTime="23:59"
         }
         let starDate=date.toString();
-        let endDate=(date+3600*frequency).toString();
+        let endDate=(date+3600*frequency-1).toString();
         //console.log(startTime+"-"+endTime+" "+tail);
 
         //console.log(endTime);
@@ -1374,6 +1374,7 @@
                     closable: true,
                     duration: 5000,
                 });
+                let time=10//下一次延时
                 if(time!=1){
                     setTimeout(()=>{flashDealActivity({
                         tail:tail,
@@ -1382,7 +1383,7 @@
                         frequency:frequency,
                         content:content,
                         mode:mode,
-                    })},5000)
+                    })},time)
                     
                 }else if(time==1){
                     alert("闪购报名成功");
