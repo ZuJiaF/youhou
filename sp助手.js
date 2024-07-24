@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         sp助手
 // @namespace    http://tampermonkey.net/
-// @version      0.6.0
+// @version      0.6.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://shopee.co.th/*
@@ -980,7 +980,7 @@
                                         max = Math.floor(2000); // 确保最大值是整数
                                         result= Math.floor(Math.random() * (max - min + 1)) + min+2000
                                         console.log(result)
-                                         if(i+1==input1){
+                                         if(nowPage+1==input1){
                                             clearInterval(Interval)
                                         }
                                         let dom=document.querySelector("#sll2-normal-pdp-main > div > div > div > div > div.wAMdpk > div > div.page-product__content--left > div:nth-child(2) > div > div > div.product-ratings__list > div.shopee-page-controller.product-ratings__page-controller > button.shopee-icon-button.shopee-icon-button--right")
