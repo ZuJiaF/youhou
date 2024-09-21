@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         虾皮优惠券审查辅助
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
+// @version      0.2.3
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller.shopee.cn/portal/marketing/vouchers/list*
@@ -20,6 +20,7 @@
     let href = location.href
     let array = []
     let shopType;//店铺类型？跨境，本土
+    let baiMingDan=["SVC-979385008025892"]
 
     init()//执行初始化函数
 
@@ -98,7 +99,12 @@
 
         //return
         let Interval = setInterval((e)=>{
+            console.log("不在优惠券页面了href",href)
+            if(href.includes("marketing/vouchers/list")==0){
 
+                console.log("不在优惠券页面了",href)
+                clearInterval(Interval)
+            }
             if(shopType=="kj"){
                 dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div.page-content-wrapper.responsive-content-wrapper > div > div:nth-child(3) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
             }else if(shopType=="bt"){
@@ -107,6 +113,7 @@
             }
 
             //console.log("dom",dom)
+            console.log("不在优惠券页面了111",href)
             let length =dom.children.length
             //console.log(`本页优惠券数量为${length-1}个`)
 
@@ -144,7 +151,15 @@
                         child.innerHTML = `低消：${e.min_price}` // 给新元素设置内容
                         child1.innerHTML = `上限：${limitValue}` // 给新元素设置内容
                         if(baiFengBi>0.11){
-                            child2.innerHTML = `注意！！！！！` // 给新元素设置内容
+
+                            const isContained = baiMingDan.some(item => item === e.voucher_code);
+
+                            if (isContained) {
+                                //console.log('数组中包含该字符串');
+                            } else {
+                                child2.innerHTML = `注意！！！！！` // 给新元素设置内容
+                                //console.log('数组中不包含该字符串');
+                            }
                         }
 
 
@@ -169,18 +184,15 @@
             //     clearInterval(Interval)
             // }
 
-            if(href.includes("marketing/vouchers/list")==0){
-                console.log("12341有没有")
-                clearInterval(Interval)
-            }
-        },100)
+
+        },10)
         }
 
     //辅助审核优惠券
     function voucherYanZheng(){
         console.log("href",href)
         if(href.includes("marketing/vouchers/list")==0){
-            console.log("12341有没有")
+            console.log("不在优惠券页面")
             return
         }
         //如果是跨境后台
