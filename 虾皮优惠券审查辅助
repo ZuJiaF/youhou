@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         虾皮优惠券审查辅助
 // @namespace    http://tampermonkey.net/
-// @version      0.1.1
+// @version      0.2.1
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller.shopee.cn/portal/marketing/vouchers/list*
+// @match        https://seller.shopee.cn/*
 // @match        https://seller.shopee.co.th/portal/marketing/vouchers/list*
+// @match        https://seller.shopee.co.th/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=shopee.cn
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @downloadURL  https://jushu.online/ZuJiaF/youhou/main/%E8%99%BE%E7%9A%AE%E4%BC%98%E6%83%A0%E5%88%B8%E5%AE%A1%E6%9F%A5%E8%BE%85%E5%8A%A9
@@ -17,177 +19,183 @@
     console.log("油猴开始执行")
     let href = location.href
     let array = []
+    let shopType;//店铺类型？跨境，本土
+
     init()//执行初始化函数
 
     //初始化
     function init(){
         jianTing()//监听路由
-        voucherYanZheng()
+        voucherYanZheng()//审查优惠券
     }
 
     function jianTing(){
-        let originPush = history.pushState;
+        let old = history.pushState;
         history.pushState = function (...arg) {
-            console.log("改变了路由");
-            href = location.href
-            voucherYanZheng()//审查优惠券
+            let t1=setInterval(()=>{
+                if(location.href!=href){
+                    console.log("改变了路由");
+                    href = location.href
+                    voucherYanZheng()//审查优惠券
+                    clearInterval(t1)
 
-            return originPush.call(this, ...arg);
+                }
+
+            },1)
+
+            return old.call(this, ...arg);
         };
     }
 
-    //辅助审核优惠券
-    function voucherYanZheng(){
-        //如果是跨境后台
-        if(href.includes("shopee.cn")){
-            //alert("跨境")
+    //获取优惠券列表
+    function voucherList(){
+        let url,SPC_CDS,cnsc_shop_id
+        if(shopType=="kj"){
+            url = "https://seller.shopee.cn/api/marketing/v3/voucher/list/"
+            SPC_CDS = "0a37d772-70c0-4a12-ac7e-d7761b795ef8"
+            cnsc_shop_id = "1261468368"
+        }else if(shopType=="bt"){
+            url = "https://seller.shopee.co.th/api/marketing/v3/voucher/list/"
+            SPC_CDS = "042d298e-2a5f-4acb-b504-0376421aef9a"
+        }
 
-            $.ajax({
-        url: 'https://seller.shopee.cn/api/marketing/v3/voucher/list/',
-        crossDomain: true,
-        data: {
-            'SPC_CDS': '0a37d772-70c0-4a12-ac7e-d7761b795ef8',
+        let obj = {
+            'SPC_CDS': SPC_CDS,
             'SPC_CDS_VER': '2',
             'offset': '0',
             'limit': '100',
             'promotion_type': '0',
-            'cnsc_shop_id': '1261468368',
+            'cnsc_shop_id':cnsc_shop_id,
         }
-    }).done(function(response) {
-        console.log("response1234214123",response);
+
+        $.ajax({
+            url: url,
+            crossDomain: true,
+            data: obj
+        }).done(function(response) {
+            console.log("response1234214123",response);
 
 
-        response.data.voucher_list.forEach((e)=>{
-            console.log("e.voucher_code",e.voucher_code)
-            let obj={
-                "voucher_code":e.voucher_code,
-                "min_price":e.min_price,
-                "max_value":e.max_value
-            }
-            console.log("obj",obj)
-            array.push(obj)
-        })
-
-    });
-
-
-    let dom
-    let Interval = setInterval((e)=>{
-
-        dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div.page-content-wrapper.responsive-content-wrapper > div > div:nth-child(3) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
-        //dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div.page-content-wrapper.responsive-content-wrapper > div > div:nth-child(3)> div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j ")
-        //alert(dom)
-        let length =dom.children.length
-
-        console.log(`本页优惠券数量为${length-1}个`)
-
-        for(let i=1;i<length;i++){
-            console.log(`第${i}个`)
-            let dom1 =dom.children[i]
-            console.log("萨达",dom1)
-            let dom2 =dom1.children[3]
-            console.log("萨123达",dom2)
-            let voucherCode = dom1.children[0].children[0].children[1].children[2].innerText.slice(5)
-            console.log("萨11312323达",voucherCode)
-            console.log("14sadfs",array)
-
-            let child = document.createElement("div"); // 创建一个新的元素
-
-            for(let e of array){
-
-                if(e.voucher_code==voucherCode){
-
-                    console.log(`${e.voucher_code}==${voucherCode}`)
-                    child.innerHTML = `低消：${e.min_price}\n上限：${e.max_value}` // 给新元素设置内容
-                    }
-            }
-
-            child.style.color = "#00ff00"; // 给新元素设置颜色
-            if(dom2.children.length==0){
-                dom2.appendChild(child); // 将新元素添加到父元素中
-            }
-
-            console.log("children长度",dom2.children.length)
-
-        }
-        //等元素加载成功就清除定时器
-        if(dom){
-            //clearInterval(Interval)
-        }
-    },20)
-
-        }else if(href.includes("shopee.co.th")){
-            //alert("本土")
-            $.ajax({
-                url: 'https://seller.shopee.co.th/api/marketing/v3/voucher/list/',
-                crossDomain: true,
-                data: {
-                    'SPC_CDS': '042d298e-2a5f-4acb-b504-0376421aef9a',
-                    'SPC_CDS_VER': '2',
-                    'offset': '0',
-                    'limit': '200',
-                    'promotion_type': '0'
+            response.data.voucher_list.forEach((e)=>{
+                console.log("e.voucher_code",e.voucher_code)
+                let obj={
+                    "voucher_code":e.voucher_code,
+                    "min_price":e.min_price,
+                    "max_value":e.max_value,//【折扣】最大优惠
+                    "discount":e.discount,
+                    "value":e.value //【满减】优惠
                 }
-            }).done(function(response) {
-                console.log("response1234214123",response);
+                console.log("obj",obj)
+                array.push(obj)
+            })
 
+        });
+    }
 
-                response.data.voucher_list.forEach((e)=>{
-                    console.log("e.voucher_code",e.voucher_code)
-                    let obj={
-                        "voucher_code":e.voucher_code,
-                        "min_price":e.min_price,
-                        "max_value":e.max_value
-                    }
-                    console.log("obj",obj)
-                    array.push(obj)
-                })
+    //创建数据
+    function creatData(){
+        let dom
 
-            });
+        //return
+        let Interval = setInterval((e)=>{
 
-
-            let dom
-            let Interval = setInterval((e)=>{
-
+            if(shopType=="kj"){
+                dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div.page-content-wrapper.responsive-content-wrapper > div > div:nth-child(3) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
+            }else if(shopType=="bt"){
                 dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div > div > div:nth-child(2) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
 
-                //alert(dom)
-                let length =dom.children.length
+            }
 
-                console.log(`本页优惠券数量为${length-1}个`)
+            //console.log("dom",dom)
+            let length =dom.children.length
+            //console.log(`本页优惠券数量为${length-1}个`)
 
-                for(let i=1;i<length;i++){
-                    console.log(`第${i}个`)
-                    let dom1 =dom.children[i]
-                    console.log("萨达",dom1)
-                    let dom2 =dom1.children[3]
-                    console.log("萨123达",dom2)
-                    let voucherCode = dom1.children[0].children[0].children[1].children[2].innerText.slice(5)
-                    console.log("萨11312323达",voucherCode)
-                    console.log("14sadfs",array)
+            for(let i=1;i<length;i++){
+                console.log(`第${i}个`)
+                let dom1 =dom.children[i]
+                //console.log("萨达",dom1)
+                let dom2 =dom1.children[3]
+                //console.log("萨123达",dom2)
+                let voucherCode = dom1.children[0].children[0].children[1].children[2].innerText.slice(5)
+                //console.log("萨11312323达",voucherCode)
+                //console.log("14sadfs",array)
 
-                    let child = document.createElement("div"); // 创建一个新的元素
+                let child = document.createElement("div"); // 创建一个新的元素
+                let child1 = document.createElement("div"); // 创建一个新的元素
+                let child2 = document.createElement("div"); // 创建一个新的元素
 
-                    for(let e of array){
+                for(let e of array){
 
-                        if(e.voucher_code==voucherCode){
-                            console.log(`${e.voucher_code}==${voucherCode}`)
-                            child.innerHTML = `低消：${e.min_price}\n上限：${e.max_value}` // 给新元素设置内容
+                    if(e.voucher_code==voucherCode){
+                        console.log(`${e.voucher_code}==${voucherCode}`)
+                        let limitValue,baiFengBi
+
+                        if(e.discount!=0){
+                            console.log("折扣优惠券")
+                            limitValue = e.max_value
+                        }else{
+                            console.log("满减优惠券")
+                            limitValue = e.value
+                        }
+
+                        baiFengBi = limitValue/e.min_price
+                        //console.log(baiFengBi)
+
+                        child.innerHTML = `低消：${e.min_price}` // 给新元素设置内容
+                        child1.innerHTML = `上限：${limitValue}` // 给新元素设置内容
+                        if(baiFengBi>0.11){
+                            child2.innerHTML = `注意！！！！！` // 给新元素设置内容
+                        }
+
+
+
                     }
-                    }
-                    child.style.color = "#00ff00"; // 给新元素设置颜色
-                    if(dom2.children.length==0){
-                        dom2.appendChild(child); // 将新元素添加到父元素中
-                    }
-                    console.log("children长度",dom2.children.length)
+                }
+                child.style.color = "#ff0000"; // 给新元素设置颜色
+                child1.style.color = "#5c7"; // 给新元素设置颜色
+                child2.style.color = "#ffffff"; // 给新元素设置颜色
+                child2.style.backgroundColor = "#ff0000"; // 给新元素设置颜色
+                if(dom2.children.length==0){
+                    dom2.appendChild(child) // 将新元素添加到父元素中
+                    dom2.appendChild(child1) // 将新元素添加到父元素中
+                    dom2.appendChild(child2) // 将新元素添加到父元素中
 
                 }
-                //等元素加载成功就清除定时器
-                // if(dom){
-                //     clearInterval(Interval)
-                // }
-            },20)
+                console.log("children长度",dom2.children.length)
+
             }
+            //等元素加载成功就清除定时器
+            // if(dom){
+            //     clearInterval(Interval)
+            // }
+
+            if(href.includes("marketing/vouchers/list")==0){
+                console.log("12341有没有")
+                clearInterval(Interval)
+            }
+        },100)
+        }
+
+    //辅助审核优惠券
+    function voucherYanZheng(){
+        console.log("href",href)
+        if(href.includes("marketing/vouchers/list")==0){
+            console.log("12341有没有")
+            return
+        }
+        //如果是跨境后台
+        if(href.includes("shopee.cn")){
+            console.log("进入跨境页面")
+            //alert("跨境")
+            shopType="kj"//确定店铺类型
+            voucherList()//获取优惠券列表
+            creatData()//创建数据
+        }else if(href.includes("shopee.co.th")){
+            //alert("本土")
+            shopType="bt"//确定店铺类型
+            voucherList()//获取优惠券列表
+            creatData()//创建数据
+        }
     }
 
 
