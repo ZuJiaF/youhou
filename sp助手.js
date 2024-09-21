@@ -9,7 +9,7 @@
 // @match        https://seller.shopee.co.th/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=xiapibuy.com
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
-// @require      https://zujia.online/ZuJiaF/youhou/main/scriptCatUi.js
+// @require      https://jushu.online/ZuJiaF/youhou/main/scriptCatUi.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @grant        GM_xmlhttpRequest
 // @downloadURL  https://jushu.online/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
