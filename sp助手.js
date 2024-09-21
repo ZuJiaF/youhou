@@ -12,8 +12,8 @@
 // @require      https://zujia.online/ZuJiaF/youhou/main/scriptCatUi.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
 // @grant        GM_xmlhttpRequest
-// @downloadURL  https://zujia.online/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
-// @updateURL    https://zujia.online/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
+// @downloadURL  https://jushu.online/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
+// @updateURL    https://jushu.online/ZuJiaF/youhou/main/sp%E5%8A%A9%E6%89%8B.js
 // @connect 	 www.ip.cn
 // @connect      fc-mp-7fe76973-5165-4172-ac40-382e23e02a8d.next.bspapp.com
 // ==/UserScript==
