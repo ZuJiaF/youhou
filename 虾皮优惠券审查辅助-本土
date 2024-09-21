@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         虾皮优惠券审查辅助-本土
+// @name         虾皮优惠券审查辅助
 // @namespace    http://tampermonkey.net/
-// @version      2024-09-19
+// @version      0.1.0
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller.shopee.cn/portal/marketing/vouchers/list*
@@ -12,18 +12,44 @@
 // ==/UserScript==
 
 (function() {
+    console.log("油猴开始执行")
+    let href = location.href
     let array = []
+    init()//执行初始化函数
 
+    //初始化
+    function init(){
+        jianTing()//监听路由
+        voucherYanZheng()
+    }
 
-    $.ajax({
-        url: 'https://seller.shopee.co.th/api/marketing/v3/voucher/list/',
+    function jianTing(){
+        let originPush = history.pushState;
+        history.pushState = function (...arg) {
+            console.log("改变了路由");
+            href = location.href
+            voucherYanZheng()//审查优惠券
+
+            return originPush.call(this, ...arg);
+        };
+    }
+
+    //辅助审核优惠券
+    function voucherYanZheng(){
+        //如果是跨境后台
+        if(href.includes("shopee.cn")){
+            //alert("跨境")
+
+            $.ajax({
+        url: 'https://seller.shopee.cn/api/marketing/v3/voucher/list/',
         crossDomain: true,
         data: {
-            'SPC_CDS': '042d298e-2a5f-4acb-b504-0376421aef9a',
+            'SPC_CDS': '0a37d772-70c0-4a12-ac7e-d7761b795ef8',
             'SPC_CDS_VER': '2',
             'offset': '0',
-            'limit': '200',
-            'promotion_type': '0'
+            'limit': '100',
+            'promotion_type': '0',
+            'cnsc_shop_id': '1261468368',
         }
     }).done(function(response) {
         console.log("response1234214123",response);
@@ -46,8 +72,8 @@
     let dom
     let Interval = setInterval((e)=>{
 
-        dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div > div > div:nth-child(2) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
-
+        dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div.page-content-wrapper.responsive-content-wrapper > div > div:nth-child(3) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
+        //dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div.page-content-wrapper.responsive-content-wrapper > div > div:nth-child(3)> div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j ")
         //alert(dom)
         let length =dom.children.length
 
@@ -68,20 +94,99 @@
             for(let e of array){
 
                 if(e.voucher_code==voucherCode){
+
                     console.log(`${e.voucher_code}==${voucherCode}`)
                     child.innerHTML = `低消：${e.min_price}\n上限：${e.max_value}` // 给新元素设置内容
                     }
             }
+
             child.style.color = "#00ff00"; // 给新元素设置颜色
             if(dom2.children.length==0){
                 dom2.appendChild(child); // 将新元素添加到父元素中
             }
+
             console.log("children长度",dom2.children.length)
 
         }
         //等元素加载成功就清除定时器
-        // if(dom){
-        //     clearInterval(Interval)
-        // }
+        if(dom){
+            //clearInterval(Interval)
+        }
     },20)
-    })();
+
+        }else if(href.includes("shopee.co.th")){
+            //alert("本土")
+            $.ajax({
+                url: 'https://seller.shopee.co.th/api/marketing/v3/voucher/list/',
+                crossDomain: true,
+                data: {
+                    'SPC_CDS': '042d298e-2a5f-4acb-b504-0376421aef9a',
+                    'SPC_CDS_VER': '2',
+                    'offset': '0',
+                    'limit': '200',
+                    'promotion_type': '0'
+                }
+            }).done(function(response) {
+                console.log("response1234214123",response);
+
+
+                response.data.voucher_list.forEach((e)=>{
+                    console.log("e.voucher_code",e.voucher_code)
+                    let obj={
+                        "voucher_code":e.voucher_code,
+                        "min_price":e.min_price,
+                        "max_value":e.max_value
+                    }
+                    console.log("obj",obj)
+                    array.push(obj)
+                })
+
+            });
+
+
+            let dom
+            let Interval = setInterval((e)=>{
+
+                dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div > div > div:nth-child(2) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
+
+                //alert(dom)
+                let length =dom.children.length
+
+                console.log(`本页优惠券数量为${length-1}个`)
+
+                for(let i=1;i<length;i++){
+                    console.log(`第${i}个`)
+                    let dom1 =dom.children[i]
+                    console.log("萨达",dom1)
+                    let dom2 =dom1.children[3]
+                    console.log("萨123达",dom2)
+                    let voucherCode = dom1.children[0].children[0].children[1].children[2].innerText.slice(5)
+                    console.log("萨11312323达",voucherCode)
+                    console.log("14sadfs",array)
+
+                    let child = document.createElement("div"); // 创建一个新的元素
+
+                    for(let e of array){
+
+                        if(e.voucher_code==voucherCode){
+                            console.log(`${e.voucher_code}==${voucherCode}`)
+                            child.innerHTML = `低消：${e.min_price}\n上限：${e.max_value}` // 给新元素设置内容
+                    }
+                    }
+                    child.style.color = "#00ff00"; // 给新元素设置颜色
+                    if(dom2.children.length==0){
+                        dom2.appendChild(child); // 将新元素添加到父元素中
+                    }
+                    console.log("children长度",dom2.children.length)
+
+                }
+                //等元素加载成功就清除定时器
+                // if(dom){
+                //     clearInterval(Interval)
+                // }
+            },20)
+            }
+    }
+
+
+})();
