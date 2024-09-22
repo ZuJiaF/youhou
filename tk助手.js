@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.10
+// @version      1.2.11
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -9,7 +9,7 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=shopee.co.th
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
-// @require      https://scriptcat.org/lib/1167/1.0.0/%E8%84%9A%E6%9C%AC%E7%8C%ABUI%E5%BA%93.js
+// @require      https://jushu.online/ZuJiaF/youhou/main/scriptCatUi.js
 // @grant        GM_xmlhttpRequest
 // @downloadURL  https://jushu.online/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
 // @updateURL    https://jushu.online/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
