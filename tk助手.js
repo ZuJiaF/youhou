@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.11
+// @version      1.2.12
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -50,7 +50,7 @@
             homeData.autoPanelStatus=JSON.parse(homeData.autoPanelStatus);
         }else if(homeData.autoPanelStatus==null){
             homeData.autoPanelStatus=0;
-            localStorage.setItem("autoPanelStatus",JSON.stringify(data.autoPanelStatus));
+            localStorage.setItem("autoPanelStatus",JSON.stringify(homeData.autoPanelStatus));
         }
 
         if(homeData.autoPanelStatus){
