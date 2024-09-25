@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         虾皮优惠券审查辅助
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller.shopee.cn/portal/marketing/vouchers/list*
@@ -20,7 +20,7 @@
     let href = location.href
     let array = []
     let shopType;//店铺类型？跨境，本土
-    let baiMingDan=["SVC-979385008025892"]
+    let baiMingDan=["SVC-979385008025892","HUIYASDWQ"]
 
     init()//执行初始化函数
 
