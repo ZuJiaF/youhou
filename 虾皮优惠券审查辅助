@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         虾皮优惠券审查辅助
 // @namespace    http://tampermonkey.net/
-// @version      0.2.4
+// @version      0.3.2
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller.shopee.cn/portal/marketing/vouchers/list*
@@ -20,8 +20,8 @@
     let href = location.href
     let array = []
     let shopType;//店铺类型？跨境，本土
-    let baiMingDan=["SVC-979385008025892","HUIYASDWQ"]
-
+    //let baiMingDan=["HUIYASDWQ","SVC-979385009074476","SVC-979380947939388","NRN6DFGDF","SGAME-947023528357889","NRN6R32D","SFP-921078478487552","NRN6AZ","SVC-991736922927148","SVC-991760562024456","SVC-999585372860452","SVC-996694078681288","SVC-996692803612752","SVC-996692804661316"]
+    let baiMingDan=[]
     init()//执行初始化函数
 
     //初始化
@@ -30,16 +30,15 @@
         voucherYanZheng()//审查优惠券
     }
 
+    //监听路由
     function jianTing(){
         let old = history.pushState;
         history.pushState = function (...arg) {
             let t1=setInterval(()=>{
                 if(location.href!=href){
-                    console.log("改变了路由");
+                    console.log("改变了路由,新路由为",location.href);
                     href = location.href
                     voucherYanZheng()//审查优惠券
-                    clearInterval(t1)
-
                 }
 
             },1)
@@ -68,43 +67,45 @@
             'promotion_type': '0',
             'cnsc_shop_id':cnsc_shop_id,
         }
+        return new Promise((resolve)=>{
+            $.ajax({
+                url: url,
+                crossDomain: true,
+                data: obj
+            }).done(function(response) {
+                console.log("获取优惠券返回结果",response);
+                response.data.voucher_list.forEach((e)=>{
+                    console.log("e.voucher_code",e.voucher_code)
+                    console.log("e.ctime",e.ctime)
+                    let ctime = timestampToDateTime(e.ctime)//时间戳转时间
+                    let obj={
+                        "voucher_code":e.voucher_code,
+                        "min_price":e.min_price,
+                        "max_value":e.max_value,//【折扣】最大优惠
+                        "discount":e.discount,
+                        "value":e.value, //【满减】优惠
+                        "ctime":ctime, //创建时间
+                    }
+                    console.log("obj",obj)
+                    array.push(obj)
+                })
+                resolve(1)
 
-        $.ajax({
-            url: url,
-            crossDomain: true,
-            data: obj
-        }).done(function(response) {
-            console.log("response1234214123",response);
+            });
+        })
 
-
-            response.data.voucher_list.forEach((e)=>{
-                console.log("e.voucher_code",e.voucher_code)
-                let obj={
-                    "voucher_code":e.voucher_code,
-                    "min_price":e.min_price,
-                    "max_value":e.max_value,//【折扣】最大优惠
-                    "discount":e.discount,
-                    "value":e.value //【满减】优惠
-                }
-                console.log("obj",obj)
-                array.push(obj)
-            })
-
-        });
     }
 
-    //创建数据
+    //创建数据 #creatDataf
     function creatData(){
         let dom
-
-        //return
         let Interval = setInterval((e)=>{
-            console.log("不在优惠券页面了href",href)
             if(href.includes("marketing/vouchers/list")==0){
-
-                console.log("不在优惠券页面了",href)
-                clearInterval(Interval)
+                console.log("不在优惠券页面了112",href)
+                clearInterval(Interval) //清除定时器
+                return
             }
+
             if(shopType=="kj"){
                 dom = document.querySelector("#app > div.app-container > div.page-container.responsive-container > div.page-content-wrapper.responsive-content-wrapper > div > div:nth-child(3) > div.eds-react-table._2EMPjrh7ooiVZI0r38AV4j > div.eds-react-table-container > div.eds-react-table-body > table > tbody")
             }else if(shopType=="bt"){
@@ -112,27 +113,62 @@
 
             }
 
-            //console.log("dom",dom)
-            console.log("不在优惠券页面了111",href)
+            console.log("识别到了优惠券dom",dom)
+
+            console.log("在优惠券页面了111",href)
             let length =dom.children.length
             //console.log(`本页优惠券数量为${length-1}个`)
 
+
+
+            //以优惠券为单位循环
             for(let i=1;i<length;i++){
-                console.log(`第${i}个`)
-                let dom1 =dom.children[i]
+                console.log(`第${i}个优惠券`)
+                let dom1 =dom.children[i] //优惠券对象
                 //console.log("萨达",dom1)
-                let dom2 =dom1.children[3]
-                //console.log("萨123达",dom2)
-                let voucherCode = dom1.children[0].children[0].children[1].children[2].innerText.slice(5)
+                let dom2 =dom1.children[3] //折扣金额格
+                console.log("折扣金额格dom",dom2)
+                let voucherCode = dom1.children[0].children[0].children[1].children[2].innerText.slice(5)//优惠券代码
                 //console.log("萨11312323达",voucherCode)
                 //console.log("14sadfs",array)
 
-                let child = document.createElement("div"); // 创建一个新的元素
-                let child1 = document.createElement("div"); // 创建一个新的元素
-                let child2 = document.createElement("div"); // 创建一个新的元素
+                //元素配置对象
+                let elementConfig  = {
+                    "e1":{
+                        "tag": 'div', //标签类型
+                        "textContent": '',//元素文字
+                        "style": {
+                            "color": "#ff0000",//字体颜色
+                        }
+                    },
+                    "e2":{
+                        "tag": 'div', //标签类型
+                        "textContent": '',//元素文字
+                        "style": {
+                            "color": "#5c7",
+                        }
+                    },
+                    //异常提醒
+                    "e3":{
+                        "tag": 'div', //标签类型
+                        "textContent": "",//元素文字
+                        "style": {
+                            "color": "#ffffff",
+                            "backgroundColor":"#ff0000"
+                        }
+                    },
+                    "e4":{
+                        "tag": 'div', //标签类型
+                        "textContent": '',//元素文字
+                        "style": {
+                            "color": "#ff0000",//字体颜色
+                            "whiteSpace":'pre-wrap'
+                        }
+                    }
+                }
 
+                //遍历请求优惠券返回的数组
                 for(let e of array){
-
                     if(e.voucher_code==voucherCode){
                         console.log(`${e.voucher_code}==${voucherCode}`)
                         let limitValue,baiFengBi
@@ -145,20 +181,34 @@
                             limitValue = e.value
                         }
 
-                        baiFengBi = limitValue/e.min_price
-                        //console.log(baiFengBi)
+                        baiFengBi = limitValue/e.min_price //折扣金额 除 最低消费金额
+                        console.log(`${e.voucher_code}的折扣比为${baiFengBi}`)
 
-                        child.innerHTML = `低消：${e.min_price}` // 给新元素设置内容
-                        child1.innerHTML = `上限：${limitValue}` // 给新元素设置内容
+                        elementConfig.e1.textContent = `低消：${e.min_price}` // 给新元素设置内容
+                        elementConfig.e2.textContent = `上限：${limitValue}` // 给新元素设置内容
+                        elementConfig.e4.textContent = `创建时间：\n${e.ctime}` // 给新元素设置内容
+
+                        /*折扣比是小于0.11就没事
+                        《正常范围》
+                        满99 减 5是0.05
+                        满199减10是0.05
+                        满299减20是0.06
+                        满399减30是0.07
+                        满499减40是0.08
+                        满599减50是0.08
+                        《非正常范围》
+                        满30 减 399是13.3
+                        满99 减 30 是0.3
+                        */
                         if(baiFengBi>0.11){
-
-                            const isContained = baiMingDan.some(item => item === e.voucher_code);
-
+                            console.log(`${e.voucher_code}的折扣比异常`)
+                            const isContained = baiMingDan.some(item => item === e.voucher_code); //如果白名单有这个item就为true
+                            //如果优惠券代码在库
                             if (isContained) {
-                                //console.log('数组中包含该字符串');
+                                elementConfig.e3.textContent= "" //如果在库并且符合条件就不用提醒了
                             } else {
-                                child2.innerHTML = `注意！！！！！` // 给新元素设置内容
-                                //console.log('数组中不包含该字符串');
+                                //不在库自然会提醒
+                                elementConfig.e3.textContent= `注意！！！！！` //如果不在库就不用提醒了
                             }
                         }
 
@@ -166,33 +216,45 @@
 
                     }
                 }
-                child.style.color = "#ff0000"; // 给新元素设置颜色
-                child1.style.color = "#5c7"; // 给新元素设置颜色
-                child2.style.color = "#ffffff"; // 给新元素设置颜色
-                child2.style.backgroundColor = "#ff0000"; // 给新元素设置颜色
-                if(dom2.children.length==0){
-                    dom2.appendChild(child) // 将新元素添加到父元素中
-                    dom2.appendChild(child1) // 将新元素添加到父元素中
-                    dom2.appendChild(child2) // 将新元素添加到父元素中
 
+
+
+// 只要dom2内有子元素，就删除它们
+while (dom2.firstChild) {
+    dom2.removeChild(dom2.firstChild);
+}
+
+                //如果折扣金额格没有其他数据 #界面
+                if(dom2.children.length==0){
+                    //循环创建元素对象配置
+                    for(let e of Object.values(elementConfig)){
+                        console.log("对象配置",e)
+                        let dom = createDOMElement(e)
+                        dom2.appendChild(dom)
+                        console.log("有加dom")
+                    }
                 }
-                console.log("children长度",dom2.children.length)
+                //console.log("children长度",dom2.children.length)
 
             }
+
             //等元素加载成功就清除定时器
             // if(dom){
             //     clearInterval(Interval)
             // }
 
 
-        },10)
+        },100)
         }
 
     //辅助审核优惠券
     function voucherYanZheng(){
         console.log("href",href)
+
         if(href.includes("marketing/vouchers/list")==0){
             console.log("不在优惠券页面")
+            let panel = document.getElementById('floating-panel');
+            panel.style.display = 'none';
             return
         }
         //如果是跨境后台
@@ -200,15 +262,301 @@
             console.log("进入跨境页面")
             //alert("跨境")
             shopType="kj"//确定店铺类型
-            voucherList()//获取优惠券列表
-            creatData()//创建数据
+            voucherList().then((e)=>{//获取优惠券列表
+                creatData()//创建数据
+            })
+
         }else if(href.includes("shopee.co.th")){
+            console.log("进入本土页面")
             //alert("本土")
             shopType="bt"//确定店铺类型
-            voucherList()//获取优惠券列表
-            creatData()//创建数据
+            voucherList().then((e)=>{//获取优惠券列表
+                creatData()//创建数据
+            })
+
         }
+
+        createBaiMingDanPanal()//优惠券管理器
     }
+
+    // 根据配置对象创建DOM元素的函数
+    function createDOMElement(config) {
+        var el = document.createElement(config.tag);
+
+        // 添加类名
+        if (config.className) {
+            el.className = config.className;
+        }
+
+        // 添加ID
+        if (config.id) {
+            el.id = config.id;
+        }
+
+        // 添加文本内容
+        if (config.textContent) {
+            el.textContent = config.textContent;
+        }
+
+        // 添加属性
+        if (config.attributes) {
+            Object.keys(config.attributes).forEach(function(attr) {
+                el.setAttribute(attr, config.attributes[attr]);
+            });
+        }
+
+        // 添加样式
+        if (config.style) {
+            Object.keys(config.style).forEach(function(styleProp) {
+                el.style[styleProp] = config.style[styleProp];
+            });
+        }
+
+        // 添加子元素
+        if (config.children) {
+            config.children.forEach(function(childConfig) {
+                var childElement = createDOMElement(childConfig);
+                el.appendChild(childElement);
+            });
+        }
+
+        return el;
+    }
+
+    //秒级时间戳转时间
+    function timestampToDateTime(timestamp) {
+        // 创建一个新的Date对象，传入时间戳（单位为毫秒）
+        var date = new Date(timestamp * 1000 + (new Date().getTimezoneOffset() + (8 || 0) * 60) * 60000)//泰国时间转为中国时间
+
+        // 获取年、月、日、时、分、秒
+        var year = date.getFullYear();
+        var month = (date.getMonth() + 1).toString().padStart(2, '0');
+        var day = date.getDate().toString().padStart(2, '0');
+        var hours = (date.getHours()).toString().padStart(2, '0');
+        var minutes = date.getMinutes().toString().padStart(2, '0');
+        var seconds = date.getSeconds().toString().padStart(2, '0');
+
+        // 拼接成需要的格式，例如：YYYY-MM-DD HH:MM:SS
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    //创建优惠券白名单面板
+    function createBaiMingDanPanal(){
+        // 创建面板的HTML结构
+        var panel = document.createElement('div');
+        panel.id = 'floating-panel';
+        panel.style.position = 'fixed';
+        panel.style.bottom = '10px';
+        panel.style.left = '50%';
+        panel.style.transform = 'translateX(-50%)';
+        panel.style.width = '300px';
+        panel.style.height = '20px';//默认缩小
+        panel.style.backgroundColor = '#fff';
+        panel.style.border = '1px solid #ccc';
+        panel.style.padding = '10px';
+        panel.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        panel.style.zIndex = '1000';
+        panel.style.display = 'flex';
+        panel.style.flexDirection = 'column';
+        panel.style.alignItems = 'center';
+
+        // 创建缩放图标
+        var scaleIcon = document.createElement('div');
+        scaleIcon.id = 'scale-icon';
+        //scaleIcon.style.position = 'absolute';
+        scaleIcon.style.top = '10px';
+        scaleIcon.style.right = '10px';
+        scaleIcon.style.width = '20px';
+        scaleIcon.style.cursor = 'pointer';
+
+        // 从localStorage加载面板缩放状态
+        var isPanelMinimized = localStorage.getItem('panelMinimized') === 'true';
+
+        // 默认为缩小时的正三角状态
+        scaleIcon.style.borderLeft = '10px solid transparent';
+        scaleIcon.style.borderRight = '10px solid transparent';
+
+        // 初始化面板高度和缩放图标状态
+        panel.style.height = isPanelMinimized ? '300px':'20px'
+        scaleIcon.style.borderTop = isPanelMinimized ? '6px solid black' : '0'
+        scaleIcon.style.borderBottom = isPanelMinimized ? '0' : '6px solid black'
+
+
+        // 切换面板高度和图标状态的函数
+        function togglePanelSize() {
+            var isMinimized = panel.style.height === '300px';
+            if (isMinimized) {
+                console.log("缩小面板事件")
+                // 缩小面板
+                panel.style.height = '20px';
+                // 更新图标为正三角
+                scaleIcon.style.borderTop = '0';
+                scaleIcon.style.borderBottom = '6px solid black';
+            } else {
+                // 放大面板
+                panel.style.height = '300px';
+                // 更新图标为倒三角
+                scaleIcon.style.borderBottom = '0';
+                scaleIcon.style.borderTop = '6px solid black';
+            }
+            // 存储面板的缩放状态到本地存储
+            localStorage.setItem('panelMinimized', isMinimized ? 'false':'true');
+
+            // 根据面板状态显示或隐藏输入框、按钮和显示区域
+            if (!isMinimized) {
+                input.style.display = 'block';
+                updateButton.style.display = 'block';
+                scrollContainer.style.display = 'block';
+            } else {
+                input.style.display = 'none';
+                updateButton.style.display = 'none';
+                scrollContainer.style.display = 'none';
+            }
+        }
+
+        // 为缩放图标添加点击事件
+        scaleIcon.onclick = togglePanelSize;
+
+
+
+        // 创建输入框
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'data-input';
+        input.placeholder = '输入优惠券代码...';
+        input.style.width = '100%';
+        input.style.marginBottom = '10px';
+        input.style.display = isPanelMinimized ? 'block' : 'none';
+        input.onmouseover = function() { // 鼠标悬停时添加阴影
+            this.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        };
+        input.onmouseout = function() { // 鼠标离开时去除阴影
+            this.style.boxShadow = 'none';
+        };
+
+        // 添加一个按钮来更新显示的数据
+        var updateButton = document.createElement('button');
+        updateButton.textContent = '添加'
+        updateButton.style.marginTop = '5px'
+        updateButton.style.marginBottom = '10px'
+        updateButton.style.border = '1px solid #ccc'
+        updateButton.style.display = isPanelMinimized ? 'block' : 'none';
+        updateButton.onmouseover = function() { // 鼠标悬停时改变背景色和文字颜色
+            this.style.backgroundColor = 'grey';
+        };
+        updateButton.onmouseout = function() { // 鼠标离开时恢复原样
+            this.style.backgroundColor = 'white';
+        };
+
+        updateButton.onclick = function() {
+            var inputData = document.getElementById('data-input').value
+            addCouponCode(inputData);
+            // 清空输入框
+            document.getElementById('data-input').value = '';
+        };
+
+        // 创建显示区域的滚动容器
+        var scrollContainer = document.createElement('div');
+        scrollContainer.id = 'scroll-container';
+        scrollContainer.style.width = '100%';
+        scrollContainer.style.height = '200px'; // 设置一个固定高度
+        scrollContainer.style.overflowY = 'auto'; // 添加滚动条
+        scrollContainer.style.border = '1px solid #ccc';
+        scrollContainer.style.padding = '5px';
+        scrollContainer.style.marginBottom = '10px';
+        scrollContainer.style.display = isPanelMinimized ? 'block' : 'none';
+
+        // 从localStorage加载优惠券代码列表
+        var couponCodes = JSON.parse(localStorage.getItem('couponCodes')) || [];
+        couponCodes.forEach(function(code) {
+            addCouponCode(code);
+        });
+
+        // 定义添加优惠券代码的函数
+        function addCouponCode(code) {
+            // 如果代码已存在，不添加
+            if (baiMingDan.includes(code)) {
+                alert("优惠券代码已存在！");
+                return;
+            }
+            var codeDiv = document.createElement('div');
+            codeDiv.style.display = 'flex';
+            codeDiv.style.justifyContent = 'space-between';
+            codeDiv.style.alignItems = 'center';
+            var codeText = document.createElement('span');
+            codeText.textContent = code;
+            var deleteButton = document.createElement('button');
+            deleteButton.textContent = '删除';
+            deleteButton.style.color = 'white';
+            deleteButton.style.backgroundColor = 'red';
+            deleteButton.style.margin = '2px';
+            deleteButton.onmouseover = function() { // 鼠标悬停时改变背景色和文字颜色
+                this.style.backgroundColor = 'darkred';
+                this.style.color = 'white';
+            };
+            deleteButton.onmouseout = function() { // 鼠标离开时恢复原样
+                this.style.backgroundColor = 'red';
+                this.style.color = 'white';
+            };
+
+            deleteButton.onclick = function() {
+                // 弹出密码输入框
+                var password = prompt("请输入密码以删除优惠券代码:");
+                if (password === "123") {
+                    // 删除优惠券代码
+                    scrollContainer.removeChild(codeDiv);
+                    // 更新baiMingDan和localStorage
+                    updateCouponCodes();
+                    // 更新滚动条位置，确保滚动条始终位于底部
+                    scrollToBottom();
+                } else {
+                    alert("密码错误！");
+                }
+            };
+            codeDiv.appendChild(codeText);
+            codeDiv.appendChild(deleteButton);
+            scrollContainer.appendChild(codeDiv);
+
+
+            // 更新baiMingDan和localStorage
+            updateCouponCodes();
+
+
+
+            // 更新滚动条位置，确保滚动条始终位于底部
+            scrollToBottom();
+
+
+        }
+
+        // 滚动到底部的函数
+        function scrollToBottom() {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+
+        // 更新baiMingDan和localStorage中的优惠券代码列表
+        function updateCouponCodes() {
+            baiMingDan = Array.from(scrollContainer.querySelectorAll('div')).map(function(div) {
+                return div.firstChild.textContent;
+            });
+            localStorage.setItem('couponCodes', JSON.stringify(baiMingDan));
+        }
+
+        // 将缩放图标添加到面板中
+        panel.appendChild(scaleIcon);
+
+        // 将元素添加到面板中
+        panel.appendChild(scrollContainer);
+        panel.appendChild(input);
+        panel.appendChild(updateButton);
+
+        // 将面板添加到页面中
+        document.body.appendChild(panel);
+        scrollToBottom()
+    }
+
+
+
 
 
 })();
