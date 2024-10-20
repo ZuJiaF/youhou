@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         虾皮优惠券审查辅助
 // @namespace    http://tampermonkey.net/
-// @version      0.3.2
+// @version      0.3.4
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller.shopee.cn/portal/marketing/vouchers/list*
@@ -82,8 +82,8 @@
                         "voucher_code":e.voucher_code,
                         "min_price":e.min_price,
                         "max_value":e.max_value,//【折扣】最大优惠
-                        "discount":e.discount,
-                        "value":e.value, //【满减】优惠
+                        "discount":e.discount,//【优惠类型】折扣
+                        "value":e.value, //【优惠类型】满减
                         "ctime":ctime, //创建时间
                     }
                     console.log("obj",obj)
@@ -134,6 +134,13 @@
 
                 //元素配置对象
                 let elementConfig  = {
+                    "e5":{
+                        "tag": 'div', //标签类型
+                        "textContent": '1',//元素文字
+                        "style": {
+                            "color": "#000000",//字体颜色
+                        }
+                    },
                     "e1":{
                         "tag": 'div', //标签类型
                         "textContent": '',//元素文字
@@ -171,19 +178,22 @@
                 for(let e of array){
                     if(e.voucher_code==voucherCode){
                         console.log(`${e.voucher_code}==${voucherCode}`)
-                        let limitValue,baiFengBi
+                        let limitValue,baiFengBi,discountType
 
                         if(e.discount!=0){
                             console.log("折扣优惠券")
                             limitValue = e.max_value
+                            discountType = e.discount+"%OFF"
                         }else{
                             console.log("满减优惠券")
                             limitValue = e.value
+                            discountType = "฿"+e.value
                         }
 
                         baiFengBi = limitValue/e.min_price //折扣金额 除 最低消费金额
                         console.log(`${e.voucher_code}的折扣比为${baiFengBi}`)
 
+                        elementConfig.e5.textContent = `${discountType}` // 给新元素设置内容
                         elementConfig.e1.textContent = `低消：${e.min_price}` // 给新元素设置内容
                         elementConfig.e2.textContent = `上限：${limitValue}` // 给新元素设置内容
                         elementConfig.e4.textContent = `创建时间：\n${e.ctime}` // 给新元素设置内容
@@ -219,10 +229,10 @@
 
 
 
-// 只要dom2内有子元素，就删除它们
-while (dom2.firstChild) {
-    dom2.removeChild(dom2.firstChild);
-}
+                // 只要dom2内有子元素，就删除它们
+                while (dom2.firstChild) {
+                    dom2.removeChild(dom2.firstChild);
+                }
 
                 //如果折扣金额格没有其他数据 #界面
                 if(dom2.children.length==0){
@@ -468,14 +478,21 @@ while (dom2.firstChild) {
 
         // 从localStorage加载优惠券代码列表
         var couponCodes = JSON.parse(localStorage.getItem('couponCodes')) || [];
-        couponCodes.forEach(function(code) {
-            addCouponCode(code);
-        });
+        console.log("123sss",couponCodes)
+        console.log("12213213sss",baiMingDan)
+
+            couponCodes.forEach(function(code) {
+                console.log("第一次触发",couponCodes)
+                addCouponCode(code,1);
+            });
+
+
+
 
         // 定义添加优惠券代码的函数
-        function addCouponCode(code) {
+        function addCouponCode(code,initFlag) {
             // 如果代码已存在，不添加
-            if (baiMingDan.includes(code)) {
+            if (baiMingDan.includes(code) && initFlag !=1) {
                 alert("优惠券代码已存在！");
                 return;
             }
