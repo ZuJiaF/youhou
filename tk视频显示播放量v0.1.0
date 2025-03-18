@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         tk视频显示播放量v0.1.0
+// @name         tk视频显示播放量v0.1.1
 // @namespace    http://tampermonkey.net/
 // @version      2025-03-18
 // @description  try to take over the world!
@@ -10,18 +10,38 @@
 // ==/UserScript==
 
 (function() {
-   // 获取整个页面的HTML内容
+// 获取页面HTML并提取playCount
 const html = document.documentElement.outerHTML;
-
-// 定义匹配statsV2中playCount的正则表达式
 const regex = /"statsV2":\s*{[^}]*"playCount"\s*:\s*"(\d+)"[^}]*}/;
 const match = html.match(regex);
 
-// 提取并打印结果
 if (match && match[1]) {
   const playCount = match[1];
-  console.log('playCount的值是:', playCount); // 输出: 637200
+
+  // ---------- 在页面上显示值的两种方式 ----------
+
+  // 方法1: 在页面顶部插入一个固定提示框
+  const displayElement = document.createElement('div');
+  displayElement.textContent = `播放次数: ${playCount}`;
+  displayElement.style.position = 'fixed';
+  displayElement.style.top = '20px';
+  displayElement.style.left = '20px';
+  displayElement.style.padding = '10px';
+  displayElement.style.backgroundColor = '#f0f0f0';
+  displayElement.style.border = '1px solid #ccc';
+  displayElement.style.zIndex = '9999';
+      displayElement.style.color = 'red';
+  document.body.appendChild(displayElement);
+
+  // 方法2: 直接弹窗显示（简单粗暴）
+  // alert(`播放次数: ${playCount}`);
+
 } else {
   console.log('未找到playCount');
+  // 可选：在页面上显示错误信息
+  const errorElement = document.createElement('div');
+  errorElement.textContent = '无法获取播放次数';
+  errorElement.style.color = 'red';
+  document.body.appendChild(errorElement);
 }
 })();
