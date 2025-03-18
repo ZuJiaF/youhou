@@ -1,0 +1,27 @@
+// ==UserScript==
+// @name         tk视频显示播放量v0.1.0
+// @namespace    http://tampermonkey.net/
+// @version      2025-03-18
+// @description  try to take over the world!
+// @author       You
+// @match        https://www.tiktok.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=tiktok.com
+// @grant        none
+// ==/UserScript==
+
+(function() {
+   // 获取整个页面的HTML内容
+const html = document.documentElement.outerHTML;
+
+// 定义匹配statsV2中playCount的正则表达式
+const regex = /"statsV2":\s*{[^}]*"playCount"\s*:\s*"(\d+)"[^}]*}/;
+const match = html.match(regex);
+
+// 提取并打印结果
+if (match && match[1]) {
+  const playCount = match[1];
+  console.log('playCount的值是:', playCount); // 输出: 637200
+} else {
+  console.log('未找到playCount');
+}
+})();
