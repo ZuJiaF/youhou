@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         tk助手
 // @namespace    http://tampermonkey.net/
-// @version      1.2.12
+// @version      1.2.13
 // @description  try to take over the world!
 // @author       You
 // @match        https://seller-th.tiktok.com/*
@@ -9,13 +9,20 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=shopee.co.th
 // @require      https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js
 // @require      https://cdn.staticfile.org/xlsx/0.15.1/xlsx.core.min.js
-// @require      https://jushu.online/ZuJiaF/youhou/main/scriptCatUi.js
+// @require       https://jushu.online/ZuJiaF/youhou/main/scriptCatUi.js
 // @grant        GM_xmlhttpRequest
 // @downloadURL  https://jushu.online/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
 // @updateURL    https://jushu.online/ZuJiaF/youhou/main/tk%E5%8A%A9%E6%89%8B.js
 // ==/UserScript==
 
 (function() {
+
+    (window.unsafeWindow || window).CAT_UI = CAT_UI;
+    (window.unsafeWindow || window).React = React;
+    (window.unsafeWindow || window).ReactDOM = ReactDOM;
+    (window.unsafeWindow || window).jsxLoader = jsxLoader;
+
+
     /**********************************全局变量定义区-START**********************************/
     let FlashDealProtect_EndFlag=0;//tk闪购商品id结束标志位
     let getInactiveEndFlag=0;//tk不活跃商品id结束标志位
@@ -63,9 +70,7 @@
                 localStorage.setItem("panelStatus",JSON.stringify(homeData.panelStatus));
             }
         }
-
-
-
+        console.log("数据初始化结束")
     }
 
     //综合面板
@@ -1384,7 +1389,7 @@
                         content:content,
                         mode:mode,
                     })},time)
-                    
+
                 }else if(time==1){
                     alert("闪购报名成功");
                 }
@@ -2136,7 +2141,8 @@
             mode=2;
         }
     })()
-
+console。log(2144)
+    createPanel();//创造ui
     getDiscountList({
         mode:mode
     }).then((data1)=>{
@@ -2166,6 +2172,7 @@
 
 
         }
+        console.log("2174")
     });
 
 
@@ -2178,5 +2185,3 @@
     init();//数据初始化
     /**********************************函数执行区-END**********************************/
 })();
-
-
