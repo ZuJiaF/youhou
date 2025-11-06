@@ -1,0 +1,1109 @@
+// ==UserScript==
+// @name         tk批量预售-多店v0.1.12
+// @namespace    http://tampermonkey.net/
+// @version      2025-07-04
+// @description  try to take over the world!
+// @author       You
+// @match        https://seller.tiktokshopglobalselling.com/*
+// @match        https://seller.tiktokglobalshop.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=tiktokshopglobalselling.com
+// @grant        GM_xmlhttpRequest
+// @grant        GM_download
+
+// ==/UserScript==
+
+(function() {
+    //避免审核，避免一直运行引起注意
+    let allCount//商品总数
+    let preorderCount//预售数量
+    let supportPreorderCount//支持预售的商品数
+    let allProductInfo = []//存放所有产品具体信息 product_id productInfo rightProductInfo
+    let ui//存放ui
+    let sellerId = getSelleriId()//获取店铺id
+    console.log("sellerId",sellerId)
+
+
+    let tis1 = "0-未执行"
+    /**
+    {
+        "productId":"",
+        "jieKou":"",//接口
+        "tis":tis1,//提示词
+    },
+    ***/
+    /**
+    {
+        "shopNumName":"",//店号
+        "sellerId":"",
+        //接口产品信息
+
+        "preSellList":[
+             {
+                  "productId":"",
+                  "jieKou":"",//接口,"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get"
+                  "tis":tis1,//提示词
+         },
+        ]
+    },
+    ***/
+    //所有店铺的商品对象
+    let allShopProductObj=[
+        {
+            "shopNumName":"5店",//店号
+            "sellerId":"7495905796795238859",
+            "preSellList":[
+                {
+                    "productId":"1731523423360419275",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731523423360419275&msToken=K_XQZ0FtJXeOgMQbsgfhgfiCJ5PMt8PV-zJ0cjaT9dnMS153-Ldbjs2hG1vBadjI2vZ_4dgO-GvMbBSN6QUfXCuuP6Yio-R87gML0XjtPwGsQpzezB-esUtP1xrSYdP4zxY0psU=&X-Bogus=DFSzswVOU5GANe72CSUuM3BYyBTO&X-Gnarly=MkCiR1m-qgMCVUCOqQs1EFRqsMsNoH0FxWyI2h0kSWO0lmd2Fg7zskgOFY4iPIwLlOpdTNPTy7GDPqVnTQ62HxBW9eByoA9CnprwyLPXXbgewl4/ad7JIMIRUtpXF4qQqkcmLD2hlr2bBsTOzkTPbm2cXdhRFbunIVDXrSw34hWQJdQpChm0fEtBu89ZO5tjk1PnS3d/JQxz5brPs4uPnciGOhDFR6WDIvCZ2PVG78W7p-CbjJgQfIMs0wA-2fWo0/b/AG8gdyhu",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731532188381054411",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731532188381054411&msToken=3s-LccsXn3TiNZBKvMRuxMttpbghvKtOGD2S5ucq7WR_fEetgjv2ACg3D1D3rMRrhrrI16YP6sE0k1yVSbE80zjJSKYArtJGS7M68UwGOnrjdpVVINReEpbcemEXHCxEnpvMlG0=&X-Bogus=DFSzswVOpMxANe72CSUm4rBYyBTL&X-Gnarly=MwtJwI-U-H3cZJ-YLEIxTGVxSnxTMRzqboiRqVqgAQYPggLVVovDkpd9JCIV88JJwgoigKrzNE2unvVpmuqs7pXRwWmcmqSXdmsjkppTOgj4VSzxC3yxl9eohmGLSkM8sz5l9U6Hca76VY7oeK/BD60tukaoeBD1MUve-0wHxoXIBjB7Wcfn8tNdH9tCCF7gBi8Z2jBaO2wpZ4phS6p3mbOB-VhwpKPB/5U3ldIMk8pHBkJcjmMSm/AUHh7Zxn83gKM9/W8rWJdg",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731529161635890635",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731529161635890635&msToken=beaa4RriY8OnydNuQM8xjZa2LX4VsIIDAtigTY5SjIp2mMtJLPxHEA69gvDZ1XGibyVSJzSAztwV0ighhZtBFJeXtTpIkgMiA8OOxmWlgz5ivfr72cEKEkWK5mLaXAW7PcPG7PjnBw==&X-Bogus=DFSzswVOtGUANe72CSUmVpBYyBY/&X-Gnarly=Mk44mwv2Muwi31LjVcime3utrz-smq-/bD2WaBWUu4quLAWklC4OF-uBlLD9965GRMRZKLFaJ18f4EiZ/bVVrTjpsvwBSrtUxg54uINaHWsUufDil1Qy4bpfRlc8VEz/VO7qc7iUfaBm/Cyi/UmE/UeBy1jk3tPUhHJU/rekFLnkkSGFjPkiE5TxzeUZdrINmJNAMxYXiDGIxi/PVOkMhZBU8AwJ1wwYYKxwdlRShIHmRPs0ncxl9X76c/wOnHg5jxSsfHmVXeVr",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731531997171254731",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731531997171254731&msToken=axsAtPDgKxd4wpHvjtnP5m1zZggBpIvuSCz8-IXTc5JsxN8mi8HZo3C31FV7NxfyJv2V6tTLWf_zOc3MSpbqR4O0xZyIHqNfZv9ElM4YVByuevCPw_TqQiqNBx4igYsMcViCp1g=&X-Bogus=DFSzswVOBH0ANe72CSUmnrBYyBY2&X-Gnarly=MFCrnqBeiTpBuCwMQDnD/UjA6ZdMGvEVolVkYWD/G5XusbyUPyIHpsZkNp3wLdFmdacl2r65GQ4NHQ8umwUHS1BGwbohdOi6vfl2q/DCJXCvr6DKH0LznT4BBjJgQmJD2Su/MtGb3uzXHcw42AP77WGdWi/mJoT2zy59kiyacGxzWgofcHh8XK56R3ykpUxOP8i0kG36XX0TWYbI-xn0hYKu2L-1L5N1jWKz2Ll7qe-ILged6P4xBwbUpTsN30rrk1eC0bwmyvIc",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731530091191829963",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731530091191829963&msToken=MyGFXNRqHcsSSbvLn8JcpBo5Yf37pbDnlMdOiEshGDU5xcTMfpD-s8jW5qYl6WqI13ifsNY_i-Jy-FVaIB8taagqScdAknBTMe2H4hY4dRKMo1I7PAyAFG6s61pCerqx5LQ8Z0k=&X-Bogus=DFSzswVOw0kANe72CSUm9pBYyBP/&X-Gnarly=MxmRjRROCUuCV-UtgiNWWWviTkzh0Ey5bp0IO8QDNz9AbleyNeHVXiu-vhoCFpvN5kYdiUFjRHouEwx6fm3ZWVPh4IXcZmF-DTl48Eqj6NdJ4cU0eiduPet7dq2NsFTzYosR4MDibiCFMX5wcb8Xs7DXEE3Z4lECz7RJ7LH9Y6d36mKBzHINMC3cLpzq5KJupl0WpmrudDIOOo2V/ygG7Hohr/z9gSsCj4RK8ysp6uSD3unrDHCTjWh62d7eqjgY3tlsowqXF9gv",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731531686761104843",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731531686761104843&msToken=T7TnB7s9FpVuGr8Xtg3BtgA2WcQNdtpYs8qT7lrTAcjQjhHu3WEuDvGxRuDDmMEmEyGvb_NAuG2pcKuI7SCHUYwZp7KrBpwwKA3J_tVLgQ6bGG-iae4qsIXDfU_yMExOLWTBWbs=&X-Bogus=DFSzswVYISUANapNCSUmT3BYyBOZ&X-Gnarly=MFWJ1u59yi4SGqPrXpNaCuodJrWcoJUdMMAMhHbrwnw04Mws1xYjxOu-bTM4/6HFauivJfp2UQSeH1QSxnizqM5uh4eRCRDDMoTOmL5y1W5Pm2zZ/oXvfm4C5DLjxdtmbXwF2vZ7yLPiwlIBl3Ducizkv7vyyVs23ZBYWYeitxWdRcyo2EBCeLawnKC408EUvQ5jzqKW7WfCvRHZbm35H5YCw5ylDIBPVhTlr7wlR17pc9S46fphuYKkjJQbwm9Ew0phLOESZqJK",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731529895427802571",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731529895427802571&msToken=61HYOu5Yr8VutG4o3TP3h1leWeWSUQvbSnVH1IQVfAFJiVbFf1eknOB3ggreubEVpehUDPB_cPaENteceRos46rpb_IHFm2n5tgNn1rU67XKEGsDjuMMYJ1fOwwegrKI-kdtAMg=&X-Bogus=DFSzswVYZdhANapNCSUmupBYyBYr&X-Gnarly=MKRUGpJ27iOb7k--atGT/yZq9UKzyOv3I8E/6L0/6vGZIyQzmAQSC71G//e3vCF0zZDTGSO20qCwdZ8SLva4BQmBM5prFYqr9SLvVSa6haPjxonh2jfVM/czO6wgYMyQhktX83g/D1hCILSg2NtmLUZgqPROrHABbUjkxr9Nzgj35lj6nWCVssSL1dYQzZ/vIxlineZHQwwUwJAvsMHLM7JuJCCon5KGEzbl-IvlJHGqFX-BbnL24WsuB7e3P29IF-s6EBi-a6Zr",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731529384575403467",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495905796795238859&aid=6556&app_name=i18n_ecom_shop&fp=verify_mbds5gwh_Lwb1NBXz_5IG4_4uuc_BvEr_lJSmSiIySA9h&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F130.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731529384575403467&msToken=4-Hnzp_itxQK12HkZ5uPvKYcezngpDv5ExR6E1m-KvdWr3wsfKPtq-TJWix5yZTmgbT7UdQxxBNzC0mJuGQGtMBP0K_fboSO-FZtnkSFvZ_8fqPH8V8XrZgPeDqS2eXZ89CUo0I=&X-Bogus=DFSzswVYMNzANapNCSUmq3BYyBYo&X-Gnarly=MPFKR8mRfXoP0qQqXJFlTOOtQZmy1PrSUtb-Ig/zAyt00IR84RnVAQD9nG9YPZu5BnFgm0c--c1aujAWPcBcMiI4eSuZmoOoGz3gfxdYvA0Z61KhAygRG3vF8s1FG-k-DFgRMO5qTjmbnhxT4NExoDzbfLUB4GIgNiYhUshbYyKI16TwxrbJoaW0OHnwYkdx9Ajf/Keyq-PyyL2kAhuKyxCoHYHMW04s8-2Sc1U71GINK0xgIAfoKw-qZ/eDoM6V2CqORgEngewK",//接口
+                    "tis":tis1,//提示词
+                }
+            ]
+        },{
+            "shopNumName":"2店",//店号
+            "sellerId":"7495515595857889563",
+            "preSellList":[
+                {
+                    "productId":"1731976174190364955",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731976174190364955&msToken=huLUB-XSxa_A5Acpy_xtsw-Rf3kFlqV-AXDMUqHC-YTm3l_FdnWrNL89XESE6ML0Mdt3_et5E_tB0hYqS3vtpJywHrqX7Z1_BtsZP5u5Y6eX05V6FrNHirz02E_VV7ZqwNyy7YE=&X-Bogus=DFSzswVYd8iANeaoCtVovIuyBXwH&X-Gnarly=MOwRyshZhhStDcZk-RPJXCJ6F0YSuOkfO0hl8PygBH-PGURFIwO3XBk/EhREdm2vA74EV20lLaPM-hh4Q0Fv-fULS9HeyQt4EDG2e4HttyfaO5tG-5SH59iGqumkobFt0c39ZGIstz-WdMk2Pou3fZUXqhaKXGgkpRlTtiic8YKYfJLD7n8byexiL-7/t6mH4P0lpfS/EAifXoRfsS5ux/6s0GG/3oj7vXDHQRt6xfZt3tF8yPm7W0i3N4Hy77VAXa1LDlt8HnIH",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731676940716049691",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731676940716049691&msToken=fRzaKcYVo8mK4ChfjWimgh4kKEUUlW2wZpgkjrsrEOgM6jBHWzca9dZXFFeHbWcnFEL3NtD60kSkqAjsAUjeOQddQsepc0_W_4i1iQSBqqUR0rZMVQScJAEVLHdZGtp6PgecVA==&X-Bogus=DFSzswVOwMvANcK/Ct8m29uyBXv5&X-Gnarly=MxuYHUjyVt5lYKjMap8xHqJvuhOjfN1GjE/uRf81hP27ON42Aiojy0cn9BfQiOTywahdYcMpWIsZ7jiHBMjwBnpBJrdso9XPbXeoqP2FUF1mgTZ68FSH-nP3pqd6VTVat2Eoh36abNH3Pb5QvDLKNylSRMzyYWwTQxi-q9SynhahMPTsZ1pRmG8HDyOP7gqt5Xq1Sj9K5LJ7Z6AXeWRXs8JPfU3Mf/MH-YvIjEuo0db1q4OEidE2-4J6gRSM6SbD8EeWJxr-S0WU",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731674630377276699",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731674630377276699&msToken=Lg8p0bRDU7_uIxJVh-Np1oJye7_YTvnp6gXGMs4jiF3hd45MpxznMJme_rqFvecd2boACEsq1WXxPMsxVmv0fM_HbcPcZyPFHgVwy80GdJoKVhOBAW_18T26ejhjyfviNn7oPRA=&X-Bogus=DFSzswVOmyXANcK/CtNbQ4uyBXw1&X-Gnarly=MK5Da3FKJqeeMicYZYAvrisHHebMRx0Rr99NvK6Ztiff-KOX2ulNG/rw3OcglQ77qalIME0YYa1oiI94nXUDHcNrWegVhYDP0EO/vHezSNhNXAjP8/X3e/ctwxWa7xFI/bk/isD3KSR1XNzoe4o1zfUVpD4EjP4MRjAiTMG1Xj5tgOalH0MklV6XsQxDZHJzBHPgsfSZURN7XoG3QkDoHn2aC2eAWAALHo1nYo/PvrnUN82lBrwNxUA/XqOMBFdpWhpNA1NVPgLb",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731658060779259163",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731658060779259163&msToken=wAZoCGDtmYNuA5_82_dWcqnhGze2LJYpvhGl3TBHzwq-3kx11NLS-xH_MF3p4WNtN2nJv_4TnIs5ul-zQvVro_3FQyd4p-znicyRAJ99f4Sj-61_l4Z83tFYix4ZrYcgMgaEGuU=&X-Bogus=DFSzswVOfebANcK/CtNbTIuyBXvA&X-Gnarly=MwkHHllpg55dW-wwdGa4jytHz0SbIRts1SxpYR7YKPh3b5I1lJirFj6FFvOfwa7ll7g-OGhUWA6wxU-M/45c7LoWZV-Ci7WJN6MtLbN9KUAspVzA5WW5mr4Evcp-T5CixuRKoWPNTBylllOk0oronaFKlVTae0M3TC0LtCnY7uqWxrIEIUlVPkU82Px3LXFoG2bXFz3b7GaQFNZfLtKvaqu3GScNimfutlAFY5Ob3ErpeGATGTT5gjIxJ8GRBG4stArM9XNvjlFv",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731657990104319259",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731657990104319259&msToken=W0H68zdS6WzZa47cUtKCMV3O_R8ALA6JQEn_WpqU9RMzK8vOezoMcdH9r_sTyYAEMebqi3MJIv-gubqY1G9l-l9PNAtFpzUX7mjts2_4fx2Tm9hjIuDR2X9KpuYkFylLDpC_BQ==&X-Bogus=DFSzswVYujxANeaoCtNbNouyBX3Z&X-Gnarly=MFMcBb-VG10uyJBWkJoJXMY05esLIXaTFKTwWvz0iNlED2uXlYLcJXMrl42ZR3ZwFD79qH8QF9aewZBsN3wAZW3cWXQIhNZa8AM1RcJ/tkLPtDsHxC9HoDiN4T72EEPEAqZddyHeXFaEIAavV3mZw-EIqTgdbzCCoL4aeTGv1ES7htOymy/DqN2/7Nq9GJ9MGSqqdctioRAnHKuC5TRroZatrqy-xKyvZKbF4oA6RoTvVuaZxii5TAKwOwa5cPLEwe3h/SXf5BG4",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731657056809223451",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731657056809223451&msToken=eCic8U7wtiJpeZYhbOVNoYkmHM1LLpaXUmR-sZihGuTwDPXKhyTLikSYZGOepm3TPiTpfSkUEMt87WPeM2pqul7BRJh5p8VzzC7Gbsqf-smkSNOoc3-tiVO9X0A4O2dJeTceJQ==&X-Bogus=DFSzswVOQ-iANcK/CtNbq4uyBXv8&X-Gnarly=M5DqT0fgnpqlGjY1726F9MCIfEbFLyMeVhrFEyiuEc/eoL8Aue8wQ7SIOw681S-y4FwmTfTnDS3XwYFiwe0BoOs0byJxcWOs6ucCD3pBAya2Ai7VmPBOi-uljfRyvzK6cRF1O7xczjf5z1ja7RlGDczwa9eMgdGgnIL1ySiu1CqmbK3ITsoiLedzxVo6OMqqKcZbTPnEpiMgJv4Wk6DvSGafGnnPEF6W75dBwFk1KdTFawTQbDdvS-tV5U3L/HUIxywHcXMxRtdB",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731656950713255195",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731656950713255195&msToken=8vnEDThJ2MZ66ziCTHcgzdlScBh2WxtErPlE92conwaNj8i27MSNBNtcMW6NHLHfoHV6TriqCfW2qwA4DOfpHwsmTPiKy7GxkeI7zshtxn1l7HyvbJ0-i6Qilgco_ikBgsrwTw==&X-Bogus=DFSzswVOLEkANcK/CtNoR9uyBXwr&X-Gnarly=MOlFOgOtZA7UG-fjRvlkULpLMNQk8YGetk7KvcfYNZszXNk0zDAKvtrZPP5mrt8uVZRumGdll68-5oh7mOSMu68luPL9/l65BdxE8WBlK6-Dz/DV8HZHrgbpyyYLzs6miBOvkw2i8xVWd3OUaZlppH9Xv8JcGbOOwaj3rpmWD5KP5tXbeL9rbpJltL-CYA7zYKkPWe-1QakTE0oNlgKoQpexaAv1P5omRln06PBkqhHDlC-3ew2V8vKWhYEFXyXMbHlDpf6ElLSf",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731656753571595547",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731656753571595547&msToken=vjh39WEJaBjdyA2W5-a4hafSgw0hpAUHp714omCKm8kwGaNJwYWAYq3usDyzW8OavCKvSEfZ1HGLYltdduXIe-On6Uv3axXpQJnp2QS8kCvRmEn38IabaJSN3KzcVEMVdCxZ9Q==&X-Bogus=DFSzswVOf3zANcK/CtNo3IuyBXvx&X-Gnarly=Mw7p62kE3nEQCmRvsqVMG5VR69cO1RmWDyAgnWivu1ImRES-QezgV1rG02svqpYP6/or1bI7EyXkubRtPTGsgHLcyoUlX9lTn-61RPR2TqAC78IMBQZbEienm6RYlnqR4425Aji-Y4OOpz5JQfeI88hPjeXTRnGIHxs1Z3nJDdW4bPp0SX6W9MlUt/1V9DfqXJAHE8U/MfsiaIc9sEVsNqngEdjzyzYVwjRUDXgBA-QwtdxLbBLG336641YgMQ3xlyAYNyx4jq1P",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731656899083797787",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731656899083797787&msToken=yyFdhmbs1U6_UEy1HQnF15H9p4kfuquo8Yi8S_szctIxf3gf50YC9HWH9Acu2mHAaEUjkfk1YvxN3y9YvfX_Nz6Xd-nOun0X4Y9Zknkx2Ti4Rfi5DSCC3mki0HSRwI1pdB5a2g==&X-Bogus=DFSzswVYA72ANeaoCtNoI4uyBX3j&X-Gnarly=MCEHTgwqr90s7D-jTfOZDOmkpVxaGo-obLefHaUUfIf5plg63x9qOHmNPAL/5/LaBuUSz1HnL3efMpisbIm/pwt1XhTIyKPGSpKIiRr5wZt6xtLKv4eTGJNavPKDMwfV9vIXkg85P5t59NjOqBoEAU4CeV14ZiVdHqO5t1uqun6YcVRbcJdynVEvGFez0gRmIJLQwgIU75QFgTwynbDyiWkBHSFuGbRbsklEHT8bTQtuN-RMCwxHnZ0UCI9ydx7HX/IhBTjTdZqw",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731676979538724123",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731676979538724123&msToken=cb-luE05ralNYmFlyxXjxeMcYXur4iEqwhd7kpWA7ggZjpSVg84UMHMTtlKXypsAQH_ChKTUUlFfMoO4Tvc62UWg2djqSyyvmEJ-FwdLZ-rCC4eQWaqz2gN10xyRVrQEwMCIYQ==&X-Bogus=DFSzswVYGm2ANeaoCtNoQ4uyBX3W&X-Gnarly=MxWlJEkmtUOagFO92XiVRFGsENAj9Q-k1BJWLI8qrHKS6v2aFlphI6OuxOvl1YhskRe6-7XwGdBEt2gnWXUujV1QXL7NQGJLw--U4Aa-hi/4o3qNbfWv4RdwP0yi1bUQs0xjIR/fezOZTTI-8CWPPV9P-MD2ExHs1KRdF6WxfBn8/Xnr5cqr4RoZ1Auq4csvk4BWY4K47cZROVVmxkdZ1hO5p6SFb56B5zH7Vlo6Wwj-XvRXoB4SKcaiSeZtho-rBMdOB9NQyDWI",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731677257595323675",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731677257595323675&msToken=zX2CnXFWGCOLNa9yiM-3_pXleOYBZtOIwatsAT2fPWItcm7nefXbrKrr4MMesBL-lRRIuXH0eYUPgDtmY1NqoK9P06KOuA1vrDoy6WNLIVZ-MSXzy2rOsgbw9S-0woasSEa9bw==&X-Bogus=DFSzswVYarhANeaoCtNo04uyBXfA&X-Gnarly=M5FsQ75V1G6-XjuNOBJg8v4tHhCNIz6HCrbjv6QnPcU60CTSbgg41AUfYTzKaoqu45dm3BETM49UrbOSruREk5NLGPAni/-z1b62SVkexELa38WGndXspFnNQgzkeQpNJF2z5BwtgmVSm87KX98i-vRIaxNKD82/KL-x8jwyPRhgaluVMiaLcGutURqEG1GBT0foWLTZG1nrPlc9G-ef1se262hrN7Wvd3o71uVAilyPXhag3WkiihUR5BB45apdTd-J0/iTSwI7",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731677360626894107",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731677360626894107&msToken=EFqo10etEwg3bv-JeAl_ImPg8khq8n1qnbtyf0_lXV1ASJ6HvGc-pxR2zhjmdq1zsvjfWlErbgBrIuJphC546V-oSvfkrY2io5jhKTxkYlg-agcTpm669iow0i4oLLwCrzI-cw==&X-Bogus=DFSzswVOriTANcK/CtNok4uyBXww&X-Gnarly=MwJEbgi96pIdlETrBj0NuxE16f9-lvhPsmYssoeeCpE8dvsIiM38rRb-5FZrz5ElEd0zWbEMJm671JLY0wb4qxG5fa40g-xs0XphMgDeKKETQS55X60nSlGtHH6Gr23JknoUKd3w1tJaGl66eeX3F4XIMZxePRP9HdrxLXXMdfpKU0n7rvvt6CjpObs4yFGRK7idfqnZjjNQC94BOaDer8SsCyKHNhEqrMp1jKk5BWMvGxKtyBopAtZkP5CkCI432U5sT2/bjKnz",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731674968994120987",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731674968994120987&msToken=_XlT7PMigLFz1l2dXQFzPTWX3VLX5jjIX0xrunH0NBo5lLFTKDmQyi3x1QdnN5V46TKoaFY8BV7KCcVfLqZf3XaZ45NyG8seu4qjd2xkp_S2-_0OwI6JVkJYLNMzEHlpyYuHDQ==&X-Bogus=DFSzswVO4liANcK/CtNoaouyBXv0&X-Gnarly=MPR8CyUVL-4QD8cZ7fmfst2IkUWr5DLiKjrm-G4i9bXr1ueK40MJQSCzZqUjb6GqdWzcvwqg9GZcXypCRPwZ0RDZommnf-q2O7cD0MnK7zFnl0U4SIDjE9OgtOXcvf59yyZJ1k0OUnbEzsUxVI6jMWiiJq8J6I-xfKo/T4pd8x6RpVUPs8cy9WQWiYpmAXMVC5-i6O6DYlKhNjzcCbN0uC5/RSsyOqvGP6t7r8iD3YWLS1XqJdHiizWOLhede-N23banzQuV2o1R",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731362511717304603",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731362511717304603&msToken=EQTEXZVMvGGrYOjNt9kN4M7B-qIjetLNbPUVtukACEt1m5LlK5IFoRNR49jzE3yiB5KYAYZ6P8ecu0up4pcmn5C6aOFjc9bIw745p2fYz1XBn5K9vCiwci5sYw4iROG1aOiDcA==&X-Bogus=DFSzswVOc02ANcK/CtNoe9uyBXwp&X-Gnarly=M8ngy-/qNeDNGAnhkqDCAO0IZryM4Egn-YX3R1S7WwU-IMpBG3-zu/heM2XEEiOkKguCWfkg1EhQMgKN6EdmgVHHdr3jBoSGPQzuJlxR3Ekv8Pa/7xEf-AuRB4McD9RD8DwoHRCjwigbzFE9isDDSPro5be0rx1jXNfR47YPOFXWzEumfrf1-JtV9KHHzwCddLzq0eadcU7ByyejkFofcAWvHqasBO8kYO9a4916VSzikF-ei4TD4tWGwZveETh2Jwt477E0LznO",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731986040737728795",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731986040737728795&msToken=UIcdnYcsu2cNXhG4oHPxBg3L-ZXYowMonPo0_hCJKGWvRSavvBQwEpsNVL5mbLy8pDgrIgS5wfSKV4sORAS_iEEDmlychpu_lSYc05tKb1it2Vfv4qijIDuN2GxBqM6LaLybVA==&X-Bogus=DFSzswVOmPkANcK/CtNonouyBXwd&X-Gnarly=MCErTQ5XioV4yW9Cqpv-mEzdc-zcIfzal11jq69lsJT7smHmAqiSX6gOhiBTyuJMn5EALYDNJMBGFKYr9jDTJWmLZFaMRS3m-J0tLpcQ1uhIE1i69aYjY585NjyiLwrmFeQSIESou/SdJfgj9Pke44xv5ZbbRrXQv7jKCXKKFPFN19GkjT8zRAJLl8vLDo4jk/LECCHovjdMfImfr-ygsOjjLqjh-kyrp9oS-q1u55/gU3P/BIWGklqVy46gTUNHmiIYU2QQNqWo",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731986287069202715",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731986287069202715&msToken=o01NRabe1f8se264wY8zvvlAgxa2-AzKDLFFAzsr46z6VST80saLI_hgGTjbmLnMF97ExM4mrhLfuJFpaKwKN7jTLqW32iLOJZRCefJmnmAlBP2dzf0RTD6ICqjVbxN87d6Lew==&X-Bogus=DFSzswVOYS0ANcK/CtNox9uyBX3x&X-Gnarly=MFNP96elmlfp1HGbx3o35qNlyPasIBSF0VAd4utGnhWn3rcafnUiKAqXoVAPP/-ZYqYAII-0mw0EnCc5JxllB072u1phsWTPC1LqMROn-gh58s20TszChADRrpu4mtLDXfZ3HQ0n0ITUYAv3RtZVVMBkbXKJR2E/3nVmRFgsS5yTyZ-hFNbPHInoU-U1l/Mg44zOYAOIESHCIcY12k3F7ck2AI9FV633loWyRHsYki1PTkn2elqb4tFsnNlkP2O/Gmf2S1cPhANL",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731986586549258523",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731986586549258523&msToken=-xnKNsnsByJq1UilANcYS-DvVF5FizETyxJuCOdvaWI7MlPyHvZ8gYV0at3LemPVDxqOknzSOlqAeJ3pe4rQ3CURDYjUiEakQA1l4yg07vOg_QGZQWoqHpr4RIqiCFXDWFPj9w==&X-Bogus=DFSzswVY/bhANeaoCtNoz9uyBXfY&X-Gnarly=M/Sv/Iz1K43J-MXvcv3O/qwB9lutTP9MXYz2AtEmtLgr1XnMoUaUkjUvPbms4/nJAVuqegaHHHW0dcKf1b2bBis4uYObcJeo6VeOZGAiJ-V3p-2SUr3ge-dXkO3iFYRHKt0c-tXUQJ4DE6T1g0g22bVQ-gqEwrxKDohx6CcuK9/4dyoLeRKje0dUmyCF8n0JQJmG4ecDrojj7mO6cnWnf0h46VcmzwOpVG-gTxjEIPp8HfmX6tFNsxFvtYVzRYlkBr43DhvWKJJ-",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731975726435436827",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731975726435436827&msToken=tVU5wiUN9MFOPpx1FDQnbO6DH3qSWrbeTw_6S2V277cpPvDI0Dcs2_0v-dYsLMLZjC7221llU8zvb7vhj-A1tKpNhhwKfpO1SGAYCDoHGMweXddrcDkY4f53iLyiFhlEvADLUg==&X-Bogus=DFSzswVOuCkANcK/CtNoi4uyBXwX&X-Gnarly=M/valnMUqLjOAjp2lsIoLXMvQ2AFip4aOyRtcXe4AWP-cLE7lewG3yPgMqGaUhj/23QqVJFhNGJk4bjAOf/Y7vuwk0wYUFQ-u7orBhyGSoP0d2ihqShk5HZ-3mwsH/fZznDkKGnyCfqInUiuxcQNstJSxZjTgaofojaT3Pw261lWMRMypVCUzCNU30-Klyz0J8mHq8u/VKDJBokK3vVP/62ojw56N/Via/gWa03xOuWqboC6OkevtwU0rw-x5gJE3ZhyveNy-/rn",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731985722923321627",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731985722923321627&msToken=cJHB096Gx26EAKzSQzIahpI8PlgRVs-eBlQOH-BC2CuG1-liInJqbw4bWFl-XvVpgzNjT5s3Kw57KqygQRW16GY1OhrSxto8ExwSKwwzmYLmtRb81lPN_0OY-xhK_LnhJ4zTNQ==&X-Bogus=DFSzswVYBbTANeaoCtNoLouyBXfw&X-Gnarly=MPEwI7mU0ft8n1MinK1f4pSnCt1K-D81bxTvLEkhQO1O59iNGNxy7N1jUrxMuk4PiRAKCuUnCQycx4YH1orB-b5YpxL89lxt7JMVbtkPELW02HvZjPuIYK3DV5NA0cI5bRvMJ02A3YdPwtNWxv0J5OKy67hBO5hozHssR924OmSX4kWL1kTpAjX1Fh/xhCndBfay8njSFWoG65jUnkohHqVVVmj61QuwQFcw8eghuEgLn1ohyc8Zwl5he1vFR/lYP1JZ8AhcXk5q",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1730398860395972891",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1730398860395972891&msToken=DYmYPD4nKzUcgMjiiYwjkePmlRg98o4dbPD30rE8TZYV16qkBdsSUdKHv2YnK-yEhZ7C2uww5zGuKIcFzDAPVNIBhnilqSwaMdFqaC2uKtb38EJrAgbW0ZjRXmrszE5vVGuL7g==&X-Bogus=DFSzswVYrMsANeaoCtNqR9uyBXwY&X-Gnarly=MJT2gI8LHTJJp6v3muyXvihkTm29iijYXQQYuvHv2hjhB/MeXHoQiRfQqxQ-SkBzUHvJCvo-DZ/Olub941wacL4-YWSqYCqlL8TCGMAwd6CSjLzs-EGjXQXn6jJ38n-Bsp8vtR7Os1wd-d0hkH4KL/o7Zx4WZba2AHxMh0L1/QhBuuCn8jVhZ/20KLcUoGgb5vU7J0Co4dhgfArrOvyrlrR7yuoxgEaH5VAngfjLjBD4UnD8LDwPB4JYL1Zf3Rc44FrirH6zCE7E",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731986678197291291",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731986678197291291&msToken=YePBZw0mhROC12pEpQJGd-qkR_r-J5u7nrzD-Hx7LTBsX4e30aw7Zyj2JtbWsrEvv7Kdqa6hpL43uxi6PieFxUIDw5z2niVCPE2fwLJ-H6Qge9u56hCSPDS8_VEP3yTlNloXEw==&X-Bogus=DFSzswVY5ziANeaoCtNqWouyBXfx&X-Gnarly=M50H5pa7Spfu74pC0jJzvh2CmF/T73zAIRmTwZLaLjynPWX2eTInlCspSFn-YzuMMRMWi8/ZCLmJCy4RNopHyJbuJ6KwozwXBSVqQ9816PbXBiLqDtFfmykoDcToownqc3FjuRexjy6EFaS8Io7L72QH9oGG5ngmMmGcDD7GayNJgTwiWxBpyns3-ZC0W3M3aZ0C/1x4ZSZEPIXdS3dZhcnGq4sZqscXlqt-h9VYV65pa7u3mwLz2bnyjqyUepj/ajk6nWnnc0a3",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731706346299426075",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731706346299426075&msToken=ckvu82KduOa6-931zF_eFCUSy8kXPJKlBA5FyvOJTqr2IrhaJj0reS8mChjcrnupVoY8tDpWAkhnekTcspmbHAqQNCq-kiPIuOkSKw9aysTeUW920BRp2kRer0FF_sRqRCllxA==&X-Bogus=DFSzswVOcItANcK/CtNqfIuyBXwg&X-Gnarly=M/Frg8bF9u-ttcuOQMhYfof7bbU71IW1NOK9ccgqH6YOqvtpjtUMJ5GKnIFuUfnBybyqJThFspCbv70np6GyTlbjKBoyUcp3kX6adiMuy/Vc4/kLrYChWwilbVgLXzfg8UM0Xactu94wiKoicRds/Omxjd6gpoDVZMq1E63OVz3FM3xoPMCvJWXFLbsuziJ7oH7pQlyfB6I12xuSUSi7/So4uWSiLHb7wlow5RQLJUzP2cKMEtmS164tofM9qLXmcIqU/rUjkBz7",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731707049230435611",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731707049230435611&msToken=PU23-bzRGJMrvQX6pEaDMzmKT7U1LS77WQm6Xi4IJrI07bBj_YxIqnBJbj0NV4USiNRYV4OVPVWt17_r167T2XmCLu30ibs-6VEusVHCdvcVRGf0rYmp1b3NRsOtSkofE87IsQ==&X-Bogus=DFSzswVOLmJANcK/CtNqBouyBXf3&X-Gnarly=MCFHYubPXFXOW64nxrDl5KJCSKGGGyVj7HzRyv6KIbdBQksd6bSX2N5NGdNzHOkDSDVNjZug-qiljWxS6vk2tVWLmX25d3FSdpzR3jSNo98XaCM8tEV-yWSkIBHfuHQabz3DDvXaRXSw6lvnObw/Kqkb7nPbeFS5kPVzyiUygkGaWT90zlm4sDXhGwk3R6F2UNANkzjaxSn5uMJ5lQ1nGS/XNclOqoF1b3NHYejUoqcLWYk4qaBbf9pNB75wIev7xva4UbnvyeHy",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732289220165667099",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732289220165667099&msToken=MhmhRRB6kdcYL5b1ILgywal_6kyRkJfpQLNMmakUTazzCgz3BYJL6XSG1-dDJrznL-k9MiQRIp07kwD1B_AsKyBtd6qVcVRpuKnGHfLrNp81LJHuNI6epYcTON846WkQ0sUCYA==&X-Bogus=DFSzswVYagiANeaoCtNqMouyBXvF&X-Gnarly=MK0X05ZLqFAvWYtcpBKtaxuDDC/H3OenT-5xSXpg2zbfA2qKjts69k9W6iaPjqb5XyoyzlKV4wNTy2JR9Sbj0WdVXftlpAHsrpteKdWjsGZXKqJTQo2mOL9boL1O/kPnK9tiG-myGROIsMwhrPYhrgm2OZbIqg4BCEEQscF5cobq05MfHbhpF1c1ncAsFrym/kGjcDd5zOV6QZbd6Nshe16QJdutPbt28U3GR6NAuXdIZU-zIwGQnzg0ietd0dMqRrUBx1iPWaZ/",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732322403614886171",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732322403614886171&msToken=NwtkPNowIhbAdgBusl7FPIiVrT_FgbOQkoorNnzv4XOPZsX9Dstt4J5KanFUuoEZinv4arGXULWW3hi0ZmwUB5rKPNORoNAQCazRoHU6pETX-J-av82OEljn4vM2hK_ZJ7ZM4w==&X-Bogus=DFSzswVOBKzANcK/CtNqpouyBX3O&X-Gnarly=M5vAB8COoM1US605qwb4P0Xu-lTO4HCIu12Jmq8bJ8Fbgv8vf0/hLrLSn90ZGvx2fI8FMLhvYQYznWsShfBxTKryRln2f5WRClwji06vXsX5oNH6PFwYlnBHuw0UXgDhbWq0w8aELpAY4dUim74NrDDhgIj4wIxziEj3LJiKwIUkqyzzLyTMblmVDjAtPZ2on61xSirtLHYDRbj0CD7izIHg7c/UuJX4PPq6ACXGcSep8fG6jIOfb33UNZx9zcdGDlh6mpe-su3t",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732304470640265499",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732304470640265499&msToken=WOEtT4475gcs6IVZDkJrUMCmsbzoumcCpA0c5y27_-IknhwE8-I4cP3fG_Pk515ku3-Um-xp7CY6Hs7v4fz1sQbNO9uvyDefP1VL7jOnRo1rKKLZ7vDFBTKkdsjAN4HS748k5Q==&X-Bogus=DFSzswVOcJxANcK/CtNqZ4uyBXwT&X-Gnarly=MJBU7zziyNjnto3NPLGcq-qDqb00deerfDk-LLr9qGMLv96/tzzVK5jz1o1L0sKs4lvVWKFyQFrDoqz1YR4566ZO2JNg5teScFjnLt3H3u5hFaOIDr3FNLcdAkoeC6/PqgyMmqEeDlrXgO4CpFtd/RhKflxzy5bW4mlFKFei3ZfTw7IuYRipbNzkfvUYHHh53s0YST466RKj3p5SO4-yEgqrcLC6pEy9PEn6DgsWe9dGdQFHC71/lF0-v/oP9DyPI-IDC-iEnG/Q",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732304078982908187",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732304078982908187&msToken=V8Btpy5VsAXrsMLZsPj9kXmmZ5Z-Gbl1FBv5no25wKcpMxbnqTF5K4iPu23B36-uEhDXwr_LXx2OrwZkKAin9_knEGL2MwB4ctr5R7-N6TtG-NO8TrUcI7rPD8pZeFC6z2h49A==&X-Bogus=DFSzswVOFgzANcK/CtNqVIuyBXvX&X-Gnarly=MOL-Sv2EWnmdDc9BfrhAgGv1lQCl08QsBg3L50rsuGutIjZNyiBCYeqs-p8Sen2eWGSn/gGXoYdxceIb7o7rwrpzlJRZFk0nkRzYN/Wvw3IGauwrB9Bab0zJ2yjsY2W0F4W1o5mM2ffC1-SHcgQhRdW8R4p0kOtZDceh/z5Jr3mscc2bul-bi9jFBSXcNA4GUhX8NMDO3RC4jFl2T/MVZR2jSO7NbKB2O7ZlCIUcnpyCxQ69Tno6zjyg13cjjkq1HxF6-7CgTwgz",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732322256002255131",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732322256002255131&msToken=cXGmgu-L7kuaZOfyjLvqM92-EHxGG7S8uasXMgB0hSotxDydyX_XEYjYjmhbec1X_oXQtAy50ucbRd9UDFu39FKnmazU-miG8mg_iRe2wN6rvjORDnNv40mSlYakjCDrOuBdJw==&X-Bogus=DFSzswVOa8hANcK/CtNqr9uyBXwi&X-Gnarly=MFM9U3U/XQZovXQVBS3a2oD78HxWDjcFVn6i21G7nCfZ003OMxrnNsTTaMSg2MDfpydBGM/MDoiWu5T0qDKELRo2da4bAI/Fhz6kGABWSiCr7nmtEYYj6UfUcyXAnMvVvwkQFw0WDhLUP85C3h5jV/qWbK/ppx6DvCsX1mNozhzN/axYjY3NZ1OHOT-cMugQs7rQvcglgSga77zp0SsClnYrDpKInJ5AP8p3DtR24D18gQ1K6vVbtVRiy3cSp6aRchmHVOJBghBk",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732304212014303515",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732304212014303515&msToken=T9B0tYr9goouoRbvSVnTV45OmUiMHpy99xaSwcW40m2t5tkn3Phonq4jjztE5wBj9q0l514Dxa8EaFUWg88-7_apkvzJbv_AdsiD_WQp-3PoJ7EvVhc48vR0dazB8kf51yidyg==&X-Bogus=DFSzswVO3izANcK/CtNqj4uyBX3I&X-Gnarly=MJQsCg9Zi6WhZhEWZ1Ma-GEa-LtFPkPZ60un30fStN6q1TQxqL7fCBWx9PZ0FWOqUDYRafnGL0gb2oOTJoL7aCnUdmtd68x2WuYhrTU19r/7sDJDJ9B-GIIfPaxfwauPH9Ft5VDNwbx8XRSTDqV-s6XP5NeS3c9waux8P6ohRNxbBKzHghCZBQH9okPfw04JIvsy/w1AWAXCEtKUy8PJFg1w5uyoqIjjZJT6Z0XaibiWN1Az5SiBKCGnBeNmFTt6VpgYKMsVMJk4",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732289491563612443",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732289491563612443&msToken=m42_Ixq2CLYbRlYWyNBT5d7eYDaN0G2mTwvWlguoFu4fBx0F-v6yE3x46KG_BWAmD1DmfqGgW0YYZe8X5ulXHOHP7S_dAvqJYrogEDiR_WE4ZQS3HqmEPoP1khhHVBqGTY5acg==&X-Bogus=DFSzswVO-jiANcK/CtNqz9uyBXw3&X-Gnarly=M5MRL0Xo-NfunJK2Z6qrH1QAm-GdQ068pXf1EmG82alKgynsV/2Skgau39i8/GL2hjYg5sN9ZZS1zonEoLJgV/El3xVZOCjK6gLJB96yp8IUIg//0A4SRCd3Yes4TkLiThEPdizSUjNSIsH57MwMoc4wEgJza0-E9DwyImyz84Zj6vfpMzWSFneh93swB/LKqf-FMTRKqmUW4I7KPQd4gOAbqOOsLbC9r/JST/H8b3O9ev8-ived6IZHbwtrKzoeNtUOkoHYxGtb",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732304346956466459",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732304346956466459&msToken=WBvXnE3NUuHUqd_7w_AYnBbxNNCeYl-euOXuj-5DSU-j0P_CPJyl0xIzTKAa0nvpXvb7SAmAXSD40ebOeeQ8UqrPADu3-NV52-LkcV2_Rb_rBKIKQFQJHIgWpRterZF9kUV2WA==&X-Bogus=DFSzswVOJGvANcK/CtNqiouyBXwI&X-Gnarly=Mk95Kjt0DE693dnm4sTJ/abeax0/TpQNasRPJjmeDxYifndTxdcWiGYb8ymUCzdfPOdg687MHqGyWhS/ipDj4ojglgnV217V61peA2DqmKRayiHB8BFTaRexCU5j/KCkUIgq-UcKPyYUOpzESNid52LjBPFW5-EHOYwmAMukDgJGrbfjpmGKWWhcQkqKYOTkL-F43KYapnkSCFRfxqfDNdCJxf5WnewCu9vXjJ66YSrEg13fXKOrs4GCMJqmfD1MNFRvb6iHU/rE",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1732289307380582683",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_magq0euc_NpVjolgA_Ep8e_4BPz_99zn_VFqMKiNQiay4&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F125.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1732289307380582683&msToken=HZDliqf5nYr_baMpD8ta4RLbznZ02TumbJo3NMsQSYdaQecw-w45z9IguBXJH1bmkBOF8zzgAMnVATkF6cOj9FVRWTZauGmAE2YLZUHIhFU_tqDKttF5H2m1tG7pIhCMMDB31w==&X-Bogus=DFSzswVOFVTANcK/CtNqb9uyBX3i&X-Gnarly=MajmOgSFXbQbpAwMgF-BwlgYEd4E3W8-FvNNVr4mfvtGnzRG/muZSgXvho3eRUSAmwzIR3kjmMTX/WKWBp5yom3KqZAf9iVHRuk5NIYgvmRV9emNhc9IK2-I/KoKldlU95WqdsEUibfJyEsrtr0MT2PwXzY/V3egvGQwmMH6yV7cDl1oGy/SfZgF2bw7ChVNggRaK4P3wSJSHhfuNJ3I-EyxVvfBaP3OHyWqnkEh6JHtDPMeYU1h8MOybtxmxKe/o3BunRVM8eSE",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1733023092925498651",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733023092925498651&msToken=AUvIfx-yJtGxDqq3hzNp-mQFr3bhPYk4124-KlsTN8c-vGkNR_8yLKDhcfGD2shD0QvPUohBRfO-clV4bZGaIYptK_tP6iZLStliqqWPl0VS2w2X6PHZmGXcev7xdbUs295Bf4c=&X-Bogus=DFSzswVYX2TANcpJCPicXsilMtPl&X-Gnarly=Mah6l3qp23O2h21KB41wRV4imWg/YQc6SIXRCgUTvq4r3kvdZdo7Cp/uMrHWFB6H3gm3olmeJmHeuQKXqaIp1bfTuF1CmzVCXzFr6TtppzXbNahfIY1jd55sQzzbnMS2wJmXup8jJNg6aIanTmB1jU84q0FlezcXiyWK4PhBZqBxv6vNadPHFBRY5cF6s55f6eUhdR3Oj8vHeW2uBf6jsAYCvGWG8wNCc7OvracdPgFsNnQagWPlty75fDhdHh94p/gwV4NJV4Ys",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1733022635724014875",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733022635724014875&msToken=4adI92vjRKEOxPHisnKUaXaPVqtlU3Zj6QtTv6FCdgudnOT8ABvnNrpCSkSeFQdLvHyBJdc7dMJoppH0lITql39Lrq2qvTuqQiDxMKegzmZwYX0SDTRVq6j0E8vqHT5BKDiN1Ts=&X-Bogus=DFSzswVOKWkANxkvCPic9TilMtYz&X-Gnarly=MaUQCbfWYMIcPj5yHV2Xp2ASIqRL0fqe-/rqNqaYzO6zOqq1y6rBlJWSlRVt6CNV-8iqoIbTsnDHxiEuCyBfyp-5iBWFRY1dBNBILMHWR9PmPnyGv41XoEzyF7b0L6C8Xax8bswS2abW-nEo7fUlSUOsYv7fXXmic/LL1W/veVzGN5y/IAZBb-1J2oJXs0km8eJrp/YuuRfBVc3yPkQHG8R5E0I4leLq82INoHxMTMJsVLKpZjxYG7hb27aNFY/SnlNyTqK1xMaw",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1733023600745874715",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733023600745874715&msToken=Yamlrjfd9mj9Iu3hpnZJh9qlMxxRz4mH7GbcqVQ5z8XE3_g5CU6NZoSHS8oSwv4u-UbR9BDU_Vj-2CIIjg4WCrVWnMcU_nPA0vr8_ovpPi6y8nX859zv9Pp4uj3JGtziV28vaCE=&X-Bogus=DFSzswVOYvhANxkvCPicYGilMtYh&X-Gnarly=MOkmFlzlUiPkmIVrR7uclr4kXRZz9byU4QwYXHCDcn0atT7DdHKEd4OK4nJWvI2sB1hmxzDGTf0nJL9pC09kglEOgza0ocKpnQAYP5rnGmpEw-aZRtLocVbnAJRggyPgEnO1Xa0niu7esmGA64-UV2R4pwWWO4zSTsI8xrVgQZw0bRLSEU7ArNOkAaXtDa38YEZaXgSJ-B62zeAsQDNyHB3RKfiBboNOuCO6oJZU/k8SxFdbEHZepMaWZH8YayOiON/b1uLY3prF",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1733023881302344987",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733023881302344987&msToken=VC1QvSGItny-Vzts9bT8I4okR1x1xGUg1ysnxVO6PVjFdeYtfDkjT28HDQZmG0WXgdxFwt8dVdelRGa6XqQ2dvLBWLkjJ7sVdp6kpeFDD2TSlZdL_pycNgZ6onK0RZJtZoFfwSM=&X-Bogus=DFSzswVON-hANxkvCPicu2ilMtO-&X-Gnarly=MwdsxrcSzm0JFkmLd/JGEsWs8kwpel2VtmSwHu1tGn6F6jShCyemu1A18QyB-un6YF1zKbTwFqGBKVEu8XJchGUuv1Ub-VHpaK8UzzS3fUs7mAzAJCYOcIEEMyuOCO0VJgiBKtwwVOqstA1l3dF6V7-s1dNvbmGBU/a0BoF7OgwjwKN5zw5q5T1ZdSTXzdSaucUeJsk4AZV7ClS7RlReg/Gg0DbDlrJueEjcCPUrGMyI7LGYVcWL9Ms2sfS7/O6FCsWU/hPe1VgF",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1733019356683339035",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733019356683339035&msToken=X80u-jBYTl7hdNdRybWIul8eVjjKscbGBf_8EBpQYTXiwCMzowZtyYC60IOMZ9F0MH_hSLdnLay8CO8bgJPxEhqXnE41i9KQV9bHp8yDgVxawUex7Vz1fgRcke4F-FlH5qXWots=&X-Bogus=DFSzswV75gxANSqJCPicbGilMtOX&X-Gnarly=M8RAG/M6BiBKausz4h3p1TxFYSHPitFdrvhl-9-QEOdePCIbULsdBeMogi3T51TaYghZB-dBuOwIv2AtJa5hHKB87QsjoS4tcA39Y9vp8Eh9oSJxj46JzMsmBPkUxa2iUzh/XRr7WlZpLSnPQ4QGvRB5Ftpgr7z02ryWFT6h2mthol31ye-sJODqY6r797MVUDcHvcR2Gw13C73usTCi0usmuYl2AIx1gXxnGC92l5lYl3V64JPxsazezHr7RndGx6Tt/M9SF3JU",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1733013669907891483",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733013669907891483&msToken=cEY4WJQVBe5R9-az-ezvmazsrgOtJ7vsLonZiLimd40IK1L4_JVKjG41xNlJELJx1KGbWuU5HzWEgOrQY2V4QDUT1d4mtLCYfYG5tJ5BKjTeRCs_K6lCU8dFJQDrutua6WCv4eQ=&X-Bogus=DFSzswVOg5vANxkvCPiaRGilMtPk&X-Gnarly=M5GNAPNwzaoqOGdxV0DFA5pnJN1BrG31WqosagZyXcVwydYOt2v0AGAAS3dZ7LpK2C3MU4YLPdzdgGdZovbajodNtLK6VPxmj95E0fLLp1qWH7qzTtSOR/i/P-/CS6w26oHdM0R-aXaLbLQWc6vWpr/4l1uOyRtXT5qiqLEXCR2sOSmgjyHCUcXZ/j2iQR4Aaa-BqaSzbbcPDexKqHVXsdyhhgacYxMsT/VZR43KSyLFBOaR48uPjogO3A7uUMWtIL1G5o2LkiUe",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1733013809379378459",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733013809379378459&msToken=P_3oJHVHsWcRNCuzjHeTXZYoF0hsRlHJScJbffewhi-CvCokXYtYyLBoNmfwcHc-518AjywThyyK_eACtQH3sd5s9cNZRR0Ty7Vtm4gd_gYUanNozmT_ptyRoTqvbE7uiJFdsSQ=&X-Bogus=DFSzswVOaYTANxkvCPiaWsilMtYp&X-Gnarly=MOOIoAmK7pmNMUv81F6k6Rgeq8kvQdy0Mv/IUngKF9lv6jo4u-wgB7tnCYw820Bk2v4XWJime2YU1JxGuR5Kg2Rn/mq5FrX1W-okxxQJz7vAcBdysbNhqMo8xAowpiDdHapu-td9d4GxweampeeHAy-aQI1nK9y8FyjsUKPkUPZNgAx0H0FBU6uYMJPCl14bv9XAwR1Ntp9Cys1gc3Kw4ewh8DHez1y4rh0WiqAMc3gwtEu3m/4SUrZixSf7wLXzg7bpUSXu6o7y",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1733023137778861339",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495515595857889563&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcynodyo_xGFZh7an_cQ32_4fLm_8iLL_DvwaJBJy9AUv&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-TW&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1733023137778861339&msToken=xnPaVEFdat7JucvegQ6IAi_I57gCWeaY0iEheXuocajv01xWp2c0HAAjRTttP5aKL2Xt7fZTKeuzn0Vbee8-b-bf_2aeEsaDfKRo9XOLY5oflRO-EAgPRtoVo_6-JoQrqnCFQhI=&X-Bogus=DFSzswVOUWTANxkvCPiaIGilMtPr&X-Gnarly=MFngiI9KBrP4i2lQk5uh3rTMVsbfh1gMqzo6d3I-w1uKW8BABsewLoVLXkbVcEw6cgxw3xglDrRlOyyD/HYBQ3WUI0G5fgIPAXLK6/l5ci9RM/3DdoLkz2TMKh8XH0gtXihliH-oufqcHtmP8m3QTvn5nFoi79SA1IaVfY1ADdjXWBx-RfeIVtk/hJ2FDvW/xjDaOmqbXRnbfukb8xkMpM7KTBS8BKqLgtqEG0XZos0QKIor3BSSjAn/ewmcGsRlmmayoy7h/s7S",//接口
+                    "tis":tis1,//提示词
+                }
+
+            ]
+        },{
+            "shopNumName":"7店",//店号
+            "sellerId":"7495143478410054258",
+            //接口产品信息
+            "preSellList":[
+                {
+                    "productId":"1731938247747602034",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731938247747602034&msToken=wNE0cBe6jyhgIxFwiLYvrZB_YpPO-wuDy9pdrkHtboY2XtUzoiiGZF50s4xynBLKNbELo8L3BsjdK8F0WZ09R6uzzHRPMOG_1I-Uqwjmr92pYaWouk80d-l2WNgZxw==&X-Bogus=DFSzswVOEeUANxkvCSZp0NBYyBYZ&X-Gnarly=MwgUQ8D6icAHOi5K/tgtLvoOPFN/NGkx8RokOIVx6t3xnkl41srywT7kxx7Elv3aKrChGWfs9K23Ed5qL1-HChjziAlQc6xJq3RBBEf8IpkJVea1s7dz2rijKMfmWYhaZbOZpgieeYI7QkCNVriIcj-ufMggiRSfaQzxxebfNCvTsTXM6-QVMmAHhBrzl4L/AgUDbIl3nLXypcYO9hC8/GdMcjFndcz/itvtObNVIobKaZOKeR4Wulao9YE1wiHv48Ust-y5J4T2",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731938192830858866",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731938192830858866&msToken=3RNc24dgHaE-bvSipsMtUzzS9q4RQhuiD1Q3l7WoPpClGHDZGoXUEvIig8VcDYyg8NRsQevr7F5w4Hff3iXalV9mPDqKYCsYyczYIoOXTw3hH8CyjHLvNsJBLr8C-gwz2gc8lm8=&X-Bogus=DFSzswVY2mXANcpJCSZpcrBYyBTe&X-Gnarly=MR36MF0-3XdkMBJ8uFViijsTCdn8Vx7J7DpJj9JmCiqiXudoKI2bqAZDH9-zL/P-NEfL0ufii0Q571jmACcyy6OGm-OL1NDLF/QL0q4HB33nOg44nyHmb8phCUcxPgJCNoG6F-vBoQkFU44dCYzwjzc4gENQbRB-gwF/BfMm1FLrJKb2fMV5hdTLZ-axCYs2HY/yahKsHgmk-1KY73d0ywbeLg/gMqHje3ttkkezJlJKDzmdI3bhfnIxgFzSItC3lw/MhTcS032p",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1731937867649353330",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731937867649353330&msToken=8qdfDG5yegBQlDbjQAsEim9oq7lsOwHxHEWzc4u4KYE_e1CmGLsmTSRcg3wyhrb8t4PgQ4-bZPmNk4cLx5IxWiY2Df8uoWdNNg97zzK6Rub9xiCsmzrsS7vBuu6VTqg0FJmf7QiinA==&X-Bogus=DFSzswVYzuUANcpJCSZpC3BYyBOl&X-Gnarly=M5Z2hqpMgNVSLkidPuExYrGzxrXRRB7c-c3NJ0J5GO/w-/ZLWf/eW8AuPPDdxPTOUHC53TgUtyQIb3vBQAxng/BFX7UVTweDnQVg7j-dFKJl4hgm-stPVCOCGueANqJDZL8DUZ5lxEb3X5ndrcqWPvAufstrSGNrXEwVfY94ajiptId8Mps6TlQ8BioGU2dyj-pe32T-d27y4Tubbv52e3Oawzvo4zIQl7um1KiO6Q9Qq2gPLOp2uIi0UEPGyFgvNlB8zPQi2f7h",//接口
+                    "tis":tis1,//提示词
+                },
+                {
+                    "productId":"1731937798920701554",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731937798920701554&msToken=gLZ7hAqmvo9OJjoWDxEC_BtBfonLGHvafWhiG6wRM7JCJPHC9wtLkcZp8MJOHf2tOZLm1n7TNaLcNgRZpEoGmkiH7L7YvuO8z-8T6ZZxT6ijZ10wOv62iKAa6JTV2VrxK_c40F3z0A==&X-Bogus=DFSzswVOWyzANxkvCSZpj3BYyBOS&X-Gnarly=MRSPnp05ASgEKWh0kYkHMcFEm/b9CV7MjIeekDYU3MyKUnc5--LyNatFPE7kSmKJ6rz/pEXVs4YCH//vcrxmwDvnGFTrlMSbkkhhVjifyqHfR0RPXlh8Q3orCsV5xLY2LzK-f1KL2UuHc/jYagPoq/rE24w-lqwmgrI9XlI/FA04cKw0tjoDifLC90dFunra/Z7cCIqIwcjIBCnl5Ri7WZbzGn9X-pVynvyp1BvD9VN00asDSGGSP4k9KurQbKuwIr-XhE5zVFV2",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731937650757305970",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731937650757305970&msToken=bL5J6GdBCMtA8lqogHVeLKiQ7daRL6S-zLpPD3gg806xsL9zr10ldeOSDDHN0hc9_2IfKo6bilBEXH3O5sZYZ6PyZT5pgYgau6eM_4mszRuFPZO3oG7kdFxcOmJaUSRajDHtFUM=&X-Bogus=DFSzswVO6/GANxkvCSZpP3BYyBTI&X-Gnarly=MxKHFVb4FTDp//i5QqEkMyo-G-7s5326Hhy3T/S8nzoCZekeQyDFQHh1FIgSF-vDlz0GKn-vyELB5fSJATy9f3yYYq1UNgJju8PJPy1x0xQzEG5ksdc4x24XcEaWGmaGgPogrBvcLnb//0nCCnYkIUePWF514L1W-HibR9Re9JsNq26xr4gW4O0hE54bzByB0HcUiuYKPnGcm7GSMqd2cOUaYT-b06IgxdvA2W6OaKVsEyp6InRt8zgs-XA6VV-B0C6P6zEnQNsc",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731896266872882802",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731896266872882802&msToken=B3nNelDJPb5lgODJRc_TYOlOuQDlqXAAR0x2BHyijNop5BsFKUTvjyk8Yu40ycOkDYkHyLJyrLiJnO3Poq9cbmW0oHiTELJe2qVD5U1r_ze38yHHo5CFKVOaKscdF3rEH7R6MKwXwg==&X-Bogus=DFSzswVYsmGANcpJCSZpmpBYyBTq&X-Gnarly=MKoMcn7SFccVHJpmGXYf8pZGa82VED6OpKXsnTm5A3EamRoJ5d0nyd17fvfls2g27mN66bVSshIj3rfRdcw26x9r4AvOCJ05CKHHY0d9evyNIllqwapelcOcKlEd6nyfpp/P18Q-yJ4bXOssASWvTSbShGyChpXHL1JJ/i1NTfUEW2VH12WmG/QgF9bNQJsglJGRWYNbTv63cfA/avC2D0poQJATdwBZPSXSOaMu64u5cModbt4ctUxt/XJSSgkXhH1y/nXv0oUr",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731894371956065906",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731894371956065906&msToken=8qFIW0WjkPlnIm35Ok3wY38hL0dSJUv1IEFyXOs976YN_HkvD1dza4rcyp6dkATdQ5Wx6FIzmAn-BP5Tn3unaUaFRpP-6Sm_wj0eRKmvn_bo4jjIIcvtiSlgkH4MNU-7AFnHGes=&X-Bogus=DFSzswVYArsANcpJCSZpiNBYyBPR&X-Gnarly=MJP40L-XwHIH70JbCe162R5ALP7XNJg67/8arslSHE-EKF2m59WcTtAR-XdkDNhMXlzmdFLbINL91dtDqMm9-fmBhdG11BsRJ9cQnEwuI/xa4btCgn6NgO7hwe5Q26Hnqo7vGBY5bQeQdmko7xx3bHKjv6BtwzL6aVJHKr57k/Uo2Pa6V-fZlM4yv7xR3WMBO4szD0VXn1-mv9JIej33QcUdconXAfR34arKInwytDntaGCk9ZbGoZzbxJDrLaHJA0HsNRN71C0k",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731911826646402674",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731911826646402674&msToken=jUk2lvftRRlC2ik0-fRPGoOOooPxXiHu1W3ro2Df-3OOezFwoJMQtDBZ0Mj2N4IDUyOsl1DaCK5X0iEmgtSS3EAu3CCIwfboLsajmdsVYQPohodMuuokTs7XNGMzXipMbSjUPzILmA==&X-Bogus=DFSzswVYxAsANcpJCSZ8-rBYyBTD&X-Gnarly=MJZ11l/8wEFR8QlTa4sQjZCoUTijd-XQtzNwvjcm/ma6Sk4w8dqfY4owcJyi/cJcy/vvcdw5bF9mh9GSZCM7tKU10daTjtB1Z66EBU5SeKcGRmiklmFgxKSX-9omhCwAk6Ooe1OYRvYuJskX92ILWYWmH1/8qVNo4OaKpy8uHqSdlXOGYqyP8GxJWnr6poD343EJFhd8Xxx308/iAD3hcyYqK30w1hfReO//wSFROppwGYWZyqlyuD5l1aaQamA3ceB5o7SkwM3M",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731911411067291250",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731911411067291250&msToken=MYMzab3_26isidk0-4D9nQ2HEgUOetJgaqaJBPb1pXpegtMYry2Iktb6ZkxkFqiSVbJWU3bvDxEq7GOgbjkSL4PYcVPrcenjm2qahoebvySs7Byl_L3_JYGlxY6l_Z6COWSlEfo=&X-Bogus=DFSzswVOOevANxkvCSZ8lrBYyBTO&X-Gnarly=MFMJapSzRbC8pKS-EwS4jiai5qO-h5oUznVDybmUZfh5PGc7/vPQQGwOdVqROJqQKgU/2dfudpFVQtrjjvwoljK-P4mJ1HGKz4ruNfyvFlGXgwAJ-HpTQtKgVjaTxtiq75fNg/OMzXVoaJzti19G8cTIzp8pvTQ/uD2cG0Xb4G1wGrGcQnScey44NgCCUIZPARFJJEJ3feUuueEx63aI5UKu1tI/AMFA1GNXUzQIyScMMxiqwq791lcUySVM9zlxsdufnVXt31PK",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731912382266443378",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731912382266443378&msToken=ReJXRAREvUEsSPSemxwNSjxk6XYM6ffC20kN1eRhR8olbFq8QJ_N6Gk6MJD4Rs62sdmADC97AD9IVJ-a1lDke66QZAhCbtazoAObZ74-FcnjyloNRP55tNTEVfWiz9Nc1AWaxKRYvA==&X-Bogus=DFSzswVO1cTANxkvCSZ83rBYyBPj&X-Gnarly=MHPUQrHhKIK-2jjFTTsb90AsF2atQ2smEBbbOxovSBxP/Q8fPgypLAvTuxWi3zZmdS9oNX045ZfdjXD8lpRrdCxED18xn6yozW9dBBIK7BOYHkNufggr0gBPKnMRc-zyy77HNSnb7vMJekOrQ9XzgNPPp9GEXxzfJ8bf35zANW-Ol/M7JZLg5Gjw9wtvSpnJs0AzSBA4dExWXPtCtWne/8eXDP29J9u7NOBYNyRDcqoJV4or7AF-eFOkwHTAx8zT/PHpvkANVu4D",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731893031220905586",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731893031220905586&msToken=ujl3Ro0Lu4UAJoEQ-Azx66JU8uDD8sb1jeKuvQtRSvYJg82xrNdRYlaNFyEYYE9_P3uWvFoZay7MH9OasFcABcvnxb-ORgI8NKwHg8_LJZtS-iFtg53QS9wH3iDpMjnjaXUzgqs=&X-Bogus=DFSzswVYcttANcpJCSZ8IrBYyBTH&X-Gnarly=MwA-zH/RIWGNB3Da6Uta8oJxcBX/u6xPp88xt5Iq6fPceNJpDbyuc45AZjRIk88MIp7ho7OlWP-mfiU-DXMa0HWmauC6Z4Sc7dw-esKBm3AgUt7c6EGc7aNwXXVyAuVdUUhI1uibWofwDShX7EU1jMPRzoTxxgaO0XKT7w/GH2089vIUiiJsueH9HOgfnSvfuEaSxEwVkYtjZD/Dk/6rn5pwu2CVGxS9DdUfMncmet/bCXh6i5TpfFKMMvvq97qfFZ3VtVwX5Vz7",//接口
+                    "tis":tis1,//提示词
+                },{
+                    "productId":"1731892963979331186",
+                    "jieKou":"https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/get?locale=zh-CN&language=zh-CN&oec_seller_id=7495143478410054258&aid=6556&app_name=i18n_ecom_shop&fp=verify_mcvhlzbp_EOKifNoQ_q6vh_4rxb_8iCo_FT2q6oqtQ37t&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F134.0.0.0%20Safari%2F537.36&browser_online=true&timezone_name=Asia%2FBangkok&product_id=1731892963979331186&msToken=ILZ6glJIKaqPPzPf4_VDWrqJmcc_DRuZZHezdcWza1pUevWyMvaB2nGvkusTrOrCMSayusR7n0uyeOfyeZDU6NiD-8yFsbsgwDNGPjzWvQ0CBdPq5OBoBhvcTNUfUOiXT6_5RZY=&X-Bogus=DFSzswVO4MTANxkvCSZ8QNBYyBOd&X-Gnarly=MFpZJCMUxYZnjyFNp8FpBLWu6/xpKQ-Qu0/2UJ2GNAZ013t8z-He/yqBg/owW4AzFpnBLz7IaWn4Jp8sa6QCvBwFX0tJ/rDYLekGZdkcEsRpTAh21daxWRpBC5cqOt4blduXaIOx/4iqyYzlcP88u3s7-Rx7Y1coJoAQh5Jb1FRLZx0RpnLLfF-mg65e5d1utc/Iv3o6o2GTKqV0pwtELzBER5vbt2Bl4WWi4B/uPZYhYh1VMBVS4ko9MBx9gEo7ZJldRmTasHES",//接口
+                    "tis":tis1,//提示词
+                },
+            ]
+        },
+
+    ]
+
+    let preSellList=getPreSellList(sellerId,allShopProductObj)//根据店id获取预售信息
+    let presellSkus = []//预售的sku的数组对象 sku、days
+
+    main()
+    //主函数
+    async function main(){
+
+        let data24 = await getProductList()//获取产品列表
+        await countPreOder(data24)//统计预售数量
+        ui = await creatUi()
+
+
+    }
+    //根据店id获取预售信息
+    function getPreSellList(id,obj){
+        // 遍历数组对象
+        for (let item of obj) {
+            // 检查当前项的sellerId是否匹配传入的id
+            if (item.sellerId === id) {
+                // 如果匹配，返回该项目的preSellList
+                return item.preSellList;
+            }
+        }
+        // 如果没有找到匹配的sellerId，可以返回null或undefined，或者根据需求返回空数组
+        return null; // 或者 return []; 根据你的需求决定
+    }
+    //获取店铺id
+    function getSelleriId(){
+        const cookieString = document.cookie
+        console.log("cookie",cookieString)
+        function getCookieValue(cookieString, name) {
+            const cookies = cookieString.split('; ');
+            for (const cookie of cookies) {
+                const [cookieName, cookieValue] = cookie.split('=');
+                if (cookieName === name) {
+                    return cookieValue;
+                }
+            }
+            return null;
+        }
+
+        const globalSellerId = getCookieValue(cookieString, 'global_seller_id_unified_seller_env');
+        console.log(globalSellerId); // 输出: 7495905796795238859
+        return globalSellerId
+    }
+
+    //批量编辑产品
+    async function allEditProduct(){
+        await Promise.all(
+            allProductInfo.map((product) => {
+                editProduct(product.rightProductInfo,product.product_id)//编辑产品
+
+            })
+        );
+
+    }
+    //添加预售内容 #添加预售单独
+    async function addPreData(presellSkusArrayObj,skus){
+        console.log("65",presellSkusArrayObj)
+        console.log("57",skus)
+        await Promise.all(
+            skus.map((sku) => {
+                // 查找 presellSkusArrayObj 中是否包含当前 sku.seller_sku
+                const presellItem = presellSkusArrayObj.find((item) =>{
+                    console.log("71",item.sku)
+                    console.log("72",sku.seller_sku)
+                    console.log(351,item.sku.includes(sku.seller_sku))
+                    if(item.sku==sku.seller_sku){
+                        return true
+                    }else{
+                        return false
+                    }
+
+                });
+                // 如果找到匹配项，则设置 pre_order_ship_day 为对应的 days，否则设为 1
+                console.log("73",presellItem)
+                sku.pre_order_ship_day = presellItem ? presellItem.days : 0;//预售天数
+
+                return sku;
+            })
+        );
+    }
+    //批量添加预售内容
+    async function allAddPreData(){
+        await Promise.all(
+            allProductInfo.map((e, i) => {
+                let res = addPreData(presellSkus,e.rightProductInfo.skus)
+                let id = e.rightProductInfo.product_id
+                console.log("90",id)
+                const item = preSellList.find(x => x.productId === id);
+                console.log("4983",item)
+                if (item) {
+                    item.tis = "3-预售信息整理完成";
+                }
+
+                ui.updataData()
+                return res
+            })
+        );
+    }
+    //处理所有产品信息
+    async function processAllProductInfo(){
+        await Promise.all(
+            allProductInfo.map((e, i) => processProductInfo(e.productInfo, i))
+        );
+    }
+    //并行获取所有产品信息
+    async function getAllProductInfo(){
+        console.log("并行获取所有产品信息开始")
+        const results = await Promise.all(
+            preSellList.map((item) => {
+                return getProductInfo(item.jieKou,item.productId)//获取产品信息
+            })
+        );
+        // 修正3: 将结果存入allProductInfo
+        allProductInfo = results.filter(item => item !== null);
+
+        console.log("并行获取所有产品信息结束", allProductInfo);
+        return
+    }
+
+    //ui界面
+    async function creatUi(){
+        // 创建主容器
+        // 存储原始高度以便恢复
+        let originalHeight = '500px';
+        const uiContainer = document.createElement('div');
+        uiContainer.id = 'custom-ui-container';
+        Object.assign(uiContainer.style, {
+            position: 'fixed',
+            top: '100px',
+            left: '100px',
+            width: '400px',
+            height: originalHeight,
+            backgroundColor: '#f5f5f5',
+            border: '1px solid #ccc',
+            borderRadius: '5px',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            resize: 'both', // 允许双向调整大小
+            zIndex: '9999'
+        });
+
+
+        // 创建标题栏
+        const titleBar = document.createElement('div');
+        titleBar.id = 'title-bar';
+        Object.assign(titleBar.style, {
+            padding: '8px 12px',
+            backgroundColor: '#e0e0e0',
+            borderBottom: '1px solid #ccc',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            cursor: 'move'
+        });
+
+        // 标题文本
+        const titleText = document.createElement('span');
+        titleText.id = 'title-text';
+        titleText.textContent = '预售功能';
+        titleText.style.fontWeight = 'bold';
+
+        // 按钮容器
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '8px';
+
+        // 缩小按钮
+        const minimizeBtn = document.createElement('button');
+        minimizeBtn.textContent = '－';
+        Object.assign(minimizeBtn.style, {
+            width: '24px',
+            height: '24px',
+            border: 'none',
+            borderRadius: '3px',
+            backgroundColor: '#f0f0f0',
+            cursor: 'pointer'
+        });
+
+        // 放大按钮 (初始隐藏)
+        const maximizeBtn = document.createElement('button');
+        maximizeBtn.textContent = '＋';
+        Object.assign(maximizeBtn.style, {
+            width: '24px',
+            height: '24px',
+            border: 'none',
+            borderRadius: '3px',
+            backgroundColor: '#f0f0f0',
+            cursor: 'pointer',
+            display: 'none'
+        });
+
+        // 拖拽按钮
+        const dragBtn = document.createElement('button');
+        dragBtn.textContent = '≡';
+        Object.assign(dragBtn.style, {
+            width: '24px',
+            height: '24px',
+            border: 'none',
+            borderRadius: '3px',
+            backgroundColor: '#f0f0f0',
+            cursor: 'move'
+        });
+
+        // 组装标题栏
+        buttonContainer.appendChild(minimizeBtn);
+        buttonContainer.appendChild(maximizeBtn);
+        buttonContainer.appendChild(dragBtn);
+        titleBar.appendChild(titleText);
+        titleBar.appendChild(buttonContainer);
+        uiContainer.appendChild(titleBar);
+
+        // 创建内容区域
+        const contentArea = document.createElement('div');
+        contentArea.id = 'content-area';
+        Object.assign(contentArea.style, {
+            flex: '1',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+        });
+
+
+
+        // 参数显示板块
+        const paramsSection = document.createElement('div');
+        paramsSection.id = 'params-section';
+        Object.assign(paramsSection.style, {
+            padding: '12px',
+            borderBottom: '1px solid #ddd',
+            backgroundColor: '#fff',
+            overflowY: 'auto',
+            flex: '0 0 100px'
+        });
+
+        // 获取商品信息按钮
+        const getProductInfoBtn = document.createElement('button');
+        getProductInfoBtn .textContent = '获取商品信息';
+        Object.assign(getProductInfoBtn.style, {
+            padding: '8px 16px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '3px',
+            cursor: 'pointer'
+        });
+        // 监听获取商品信息按钮（未完成
+        getProductInfoBtn.addEventListener('click', async() => {
+            await getAllProductInfo()//获取所有产品信息
+            await processAllProductInfo()//并行处理所有产品信息
+
+        });
+
+        // 添加示例参数
+        const paramsList = document.createElement('div');
+        paramsList.id = 'params-list';
+        paramsSection.appendChild(paramsList);
+        paramsSection.appendChild(getProductInfoBtn);
+
+        // 更新参数函数
+        function updateParams() {
+            //console.log("更新参数函数")
+            const params = {
+                '商品总数': allCount ,
+                '预售数量': preorderCount,
+                '支持预售商品数': supportPreorderCount
+            };
+
+            paramsList.innerHTML = '';
+            for (const [key, value] of Object.entries(params)) {
+                const paramItem = document.createElement('div');
+                paramItem.style.marginBottom = '5px';
+                paramItem.innerHTML = `<strong>${key}:</strong> ${value}`;
+                paramsList.appendChild(paramItem);
+            }
+        }
+
+        // 对象数据显示板块
+        const dataSection = document.createElement('div');
+        dataSection.id = 'data-section';
+        Object.assign(dataSection.style, {
+            flex: '1',
+            padding: '12px',
+            borderBottom: '1px solid #ddd',
+            backgroundColor: '#fafafa',
+            overflowY: 'auto'
+        });
+
+        // 创建表格
+        const dataTable = document.createElement('div');
+        dataTable.id = 'data-table';
+        dataTable.style.display = 'grid';
+        dataTable.style.gridTemplateColumns = '1fr 1fr';
+        dataTable.style.gap = '8px';
+        dataTable.style.marginBottom = '10px';
+
+        // 表头
+        const header1 = document.createElement('div');
+        header1.textContent = '商品ID';
+        header1.style.fontWeight = 'bold';
+        header1.style.padding = '4px';
+        header1.style.backgroundColor = '#eee';
+
+        const header2 = document.createElement('div');
+        header2.textContent = '状态';
+        header2.style.fontWeight = 'bold';
+        header2.style.padding = '4px';
+        header2.style.backgroundColor = '#eee';
+
+        dataTable.appendChild(header1);
+        dataTable.appendChild(header2);
+        dataSection.appendChild(dataTable);
+
+        // 添加示例数据
+        function generateSampleData() {
+            return preSellList.map(item => ({
+                id: item.productId,
+                status: item.tis
+            }));
+        }
+
+        function updateDataTable(data) {
+            //console.log("更新表格数据")
+            // 清空现有数据（保留表头）
+            while (dataTable.children.length > 2) {
+                dataTable.removeChild(dataTable.lastChild);
+            }
+
+            // 添加新数据
+            data.forEach(item => {
+                const idCell = document.createElement('div');
+                idCell.textContent = item.id;
+                idCell.style.padding = '4px';
+                idCell.style.borderBottom = '1px solid #eee';
+
+                const statusCell = document.createElement('div');
+                statusCell.textContent = item.status;
+                statusCell.style.padding = '4px';
+                statusCell.style.borderBottom = '1px solid #eee';
+
+                // 根据状态设置颜色
+                if (item.status === '缺货') statusCell.style.color = 'red';
+                else if (item.status === '热卖') statusCell.style.color = 'green';
+                else if (item.status === '预售') statusCell.style.color = 'orange';
+
+                dataTable.appendChild(idCell);
+                dataTable.appendChild(statusCell);
+            });
+        }
+
+        // 输入板块
+        const inputSection = document.createElement('div');
+        inputSection.id = 'input-section';
+        Object.assign(inputSection.style, {
+            padding: '12px',
+            backgroundColor: '#fff',
+            overflowY: 'auto',
+            flex: '0 0 150px'
+        });
+
+
+        // SKU输入
+        const skuLabel = document.createElement('label');
+        skuLabel.textContent = 'SKU(按英文逗号,分隔):';
+        skuLabel.style.display = 'block';
+        skuLabel.style.marginBottom = '5px';
+
+        const skuTextarea = document.createElement('textarea');
+        skuTextarea.id = 'sku-input';
+        Object.assign(skuTextarea.style, {
+            width: '100%',
+            height: '40px',
+            marginBottom: '10px',
+            padding: '5px',
+            border: '1px solid #ccc',
+            borderRadius: '3px',
+            resize: 'none'
+        });
+
+        // 预售天数输入
+        const daysLabel = document.createElement('label');
+        daysLabel.textContent = '预售天数(按英文逗号,分隔):';
+        daysLabel.style.display = 'block';
+        daysLabel.style.marginBottom = '5px';
+
+        const daysTextarea = document.createElement('textarea');
+        daysTextarea.id = 'days-input';
+        Object.assign(daysTextarea.style, {
+            width: '100%',
+            height: '40px',
+            marginBottom: '10px',
+            padding: '5px',
+            border: '1px solid #ccc',
+            borderRadius: '3px',
+            resize: 'none'
+        });
+
+        // 提交按钮
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = '提交';
+        Object.assign(submitBtn.style, {
+            padding: '8px 16px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '3px',
+            cursor: 'pointer'
+        });
+
+        // 组装输入区域
+        inputSection.appendChild(skuLabel);
+        inputSection.appendChild(skuTextarea);
+        inputSection.appendChild(daysLabel);
+        inputSection.appendChild(daysTextarea);
+        inputSection.appendChild(submitBtn);
+
+        // 将各板块添加到内容区域
+        contentArea.appendChild(paramsSection);
+        contentArea.appendChild(dataSection);
+        contentArea.appendChild(inputSection);
+        uiContainer.appendChild(contentArea);
+
+        // 添加到文档
+        document.body.appendChild(uiContainer);
+
+        // 初始化数据
+        updateParams();
+        updateDataTable(generateSampleData());
+
+
+
+        // 定时更新参数 #延时 #定时
+        // setInterval(()=>{
+        //     updateDataTable(generateSampleData())
+        // }, 1000);
+
+        // 拖拽功能
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        dragBtn.addEventListener('mousedown', startDrag);
+        titleBar.addEventListener('mousedown', (e) => {
+            if (e.target === titleBar || e.target === titleText) {
+                startDrag(e);
+            }
+        });
+
+        function startDrag(e) {
+            isDragging = true;
+            offsetX = e.clientX - uiContainer.getBoundingClientRect().left;
+            offsetY = e.clientY - uiContainer.getBoundingClientRect().top;
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            uiContainer.style.left = (e.clientX - offsetX) + 'px';
+            uiContainer.style.top = (e.clientY - offsetY) + 'px';
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+        // 最小化/最大化功能
+        minimizeBtn.addEventListener('click', () => {
+            // 调整容器高度为仅标题栏高度
+            uiContainer.style.height = '37px';
+            contentArea.style.display = 'none';
+            minimizeBtn.style.display = 'none';
+            titleText.style.display = 'none';
+            maximizeBtn.style.display = 'block';
+        });
+
+        maximizeBtn.addEventListener('click', () => {
+            uiContainer.style.height = originalHeight;
+            contentArea.style.display = 'flex';
+            maximizeBtn.style.display = 'none';
+            titleText.style.display = 'block';
+            minimizeBtn.style.display = 'block';
+        });
+
+        // 提交按钮功能 #按钮按下 #按钮事件 #点击按钮 #按钮监听
+        submitBtn.addEventListener('click', async() => {
+            const skuValue = skuTextarea.value.trim();
+            const daysValue = daysTextarea.value.trim();
+
+            // 检查两个输入框是否都为空
+            if (!skuValue && !daysValue) {
+                alert('请输入SKU和预售天数！');
+                return;
+            }
+
+            // 检查SKU输入框是否为空
+            if (!skuValue) {
+                alert('请输入SKU！');
+                return;
+            }
+
+            // 检查预售天数输入框是否为空
+            if (!daysValue) {
+                alert('请输入预售天数！');
+                return;
+            }
+
+            // 如果两个输入框都有值，则执行原来的逻辑
+            const array391 = skuValue.split(",").map(line => line.trim());
+            console.log("array391", array391);
+            const array394 = daysValue.split(",").map(line => line.trim());
+
+            // 清空之前的预设SKU数组
+            presellSkus = [];
+
+            for (let i = 0; i < array394.length; i++) {
+                let obj = {}
+                obj.sku = array391[i]
+
+                // 确保 days 是数值类型
+                const daysNum = Number(array394[i]);
+                if (isNaN(daysNum)) {
+                    alert(`第 ${i + 1} 行的预售天数不是有效数字！`);
+                    return;
+                }
+                obj.days = daysNum; // 存储为 number 类型
+
+                presellSkus.push(obj)
+            }
+            console.log("402", presellSkus)
+            await allAddPreData()//批量添加预售内容
+            console.log("51-2",allProductInfo)
+            await allEditProduct()//批量编辑产品
+
+            console.log(`预售信息:${JSON.parse(presellSkus)}`);
+            alert(`提交成功!\nSKU: ${skuValue}\n预售天数: ${daysValue}`);
+        });
+
+        // 添加关闭按钮功能（虽然需求没要求，但通常需要）
+        dragBtn.addEventListener('dblclick', () => {
+            if (confirm('确定要关闭此面板吗?')) {
+                document.body.removeChild(uiContainer);
+            }
+        });
+        //更新数据
+        function updataData(){
+            updateDataTable(generateSampleData());
+        }
+        return {
+
+            updataData
+
+        }
+    }
+    //统计预售数量
+    async function countPreOder(data){
+        console.log("37",data)
+        allCount=data.length
+        preorderCount = Object.values(data).filter(
+            item => item.pre_order_status === 1
+        ).length;
+        supportPreorderCount= preSellList.length
+        console.log(`总商品数为${allCount}，预售数为${preorderCount},支持预售的商品数为${supportPreorderCount}`)
+
+    }
+    //获取商品列表 #商品列表获取
+    async function getProductList(){
+        return new Promise((resolve)=>{
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: `https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/products/list?locale=zh-CN&language=zh-CN&oec_seller_id=${sellerId}&aid=6556&device_platform=web&cookie_enabled=true&screen_width=1920&screen_height=1080&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_online=true&timezone_name=Asia%2FBangkok&tab_id=1&page_number=1&page_size=50&sku_number=1&product_sort_fields=3&product_sort_types=0&same_product_page_size=3`,
+                headers: {
+                    "Content-type": "application/json"
+                },
+                data:JSON.stringify(),
+                onload: function(response){
+                    console.log("获取产品列表成功",response.responseText);
+
+                    let res = JSON.parse(response.responseText)
+                    let data = res.data.products
+                    console.log("50",data);
+                    resolve(data)
+                },
+                onerror: function(response){
+                    console.log("请求失败");
+                }
+            })
+        })
+    }
+    //处理产品信息
+    async function processProductInfo(data,i488){
+        let id = data.product_id
+        console.log(`处理产品${id}信息开始`,data)
+        let obj = {}
+        obj.product_id = data.product_id
+        obj.product_name = data.product_name
+        obj.category_id =data.categories[data.categories.length - 1].id
+        obj.brand_id = data.brand?.id || "0";
+        obj.model = data.model
+        obj.description = data.description
+        obj.images = data.images
+        obj.images.forEach(img => {
+            delete img.thumb_url_list;
+            delete img.url_list;
+        });
+        if (data.video?.id !== undefined) {
+            obj.video = data.video.id;
+            console.log(`${id}没有视频`)
+        }
+        obj.packing_list = data.packing_list
+        obj.warranty_period = data.warranty_period.id
+        obj.warranty_policy = data.warranty_policy
+        obj.product_properties = []
+        obj.package_weight = data.package_weight
+        obj.package_dimension_unit = data.package_dimension_unit
+        obj.package_height= data.package_height
+        obj.package_width = data.package_width
+        obj.package_length = data.package_length
+        obj.is_cod_open = data.is_cod_open
+
+        obj.sale_properties = data.sale_properties
+        //直接操作 obj.sale_properties 数组
+        if (obj.sale_properties && Array.isArray(obj.sale_properties)) {
+            obj.sale_properties.forEach(property => {
+                // 重命名 name -> text
+                property.text = property.name;
+                delete property.name;
+
+                // 删除不需要的字段
+                delete property.is_enum;
+                delete property.is_input;
+                delete property.is_necessary;
+                delete property.is_multi_choice;
+
+                // 处理 values 数组
+                if (property.values && Array.isArray(property.values)) {
+                    property.values.forEach(value => {
+                        // 简化图片数据
+                        if (value.image) {
+                            // 只保留需要的图片字段
+                            value.image = {
+                                uri: value.image.uri,
+                                width: value.image.width,
+                                height: value.image.height
+                            };
+                        }
+
+                        // 删除不需要的字段 (如果存在)
+                        delete value.thumb_url_list;
+                        delete value.url_list;
+                    });
+                }
+            });
+        }
+        obj.warehouse_id = data.warehouse.warehouse_id
+        obj.product_source = 4
+        obj.size_chart_type = data.size_chart_type
+        obj.logistics_services = []
+        obj.skus = data.skus
+        // 直接操作 obj.skus 数组
+        if (obj.skus && Array.isArray(obj.skus)) {
+            obj.skus = obj.skus.map(sku => {
+                // 创建新的 base_price 结构
+                const basePrice = sku.base_price || {};
+                const newBasePrice = {
+                    list_price: basePrice.sale_price || "",
+                    list_price_display: "",
+                    sale_price: basePrice.sale_price || "",
+                    sale_price_display: "",
+                    localized_dutiable_price: basePrice.localized_dutiable_price || "",
+                    region: basePrice.region || "TH",
+                    currency: basePrice.currency || "THB"
+                };
+
+                // 简化 quantities 结构
+                const newQuantities = (sku.quantities || []).map(q => ({
+                    available_quantity: q.available_quantity || 0,
+                    quantity_variation: 0, // 默认值为 0
+                    warehouse_id: q.warehouse_id || ""
+                }));
+
+                // 返回新的 SKU 结构
+                return {
+                    id: sku.id || "",
+                    seller_sku: sku.seller_sku || "",
+                    properties: sku.properties || [],
+                    base_price: newBasePrice,
+                    quantities: newQuantities,
+                    gtin: sku.gtin || {},
+                    pre_order_ship_day: sku.pre_order_ship_day || 0,
+                    purchase_order_quantity_limit: {} // 添加空对象
+                };
+            });
+        }
+        obj.tab_id = 1
+        console.log("27",obj)
+        allProductInfo[i488].rightProductInfo=obj
+        const item = preSellList.find(x => x.productId === id);
+        console.log("4983",item)
+        if (item) {
+            item.tis = "2-商品信息编辑完成";
+        }
+
+        ui.updataData()
+    }
+
+    //获取产品信息
+    async function getProductInfo(url,id){
+        //console.log("获取产品信息开始")
+        //console.log(url)
+        return new Promise((resolve)=>{
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: url,
+                headers: {
+                    "Content-type": "application/json"
+                },
+                data:JSON.stringify(),
+                onload: function(response){
+                    //console.log("获取产品信息成功",response.responseText);
+
+                    let res = JSON.parse(response.responseText)
+                    let data = res.data.product
+                    //console.log("50",data);
+                    let obj = {}
+                    obj.product_id = data.product_id
+                    obj.productInfo = data
+
+                    const item = preSellList.find(x => x.productId === id);
+                    //console.log("4983",item)
+                    if (item) {
+                        item.tis = "1-商品信息已获取";
+                    }
+
+                    ui.updataData()
+
+                    resolve(obj)
+                },
+                onerror: function(response){
+                    console.log("请求失败");
+                }
+            })
+        })
+
+    }
+    //编辑产品 #上传产品 #编辑产品单个 #编辑产品函数
+    async function editProduct(data,id){
+        console.log("开始编辑产品")
+        console.log("产品信息为：",data)
+        console.log("产品id为：",id)
+        //店铺号未动态
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: `https://api16-normal-sg.tiktokshopglobalselling.com/api/v1/product/local/product/edit?locale=zh-CN&language=zh-CN&oec_seller_id=${sellerId}`,
+            headers: {
+                "Content-type": "application/json"
+            },
+            data:JSON.stringify(data),
+
+            onload: function(response){
+                console.log(`编辑产品${id}成功`);
+                console.log(response.responseText);
+                //console.log("code",JSON.parse(response.responseText).code)
+                let code = JSON.parse(response.responseText).code
+
+                const item = preSellList.find(x => x.productId === id);
+                console.log("4983",item)
+                if (item && code == 0) {
+                    item.tis = "end-预售设置成功";
+                }else{
+                    item.tis = "end-预售设置失败";
+                }
+                ui.updataData()
+            },
+            onerror: function(response){
+                console.log("请求失败");
+            }
+        })
+    }
+
+})();
