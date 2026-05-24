@@ -1,4 +1,4 @@
-//v0.5.9
+//v0.6.0-beta.1
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
@@ -31,12 +31,9 @@
 let debugMode = false
 
 let caigoubiao = "采购表" //"采购表"的表名
-let itemList = "货物清单" //"货物清单"的表名
-let gnSheetName = "功能表" //"货物清单"的表名
+let gnSheetName = "功能表" //"功能表"的表名
 let caigoubiaosheet = Application.Sheets.Item(caigoubiao)//采购表对象
-let huoWuQingDanSheet = Application.Sheets.Item(itemList)//"货物清单"表对象
 let gnSheet = Application.Sheets.Item(gnSheetName) //功能表对象
-const fileUrl = "https://365.kdocs.cn/l/cv7kiFAkhkC2" //此工作簿链接,运算需要
 
 let colNumID018 = getCol("ID018", 1, "功能表")//储存着"行ID"的列号字母
 let colNumID014 = getCol("ID014", 1, "功能表")//存储着"脚本配置"的值的列号字母
@@ -533,7 +530,6 @@ let huoWuQingDanArrayObj = [
 let caigoubiaoData = []//储存采购表数据
 let huoWuQingDanData = []//存储货物清单数据
 let caigoubiaoDataMax = []//扁平化后的采购数据
-let huoWuQingDanDataMax = []//扁平化后的货物清单数据
 let dataQingXi1Array = []//储存要清理的品的下标
 let imageRowsArray = []//储存图片行的下标
 let num0RowsArray = []//储存数量为0的sku的下标
@@ -641,72 +637,34 @@ function beforeRunCheck() {
   }
 }
 
-//数据扁平化处理并赋值 #扁平化货物清单
-function huoWuQingDanFuncPart1() {
-  //console.log("开始扁平化处理货物清单数据并赋值")
-  //huoWuQingDanSheet.Delete()
-
-  //console.log(7611, huoWuQingDanData[1].length)
-  //数组扁平处理
-  huoWuQingDanDataMax = arraysFunc(huoWuQingDanData)
-  huoWuQingDanDataMax.splice(1, 1);//删除没用的那列
-  //赋值
-  //console.log("扁平化处理后的数据408", huoWuQingDanDataMax[1].length)
-  let weight = huoWuQingDanDataMax[0].length
-  let height = huoWuQingDanDataMax.length
-  let columnZm = numberToLetters(weight)
-  //console.log("A1:" + columnZm + height)
-  //aimSheet.Range("A1").Value2=1231
-  //console.log("414")
-  huoWuQingDanSheet.UsedRange.UnMerge()
-  huoWuQingDanSheet.UsedRange.ClearFormats()
-  huoWuQingDanSheet.UsedRange.Delete(xlShiftUp)
-  huoWuQingDanSheet.UsedRange.Delete(xlShiftToLeft)
-
-  //console.log("417")
-
-  //huoWuQingDanSheet.UsedRange.Delete()
-  //console.log("416")
-  huoWuQingDanSheet.Range("A1:" + columnZm + height).Value2 = huoWuQingDanDataMax
-  //console.log("416")
-  //console.log("结束扁平化处理货物清单数据并赋值")
-}
-
 //货物清单专属线程 #货物清单f #货物清单函数 #huoWuQingDanFuncf #货物清单线程 #货物清单进程 #货物清单流程
 async function huoWuQingDanFunc() {
-  // console.log(`货物清单专属线程开始`) // 阶段日志：噪声，排查时再开
   huoWuQingDanData = JSON.parse(JSON.stringify(caigoubiaoData)) //把采购表数据给一份给货物清单 #复制一份 #货物清单数据转移
-
-  //先把货物清单删除并新建
-  if (huoWuQingDanSheet) {
-    huoWuQingDanSheet.Delete()
-  }
-  huoWuQingDanSheet = ActiveWorkbook.Sheets.Add(null, ActiveWorkbook.Worksheets.Item(Worksheets.Count), null)
-  huoWuQingDanSheet.Name = "货物清单"
-
 
   huoWuQingDanFuncPart0_1()//清洗出货物清单需要的数据
 
-
   //如果要求了隔品同行则执行
   if (huoWuQingDanVer == "隔品隔行") {
-    //在名为arrayObj的obj中，找"arrayObj[x].Name"为"款式编码"的"arrayObj[x].ID"的值，并赋值给常量"kuanShiCodeColId"
     const kuanShiItem = arrayObj.find(item => item.Name === "款式编码");
     const kuanShiCodeColId = kuanShiItem ? kuanShiItem.ID : null;
-
     huoWuQingDanNewVer(kuanShiCodeColId)//货物清单隔品空行处理
   }
 
   delHuoQingDanDuoYuLie()//删除货物清单多余列 #删除多余列
 
-  console.log("货物清单对象数据:", JSON.stringify(huoWuQingDanData))
-
-  huoWuQingDanFuncPart1()//数据扁平化处理并赋值
-
-  await huoWuQingDanFuncPart2()//进一步处理
-  // console.log("612") // 调试用：噪声数字
-  await exportHuoWuQingDan(fileUrl)//导出货物清单
-  // console.log(`货物清单专属线程结束`) // 阶段日志：噪声，排查时再开
+  //把货物清单数据发送到后端云对象生成PDF
+  let respGeneratePdf = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/wps/generatePdf', {
+    "huoWuQingDanData": huoWuQingDanData,
+    "qiShu": qiShu21,
+    "guoJia": guoJia,
+    "postMothod": postMothod26
+  })
+  let generatePdfResult = respGeneratePdf.json()
+  console.log("后端generatePdf返回:", JSON.stringify(generatePdfResult))
+  if (generatePdfResult.result) {
+    pdfLink = generatePdfResult.result
+    console.log("PDF链接:", pdfLink)
+  }
 }
 
 //删除货物清单多余列 #货物清单删除多余列
@@ -779,116 +737,6 @@ function huoWuQingDanNewVer(kuanShiCodeColId1) {
 
 }
 
-//导出货物清单
-async function exportHuoWuQingDan(source1) {
-  const source = source1
-  //console.log(`导出货物清单任务开始`)
-  //保存工作簿
-  Application.ActiveWorkbook.Save()
-
-  // 文件另存
-  let url = KSDrive.createFile(KSDrive.FileType.ET, {
-    source: source,
-    name: "货物清单",
-    dirUrl: 'https://wps365.kdocs.cn/space/680485823/2288177622/409694632725'
-  })
-  //console.log("新货物清单的url", url)
-  const match = url.match(/\/l\/([a-zA-Z0-9]+)$/);
-  const result = match ? match[1] : null;
-  //console.log(result); // 输出: "chh8lTjkBAh7"
-
-  //    let resp1 = HTTP.post('https://fc-mp-7ea0ed32-cca6-4b00-a6e8-4c90127c1aff.next.bspapp.com/v1/sendRequestToWps1', {
-  //     "script_id": "V2-1MT03X2nK0UgMXpSJOu0rI",
-  //     "file_id": result
-  //   })
-
-  // console.log(resp1.json())
-  let resp2 = HTTP.post(`https://wps365.kdocs.cn/api/v3/ide/file/${result}/script/V2-1MT03X2nK0UgMXpSJOu0rI/sync_task`, {})
-
-  //用AirScript1.0来导出pdf，获取pdf临时链接
-  let pdfLinLink = resp2.json().data.result
-  //console.log(`要上传到服务器的临时pdf链接是${pdfLinLink}`)
-
-
-  //导出pdf
-  //console.log(`要导出的期数是${qiShu21}`)
-  //发送json
-  let resp = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/wps/uploadFile', {
-    "qiShu": qiShu21,
-    "pdfUrl": pdfLinLink,
-    "fileName": `货物清单(第${qiShu21}期${guoJia}${postMothod26}）`
-  })
-
-
-  pdfLink = resp.json().result
-  //console.log(`服务器返回的pdf链接是${pdfLink}`)
-  //console.log(`导出货物清单任务结束`)
-}
-
-//货物清单进一步处理
-async function huoWuQingDanFuncPart2() {
-  //console.log("货物清单进一步处理开始")
-  let range1 = huoWuQingDanSheet.Range("A1")
-  range1.Font.Bold = true
-  range1.Font.Name = '宋体'
-  range1.Font.Size = 26
-
-  // 合并单元格
-  range1.Range('A1:e1').Merge()
-
-  //columnB.Find("总计")
-  let findTotal = huoWuQingDanSheet.UsedRange.Columns.Item(1).Find("总计:")
-  let length = findTotal ? findTotal.Row : -1 // 第一列中“总计:”所在行
-  //console.log("重复", length)
-
-  // 合并单元格
-  huoWuQingDanSheet.Range("A" + length + ":c" + length).Merge()
-  //console.log("440")
-
-  //总计的值
-  huoWuQingDanSheet.Range("d" + length).Value2 = `=SUM(d1:d${length - 1})`
-  //huoWuQingDanData[index].splice(huoWuQingDanData[index].length - 1, 1, [`=SUM(d1:d${huoWuQingDanData[index].length - 2})`]);
-
-
-  // 编辑选区单元格边框
-  for (let i = 1; i <= huoWuQingDanSheet.UsedRange.Count; i++) {
-    //console.log("443",huoWuQingDanSheet.UsedRange.Cells.Item(i).Value2)
-    //AirScript2.0的加边框语句
-    huoWuQingDanSheet.UsedRange.Cells.Item(i).BorderAround(undefined, xlMedium, RGB(0, 0, 0))
-    //AirScript1.0的加边框语句
-    //huoWuQingDanSheet.UsedRange.Cells.Item(i).BorderAround(xlContinuous, xlThin, '#000000')
-  }
-
-  //自动换行
-  huoWuQingDanSheet.UsedRange.WrapText = true
-
-
-  //行高
-  let rw222 = huoWuQingDanSheet.UsedRange.Rows
-  for (let i = 1; i <= rw222.Count; i++) {
-    rw222.Item(i).RowHeight = 40
-    //console.log(298)
-  }
-
-  //列宽
-  let rw232 = huoWuQingDanSheet.UsedRange.Columns
-  for (let i = 1; i <= rw232.Count; i++) {
-    rw232.Item(i).ColumnWidth = 15.5
-    //console.log(304)
-    if (i == rw232.Count) {
-      //设置对齐方式不知道为啥放这就有用，放for下面时，导出来的表里的货物清单不对齐
-      // 设置对齐方式：居中 AirScript1.0语句
-      //huoWuQingDanSheet.UsedRange.HorizontalAlignment = Application.Enum.XlHAlign.xlHAlignCenter
-      //console.log("718")
-      // 设置对齐方式：居中 AirScript2.0语句 
-      huoWuQingDanSheet.UsedRange.HorizontalAlignment = xlCenter
-
-    }
-  }
-  //console.log("724")
-
-  //console.log("货物清单进一步处理结束")
-}
 //清洗出货物清单需要的数据
 function huoWuQingDanFuncPart0_1() {
   // console.log("开始清洗出货物清单需要的数据") // 阶段日志：噪声，排查时再开
