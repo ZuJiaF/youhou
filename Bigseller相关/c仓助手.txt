@@ -1,0 +1,984 @@
+// ==UserScript==
+// @name         c仓助手
+// @namespace    http://tampermonkey.net/
+// @version      1.3
+// @match        *://*/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    // ==========================
+    // 允许运行的页面
+    // ==========================
+
+    const ALLOWED_PATHS = [
+        '/web/inventory/scan/receive/index.htm',
+        '/web/receive/purchase/manage/index.htm',
+        '/web/waveShip/packageManage/abnormalPackages.htm',
+        '/web/waveShip/packageManage/allPackages.htm'
+    ];
+
+    const INVENTORY_PAGES = [
+        '/web/waveShip/packageManage/abnormalPackages.htm',
+        '/web/waveShip/packageManage/allPackages.htm'
+    ];
+
+    function isAllowedPage() {
+        return ALLOWED_PATHS.some(
+            p => location.pathname === p
+        );
+    }
+
+    function isInventoryPage() {
+        return INVENTORY_PAGES.some(
+            p => location.pathname === p
+        );
+    }
+
+    const STORAGE_KEY = 'sku_panel_collapsed';
+    const POS_KEY = 'sku_panel_pos';
+
+    const panel = document.createElement('div');
+
+    panel.style.cssText = `
+        position:fixed;
+        top:80px;
+        right:20px;
+        left:auto;
+        width:400px;
+        background:#fff;
+        border:1px solid #ccc;
+        z-index:999999;
+        padding:10px;
+        box-shadow:0 0 10px rgba(0,0,0,.2);
+        border-radius:6px;
+    `;
+
+    panel.innerHTML = `
+<div id="panelHeader"
+    style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        cursor:move;
+        background:#f5f5f5;
+        margin:-10px -10px 10px -10px;
+        padding:10px;
+        border-bottom:1px solid #ddd;
+        user-select:none;
+        border-radius:6px 6px 0 0;
+    ">
+
+    <span>c仓助手</span>
+
+    <button id="togglePanel"
+        style="
+            border:none;
+            background:none;
+            cursor:pointer;
+            font-size:18px;
+            font-weight:bold;
+        ">
+        +
+    </button>
+
+</div>
+
+<div id="panelBody">
+
+<div id="fillBody">
+    <div>SKU</div>
+
+    <textarea id="skuList"
+        style="width:100%;height:180px;"></textarea>
+
+    <div style="margin-top:10px;">
+        数量
+    </div>
+
+    <textarea id="qtyList"
+        style="width:100%;height:180px;"></textarea>
+
+    <button id="fillBtn"
+        style="
+            width:100%;
+            margin-top:10px;
+            height:40px;
+            cursor:pointer;
+        ">
+        批量填写
+    </button>
+
+    <div id="msg"
+        style="margin-top:10px;color:green;">
+    </div>
+
+    <div id="tableStatus"
+        style="margin-top:8px;font-size:12px;color:#999;display:flex;align-items:center;gap:8px;">
+        <button id="detectBtn"
+            style="
+                border:1px solid #d9d9d9;
+                background:#fafafa;
+                cursor:pointer;
+                padding:2px 8px;
+                border-radius:4px;
+                font-size:12px;
+            ">
+            识别表格
+        </button>
+        <span id="detectResult"></span>
+    </div>
+</div>
+
+<div id="inventoryBody" style="display:none;">
+    <button id="queryInventoryBtn"
+        style="
+            width:100%;
+            height:40px;
+            cursor:pointer;
+            background:#1890ff;
+            color:#fff;
+            border:none;
+            border-radius:4px;
+            font-size:14px;
+        ">
+        查询货架/库存
+    </button>
+    <div id="inventoryMsg"
+        style="margin-top:10px;font-size:12px;color:#666;">
+    </div>
+</div>
+
+</div>
+`;
+
+    document.body.appendChild(panel);
+
+    // ==========================
+    // 自动检测列表渲染并触发查询
+    // ==========================
+
+    let autoQueryActive = false;
+    let orderIdCache = {};
+
+    async function waitForSelector(selector, maxWait = 30000) {
+        let wait = 200;
+        let total = 0;
+        while (total < maxWait) {
+            const el = document.querySelector(selector);
+            if (el) return el;
+            await new Promise(r => setTimeout(r, wait));
+            total += wait;
+            wait = Math.min(wait * 2, 5000);
+        }
+        return null;
+    }
+
+    // 等待指定容器的DOM停止变化（连续0.5秒无变化视为稳定）
+    function waitForDomStable(selector, quietMs = 500, maxWait = 15000) {
+        return new Promise(resolve => {
+            const target = document.querySelector(selector);
+            if (!target) { resolve(); return; }
+
+            let timer = null;
+            let totalTimer = null;
+
+            const obs = new MutationObserver(() => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    obs.disconnect();
+                    clearTimeout(totalTimer);
+                    resolve();
+                }, quietMs);
+            });
+
+            obs.observe(target, { childList: true, subtree: true });
+
+            // 初始启动计时
+            timer = setTimeout(() => {
+                obs.disconnect();
+                clearTimeout(totalTimer);
+                resolve();
+            }, quietMs);
+
+            // 最大等待时间兜底
+            totalTimer = setTimeout(() => {
+                obs.disconnect();
+                clearTimeout(timer);
+                resolve();
+            }, maxWait);
+        });
+    }
+
+    async function autoQueryWhenReady() {
+        if (!isInventoryPage()) return;
+        if (autoQueryActive) return;
+        autoQueryActive = true;
+
+        try {
+            // 逐层等待DOM加载
+            const steps = [
+                '#pageList',
+                '#pageList .list_items',
+                '#pageList .list_items td.merge_el.dt_el',
+                '#pageList .list_items td.merge_el.dt_el .rows.flex div span.ml_10'
+            ];
+
+            for (const sel of steps) {
+                const found = await waitForSelector(sel);
+                if (!found) {
+                    console.log('[c仓助手] 等待超时:', sel);
+                    return;
+                }
+            }
+
+            // 所有层级加载完成，触发查询
+            const btn = document.getElementById('queryInventoryBtn');
+            if (btn) btn.click();
+
+            // 等待DOM停止变化后再注入按钮（应对排序重渲染）
+            await waitForDomStable('#pageList');
+            injectReplaceGoodsBtn();
+            autoFetchOrderIds();
+        } finally {
+            autoQueryActive = false;
+        }
+    }
+
+    // ==========================
+    // URL 变化监听 & 面板显隐
+    // ==========================
+
+    let lastInventoryUrl = '';
+
+    function updatePanelVisibility() {
+        if (isAllowedPage()) {
+            panel.style.display = 'block';
+            const fillBody = document.getElementById('fillBody');
+            const inventoryBody = document.getElementById('inventoryBody');
+            if (isInventoryPage()) {
+                fillBody.style.display = 'none';
+                inventoryBody.style.display = 'block';
+                // 只在URL真正变化时才重新加载
+                if (location.href !== lastInventoryUrl) {
+                    lastInventoryUrl = location.href;
+                    resetInventoryState();
+                }
+            } else {
+                fillBody.style.display = 'block';
+                inventoryBody.style.display = 'none';
+                lastInventoryUrl = '';
+            }
+        } else {
+            panel.style.display = 'none';
+            lastInventoryUrl = '';
+        }
+    }
+
+    function resetInventoryState() {
+        // 移除旧的注入元素
+        document.querySelectorAll('.c_inv_tag').forEach(el => el.remove());
+        document.querySelectorAll('.c_replace_btn').forEach(el => el.remove());
+        document.querySelectorAll('.c_replace_tag').forEach(el => el.remove());
+        // 重置状态锁
+        autoQueryActive = false;
+        orderIdCache = {};
+        // 延迟1秒等旧DOM卸载、新DOM开始渲染
+        setTimeout(() => {
+            autoQueryWhenReady();
+        }, 1000);
+    }
+
+    updatePanelVisibility();
+
+    // 监听 SPA 路由变化
+    let lastUrl = location.href;
+
+    const urlObserver = new MutationObserver(() => {
+        if (location.href !== lastUrl) {
+            lastUrl = location.href;
+            updatePanelVisibility();
+        }
+    });
+
+    urlObserver.observe(document.body, {
+        childList: true, subtree: true
+    });
+
+    // 拦截 pushState / replaceState
+    const origPush = history.pushState;
+    const origReplace = history.replaceState;
+
+    history.pushState = function () {
+        origPush.apply(this, arguments);
+        updatePanelVisibility();
+    };
+
+    history.replaceState = function () {
+        origReplace.apply(this, arguments);
+        updatePanelVisibility();
+    };
+
+    window.addEventListener(
+        'popstate', updatePanelVisibility
+    );
+
+    // ==========================
+    // 恢复位置
+    // ==========================
+
+    const savedPos = JSON.parse(
+        localStorage.getItem(POS_KEY) || '{}'
+    );
+
+    if (
+        savedPos.left !== undefined &&
+        savedPos.top !== undefined
+    ) {
+        panel.style.left = savedPos.left + 'px';
+        panel.style.top = savedPos.top + 'px';
+        panel.style.right = 'auto';
+    }
+
+    // ==========================
+    // 恢复展开状态
+    // ==========================
+
+    let collapsed =
+        localStorage.getItem(STORAGE_KEY) !== 'false';
+
+    const body =
+        document.getElementById('panelBody');
+
+    const btn =
+        document.getElementById('togglePanel');
+
+    function applyPanelState() {
+
+        if (collapsed) {
+
+            body.style.display = 'none';
+            panel.style.height = '40px';
+            btn.innerText = '+';
+
+        } else {
+
+            body.style.display = 'block';
+            panel.style.height = 'auto';
+            btn.innerText = '−';
+        }
+    }
+
+    applyPanelState();
+
+    // ==========================
+    // 收起展开
+    // ==========================
+
+    btn.addEventListener('click', () => {
+
+        collapsed = !collapsed;
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            collapsed
+        );
+
+        applyPanelState();
+    });
+
+    // ==========================
+    // 拖动功能
+    // ==========================
+
+    let dragging = false;
+
+    let startX = 0;
+    let startY = 0;
+
+    let startLeft = 0;
+    let startTop = 0;
+
+    const header =
+        document.getElementById('panelHeader');
+
+    header.addEventListener('mousedown', e => {
+
+        dragging = true;
+
+        startX = e.clientX;
+        startY = e.clientY;
+
+        const rect =
+            panel.getBoundingClientRect();
+
+        startLeft = rect.left;
+        startTop = rect.top;
+
+        panel.style.right = 'auto';
+    });
+
+    document.addEventListener('mousemove', e => {
+
+        if (!dragging) return;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        panel.style.left =
+            startLeft + dx + 'px';
+
+        panel.style.top =
+            startTop + dy + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+
+        if (!dragging) return;
+
+        dragging = false;
+
+        localStorage.setItem(
+            POS_KEY,
+            JSON.stringify({
+                left: parseInt(panel.style.left),
+                top: parseInt(panel.style.top)
+            })
+        );
+    });
+
+    // ==========================
+    // 批量填写
+    // ==========================
+
+    document.getElementById('fillBtn').onclick = () => {
+
+        const skuArr = document
+            .getElementById('skuList')
+            .value
+            .split('\n')
+            .map(v => v.trim())
+            .filter(Boolean);
+
+        const qtyArr = document
+            .getElementById('qtyList')
+            .value
+            .split('\n')
+            .map(v => v.trim())
+            .filter(Boolean);
+
+        if (skuArr.length !== qtyArr.length) {
+
+            alert(
+                `SKU数量(${skuArr.length}) 与 数量行数(${qtyArr.length}) 不一致`
+            );
+
+            return;
+        }
+
+        const skuMap = {};
+
+        skuArr.forEach((sku, index) => {
+            skuMap[sku] = qtyArr[index];
+        });
+
+        // 尝试多种表格选择器以兼容不同页面
+        const tableSelectors = [
+            // 采购收货页面（全屏modal内的表格）
+            ".ant-modal-wrap.full_screen .ant-modal-body table.fixed_table",
+            ".ant-modal-wrap.full_screen .ant-modal-body table",
+            // 扫描收货页面
+            "#app > div.__root > div.page_body.page_body_Nav > section.rt > div:nth-child(2) > div:nth-child(1) > div:nth-child(4) > div > div:nth-child(2) > table",
+            // 通用
+            "#app .ant-table-wrapper table",
+            ".ant-table table",
+            "table.ant-table-fixed"
+        ];
+
+        let table = null;
+
+        for (const sel of tableSelectors) {
+            table = document.querySelector(sel);
+            if (table) break;
+        }
+
+        if (!table) {
+
+            alert("未找到表格");
+
+            return;
+        }
+
+        let success = 0;
+
+        const rows =
+            table.querySelectorAll('tbody > tr');
+
+        rows.forEach(row => {
+
+            // 尝试多种SKU选择器
+            const skuSpan =
+                row.querySelector(
+                    '.receive_sku_row .receive_sku_no'
+                ) ||
+                row.querySelector(
+                    '.receive_sku_row span'
+                ) ||
+                row.querySelector(
+                    '.copy_txt_box span'
+                ) ||
+                row.querySelector(
+                    'td.dt_el .receive_sku_row span'
+                ) ||
+                row.querySelector(
+                    'td .sku-text'
+                ) ||
+                row.querySelector(
+                    'td[class*="sku"] span'
+                );
+
+            if (!skuSpan) return;
+
+            // SKU文本可能带前缀如 "SKU: xxx"，需要去掉
+            let sku = skuSpan.innerText.trim();
+            sku = sku.replace(/^SKU:\s*/i, '');
+
+            if (!(sku in skuMap))
+                return;
+
+            // 尝试多种输入框选择器
+            const input =
+                row.querySelector(
+                    'td.receive_qty_el input.ant-input'
+                ) ||
+                row.querySelector(
+                    'td.receive_qty_el input'
+                ) ||
+                row.querySelector(
+                    '.ant-input-group input'
+                ) ||
+                row.querySelector(
+                    'input.ant-input'
+                ) ||
+                row.querySelector(
+                    'input.ant-input-number-input'
+                ) ||
+                row.querySelector(
+                    '.ant-input-number input'
+                );
+
+            if (!input)
+                return;
+
+            const value =
+                skuMap[sku];
+
+            input.focus();
+
+            // 兼容 React 受控组件的值设置
+            const nativeInputValueSetter =
+                Object.getOwnPropertyDescriptor(
+                    window.HTMLInputElement.prototype,
+                    'value'
+                ).set;
+
+            nativeInputValueSetter.call(
+                input, value
+            );
+
+            input.dispatchEvent(
+                new Event('input', {
+                    bubbles: true
+                })
+            );
+
+            input.dispatchEvent(
+                new Event('change', {
+                    bubbles: true
+                })
+            );
+
+            input.dispatchEvent(
+                new KeyboardEvent(
+                    'keyup',
+                    {
+                        bubbles: true
+                    }
+                )
+            );
+
+            input.blur();
+
+            row.style.background =
+                'rgba(0,255,0,.15)';
+
+            success++;
+        });
+
+        document.getElementById('msg')
+            .innerText =
+            `成功填写 ${success} 个SKU`;
+    };
+
+    // ==========================
+    // 手动识别表格
+    // ==========================
+
+    const tableSelectors = [
+        ".ant-modal-wrap.full_screen .ant-modal-body table.fixed_table",
+        ".ant-modal-wrap.full_screen .ant-modal-body table",
+        "#app > div.__root > div.page_body.page_body_Nav > section.rt > div:nth-child(2) > div:nth-child(1) > div:nth-child(4) > div > div:nth-child(2) > table",
+        "#app .ant-table-wrapper table",
+        ".ant-table table",
+        "table.ant-table-fixed"
+    ];
+
+    document.getElementById('detectBtn').onclick = () => {
+        const resultEl =
+            document.getElementById('detectResult');
+
+        let found = null;
+        for (const sel of tableSelectors) {
+            const t = document.querySelector(sel);
+            if (t) {
+                found = t;
+                break;
+            }
+        }
+
+        if (found) {
+            const rows = found.querySelectorAll('tbody > tr');
+            resultEl.innerHTML =
+                `<span style="color:#52c41a;">&#9679;</span> 已识别（${rows.length} 行）`;
+        } else {
+            resultEl.innerHTML =
+                `<span style="color:#ff4d4f;">&#9679;</span> 未识别到表格`;
+        }
+    };
+
+    // ==========================
+    // 异常包裹页 - 查询货架/库存
+    // ==========================
+
+    const WAREHOUSE_ID = '54443';
+    const BATCH_SIZE = 30;
+
+    document.getElementById('queryInventoryBtn').onclick = async () => {
+        const msgEl = document.getElementById('inventoryMsg');
+        msgEl.innerText = '正在收集SKU...';
+
+        // 移除之前注入的标签
+        document.querySelectorAll('.c_inv_tag').forEach(el => el.remove());
+
+        // 收集页面中所有SKU
+        const skuSpans = document.querySelectorAll(
+            '#pageList .list_items td.merge_el.dt_el .rows.flex div span.ml_10'
+        );
+
+        if (!skuSpans.length) {
+            msgEl.innerText = '未找到SKU元素';
+            return;
+        }
+
+        // 去重收集SKU
+        const skuSet = new Set();
+        skuSpans.forEach(span => {
+            const sku = span.innerText.trim();
+            if (sku) skuSet.add(sku);
+        });
+
+        const allSkus = [...skuSet];
+        msgEl.innerText = `找到 ${allSkus.length} 个SKU，正在查询...`;
+
+        // 分批查询
+        const skuDataMap = {};
+        const batches = [];
+        for (let i = 0; i < allSkus.length; i += BATCH_SIZE) {
+            batches.push(allSkus.slice(i, i + BATCH_SIZE));
+        }
+
+        try {
+            for (let i = 0; i < batches.length; i++) {
+                const batch = batches[i];
+                msgEl.innerText = `正在查询第 ${i + 1}/${batches.length} 批...`;
+
+                const params = new URLSearchParams({
+                    pageNo: '1',
+                    pageSize: '50',
+                    searchType: 'skuName',
+                    searchContent: batch.join(','),
+                    inquireType: '0',
+                    stockStatus: '',
+                    isGroup: '',
+                    orderBy: '',
+                    desc: '',
+                    fullCid: '',
+                    queryDistribution: '1',
+                    saleState: '',
+                    zoneId: '',
+                    openFlag: 'false',
+                    hideZeroInventorySku: '0',
+                    warehouseIds: WAREHOUSE_ID
+                });
+
+                const resp = await fetch(
+                    '/api/v1/inventory/pageList.json',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'clienttype': '1'
+                        },
+                        body: params.toString()
+                    }
+                );
+
+                const json = await resp.json();
+
+                if (json.code === 0 && json.data && json.data.page) {
+                    json.data.page.rows.forEach(item => {
+                        skuDataMap[item.sku] = {
+                            shelfName: item.shelfName || '--',
+                            onhand: item.onhand ?? '--',
+                            available: item.available ?? '--'
+                        };
+                    });
+                }
+            }
+        } catch (e) {
+            msgEl.innerText = `查询出错: ${e.message}`;
+            return;
+        }
+
+        // 注入标签到页面
+        let injected = 0;
+        skuSpans.forEach(span => {
+            const sku = span.innerText.trim();
+            const info = skuDataMap[sku];
+            if (!info) return;
+
+            // 插到span.ml_10的直接父div中
+            const parent = span.parentElement;
+            if (parent.querySelector('.c_inv_tag')) return;
+
+            const tag = document.createElement('div');
+            tag.className = 'c_inv_tag';
+            tag.style.cssText =
+                'margin-left:10px;margin-top:2px;padding:1px 6px;border-radius:3px;font-size:12px;background:#e6f7ff;color:#1890ff;line-height:1.5;';
+            tag.innerHTML = `${info.shelfName}<br>现有库存:${info.onhand}<br>整仓可用:${info.available}`;
+            parent.appendChild(tag);
+            injected++;
+        });
+
+        const notFound = allSkus.length - Object.keys(skuDataMap).length;
+        msgEl.innerText = `完成！已标注 ${injected} 处` +
+            (notFound > 0 ? `，${notFound} 个SKU未查到` : '');
+
+        // 兜底：查询完成后注入换货按钮（防重复逻辑在函数内部）
+        injectReplaceGoodsBtn();
+    };
+
+    autoQueryWhenReady();
+
+    // ==========================
+    // 查询是否换货功能
+    // ==========================
+
+    async function injectReplaceGoodsBtn() {
+        if (!isInventoryPage()) return;
+
+        // 等待包裹标题栏加载
+        await waitForSelector('#pageList .items_tit');
+
+        // 在每个包裹标题栏左侧区域注入按钮
+        const titles = document.querySelectorAll('#pageList .items_tit');
+        titles.forEach(tit => {
+            if (tit.querySelector('.c_replace_btn')) return;
+
+            const lt = tit.querySelector('.lt') || tit;
+
+            const btn = document.createElement('button');
+            btn.className = 'c_replace_btn';
+            btn.innerText = '查询是否换货';
+            btn.style.cssText =
+                'margin-left:10px;padding:2px 10px;border:1px solid #faad14;background:#fffbe6;color:#d48806;border-radius:4px;cursor:pointer;font-size:12px;white-space:nowrap;';
+            btn.onclick = () => queryReplaceForPackage(btn, tit);
+            lt.appendChild(btn);
+        });
+    }
+
+    // 自动收集订单号并批量获取ID（与SKU查询同时进行）
+    async function autoFetchOrderIds() {
+        if (!isInventoryPage()) return;
+
+        const tdSel = '#pageList .list_items tbody tr td.order_No, #pageList .list_items tbody tr td:nth-child(5)';
+        await waitForSelector(tdSel);
+
+        const orderTds = document.querySelectorAll(tdSel);
+        const orderNos = [];
+        orderTds.forEach(td => {
+            const text = td.innerText.trim();
+            if (text && /^\d+$/.test(text)) {
+                orderNos.push(text);
+            }
+        });
+
+        if (!orderNos.length) return;
+
+        try {
+            const resp = await fetch('/api/v1/order/new/pageList.json', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'clienttype': '1'
+                },
+                body: JSON.stringify({
+                    searchType: 'orderNo',
+                    searchContent: orderNos.join(','),
+                    inquireType: 2,
+                    allOrder: true,
+                    historyOrder: 0,
+                    pageNo: 1,
+                    pageSize: 300,
+                    desc: 1,
+                    orderBy: 'printTime'
+                })
+            });
+
+            const json = await resp.json();
+            if (json.code === 0 && json.data && json.data.page) {
+                orderIdCache = {};
+                json.data.page.rows.forEach(order => {
+                    orderIdCache[order.platformOrderId] = order.id;
+                });
+                console.log(`[c仓助手] 已缓存 ${Object.keys(orderIdCache).length} 个订单ID`);
+            }
+        } catch (e) {
+            console.log('[c仓助手] 获取订单ID失败:', e.message);
+        }
+    }
+
+    // 点击单个包裹的按钮：用缓存的ID查该订单详情
+    async function queryReplaceForPackage(btn, titleEl) {
+        const origText = btn.innerText;
+        btn.innerText = '查询中...';
+        btn.disabled = true;
+
+        try {
+            // 找到该包裹对应的表格
+            const listItemsOut = titleEl.closest('.list_items_out');
+            if (!listItemsOut) return;
+
+            // 获取订单号
+            const orderTd = listItemsOut.querySelector(
+                'table.list_items tbody tr td.order_No, table.list_items tbody tr td:nth-child(5)'
+            );
+            if (!orderTd) return;
+
+            const orderNo = orderTd.innerText.trim();
+            if (!orderNo || !/^\d+$/.test(orderNo)) {
+                btn.innerText = '无订单号';
+                setTimeout(() => { btn.innerText = origText; }, 2000);
+                return;
+            }
+
+            // 从缓存获取订单ID，若无则单独查询
+            let orderId = orderIdCache[orderNo];
+            if (!orderId) {
+                const resp1 = await fetch('/api/v1/order/new/pageList.json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'clienttype': '1'
+                    },
+                    body: JSON.stringify({
+                        searchType: 'orderNo',
+                        searchContent: orderNo,
+                        inquireType: 2,
+                        allOrder: true,
+                        historyOrder: 0,
+                        pageNo: 1,
+                        pageSize: 10,
+                        desc: 1,
+                        orderBy: 'printTime'
+                    })
+                });
+                const json1 = await resp1.json();
+                if (json1.code === 0 && json1.data && json1.data.page && json1.data.page.rows.length) {
+                    orderId = json1.data.page.rows[0].id;
+                    orderIdCache[orderNo] = orderId;
+                }
+            }
+
+            if (!orderId) {
+                btn.innerText = '未找到订单';
+                setTimeout(() => { btn.innerText = origText; }, 2000);
+                return;
+            }
+
+            // 查详情
+            const resp2 = await fetch(
+                `/api/v1/order/detail.json?id=${orderId}&historyOrder=0&viewBuyerMessage=false`,
+                { headers: { 'clienttype': '1' } }
+            );
+            const json2 = await resp2.json();
+
+            if (json2.code !== 0 || !json2.data) {
+                btn.innerText = '查询失败';
+                setTimeout(() => { btn.innerText = origText; }, 2000);
+                return;
+            }
+
+            const detail = json2.data.orderDetail;
+            const replaces = [];
+
+            if (detail.orderItemVoList) {
+                detail.orderItemVoList.forEach(item => {
+                    if (item.inventorySku && item.inventorySku !== item.varSku) {
+                        replaces.push({
+                            from: item.varSku,
+                            to: item.inventorySku
+                        });
+                    }
+                });
+            }
+
+            if (replaces.length > 0) {
+                btn.innerText = '有换货';
+                btn.style.background = '#fff1f0';
+                btn.style.borderColor = '#cf1322';
+                btn.style.color = '#cf1322';
+
+                // 在标题栏显示换货详情
+                let tag = titleEl.querySelector('.c_replace_tag');
+                if (!tag) {
+                    tag = document.createElement('span');
+                    tag.className = 'c_replace_tag';
+                    tag.style.cssText =
+                        'margin-left:8px;padding:2px 6px;border-radius:3px;font-size:11px;background:#fff1f0;color:#cf1322;';
+                    titleEl.appendChild(tag);
+                }
+                tag.innerHTML = replaces.map(
+                    r => `${r.from} → ${r.to}`
+                ).join(', ');
+            } else {
+                btn.innerText = '无换货';
+                btn.style.background = '#f6ffed';
+                btn.style.borderColor = '#52c41a';
+                btn.style.color = '#52c41a';
+            }
+
+        } catch (e) {
+            btn.innerText = '出错';
+            setTimeout(() => { btn.innerText = origText; }, 2000);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    injectReplaceGoodsBtn();
+    autoFetchOrderIds();
+
+})();

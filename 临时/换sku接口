@@ -1,0 +1,12 @@
+
+https://www.bigseller.pro/api/v1/inventory/mappingRelation/changeMappingRelation.json
+
+orderId=13711912955&orderItemId=10105285450&orderState=new&warehouseId=54443&skuId=102629109&platformSku=JS-017-038&changeType=only
+
+{
+    "code": 0,
+    "errorType": 0,
+    "msg": "Successfully",
+    "msgObjStr": "",
+    "data": 0
+}
