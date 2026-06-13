@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Bigseller助手
 // @namespace    http://tampermonkey.net/
-// @version      0.3.1
+// @version      0.4.3
 // @match        *://www.bigseller.pro/web/order/index.htm*
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @connect      env-00jy671a213o.dev-hz.cloudbasefunction.cn
 // ==/UserScript==
 
 (function () {
@@ -12,6 +13,47 @@
     const STYLE = 'margin-left:6px;padding:2px 8px;border:none;background:#722ed1;color:#fff;border-radius:3px;cursor:pointer;font-size:12px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.2);';
 
     const WAREHOUSE_ID = '54443';
+    const CLOUD_BASE = 'https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/bigsellerSwap';
+
+    // GM_xmlhttpRequest 封装为 Promise
+    function gmFetch(url, data) {
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url,
+                headers: { 'Content-Type': 'application/json' },
+                data: JSON.stringify(data),
+                onload: (resp) => {
+                    try { resolve(JSON.parse(resp.responseText)); }
+                    catch (e) { reject(e); }
+                },
+                onerror: (e) => reject(e)
+            });
+        });
+    }
+
+    // 云端：写入换货记录
+    async function saveSwapRecord(record) {
+        try {
+            const json = await gmFetch(CLOUD_BASE + '/addSwapRecord', record);
+            return json;
+        } catch (e) {
+            console.log('[Bigseller助手] 保存换货记录失败:', e.message || e);
+            return null;
+        }
+    }
+
+    // 云端：批量查询换货记录
+    async function querySwapRecords(orderNos) {
+        try {
+            const json = await gmFetch(CLOUD_BASE + '/getSwapRecords', { orderNos });
+            if (json.code === 200) return json.data;
+            return [];
+        } catch (e) {
+            console.log('[Bigseller助手] 查询换货记录失败:', e.message || e);
+            return [];
+        }
+    }
 
     // 通过库存接口查询SKU信息（标题+库存）
     async function fetchSkuInfo(sku) {
@@ -284,6 +326,18 @@
                 });
                 const swapJson = await swapResp.json();
                 if (swapJson.code === 0) {
+                    // 保存换货记录到云端
+                    saveSwapRecord({
+                        orderNo,
+                        orderId: String(orderId),
+                        originalSku: currentSku,
+                        targetSku,
+                        targetSkuId: String(targetInfo.skuId),
+                        targetTitle: targetInfo.title,
+                        targetImage: targetInfo.image,
+                        targetAvailable: targetInfo.available,
+                        warehouseId: WAREHOUSE_ID
+                    });
                     alert('换货成功！');
                     // 在页面SKU下方注入换货结果
                     injectSwapResult(skuTag, targetSku, targetInfo);
@@ -401,8 +455,87 @@
         });
     }
 
+    // 页面加载时从云端查询换货记录并注入显示
+    async function loadSwapRecordsForPage() {
+        // 收集当前页所有订单号
+        const orderSpans = document.querySelectorAll('td.odn_el div.copy_txt_box > div > span');
+        const orderNos = [];
+        orderSpans.forEach(span => {
+            const no = span.innerText.trim();
+            if (no && /^\d+$/.test(no)) orderNos.push(no);
+        });
+        console.log('[Bigseller助手] 收集到订单号:', orderNos.length, orderNos.slice(0, 5));
+        if (!orderNos.length) return;
+
+        const records = await querySwapRecords(orderNos);
+        console.log('[Bigseller助手] 云端返回换货记录:', records.length, records);
+        if (!records.length) return;
+
+        // 按订单号分组
+        const recordMap = {};
+        records.forEach(r => {
+            if (!recordMap[r.orderNo]) recordMap[r.orderNo] = [];
+            recordMap[r.orderNo].push(r);
+        });
+        console.log('[Bigseller助手] 记录分组:', Object.keys(recordMap));
+
+        // 遍历页面，为有换货记录的SKU注入结果
+        const allRows = document.querySelectorAll('tr');
+        console.log('[Bigseller助手] 页面tr数量:', allRows.length);
+        let matched = 0;
+        allRows.forEach(row => {
+            const oSpan = row.querySelector('td.odn_el div.copy_txt_box > div > span');
+            if (!oSpan) return;
+            const orderNo = oSpan.innerText.trim();
+            if (!recordMap[orderNo]) return;
+
+            const skuSpan = row.querySelector('td.merge_el.dt_el div.copy_txt_box > div > span');
+            if (!skuSpan) return;
+            const sku = skuSpan.innerText.trim();
+
+            const match = recordMap[orderNo].find(r => r.originalSku === sku);
+            if (!match) {
+                console.log('[Bigseller助手] 订单', orderNo, '有记录但SKU不匹配, 页面SKU:', sku, '记录SKU:', recordMap[orderNo].map(r => r.originalSku));
+                return;
+            }
+
+            const skuCell = skuSpan.closest('td.merge_el.dt_el');
+            if (!skuCell || skuCell.querySelector('.c_swap_result')) return;
+
+            matched++;
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'c_swap_result';
+            resultDiv.style.cssText = 'margin-top:8px;padding:8px;border:1px solid #52c41a;border-radius:6px;background:#f6ffed;';
+            resultDiv.innerHTML = `
+                <div style="text-align:center;color:#52c41a;font-size:14px;">↓</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <img src="${match.targetImage}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;${match.targetImage ? '' : 'display:none;'}" />
+                    <div style="flex:1;">
+                        <div style="font-size:13px;font-weight:bold;word-break:break-all;">${match.targetSku}</div>
+                        <div style="font-size:11px;color:#666;word-break:break-all;">${match.targetTitle}</div>
+                        <div style="font-size:11px;color:#52c41a;">库存: ${match.targetAvailable}</div>
+                    </div>
+                </div>
+            `;
+            skuCell.appendChild(resultDiv);
+        });
+        console.log('[Bigseller助手] 成功注入换货结果:', matched);
+    }
+
     // 初始注入 + 监听DOM变化（应对SPA翻页/筛选）
     const observer = new MutationObserver(() => injectButtons());
     observer.observe(document.body, { childList: true, subtree: true });
     setTimeout(injectButtons, 1500);
+
+    // 等待订单列表渲染后查询云端换货记录
+    let swapLoaded = false;
+    const swapObserver = new MutationObserver(async () => {
+        const orderSpans = document.querySelectorAll('td.odn_el div.copy_txt_box > div > span');
+        if (orderSpans.length > 0 && !swapLoaded) {
+            swapLoaded = true;
+            // 延迟500ms确保DOM完全稳定
+            setTimeout(loadSwapRecordsForPage, 500);
+        }
+    });
+    swapObserver.observe(document.body, { childList: true, subtree: true });
 })();
