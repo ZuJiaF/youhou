@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name         Bigseller助手
 // @namespace    http://tampermonkey.net/
-// @version      0.4.3
+// @version      0.6.0
 // @match        *://www.bigseller.pro/web/order/index.htm*
+// @match        *://www.bigseller.com/web/order/index.htm*
 // @grant        GM_xmlhttpRequest
 // @connect      env-00jy671a213o.dev-hz.cloudbasefunction.cn
 // ==/UserScript==
@@ -39,6 +40,17 @@
             return json;
         } catch (e) {
             console.log('[Bigseller助手] 保存换货记录失败:', e.message || e);
+            return null;
+        }
+    }
+
+    // 云端：删除换货记录
+    async function deleteSwapRecord(orderNo, originalSku) {
+        try {
+            const json = await gmFetch(CLOUD_BASE + '/deleteSwapRecord', { orderNo, originalSku });
+            return json;
+        } catch (e) {
+            console.log('[Bigseller助手] 删除换货记录失败:', e.message || e);
             return null;
         }
     }
@@ -186,6 +198,32 @@
         return sku;
     }
 
+    // 查询同SKU的待处理订单列表（排除当前订单）
+    async function fetchSameSkuOrders(sku, excludeOrderNo) {
+        const resp = await fetch('/api/v1/order/new/pageList.json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'clienttype': '1' },
+            body: JSON.stringify({
+                searchType: 'variationSku',
+                searchContent: sku,
+                inquireType: 2,
+                pageWarehouseIds: [WAREHOUSE_ID],
+                statusList: ['new'],
+                allOrder: true,
+                historyOrder: 0,
+                pageNo: 1,
+                pageSize: 300,
+                desc: 1,
+                orderBy: 'printTime'
+            })
+        });
+        const json = await resp.json();
+        if (json.code === 0 && json.data?.page?.rows?.length) {
+            return json.data.page.rows.filter(r => r.platformOrderId !== excludeOrderNo);
+        }
+        return [];
+    }
+
     // 弹窗相关
     async function showSwapModal(currentSku, currentStock, currentTitle, currentImage, orderNo, skuTag) {
         // 移除已有弹窗
@@ -224,6 +262,12 @@
         <div id="c_swap_recommend" style="margin-top:8px;padding:10px;border:1px solid #e8e8e8;border-radius:4px;min-height:60px;max-height:200px;overflow-y:auto;font-size:12px;color:#999;">
             暂无推荐
         </div>
+    </div>
+    <div id="c_swap_batch_area" style="margin-bottom:16px;display:none;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+            <input id="c_swap_batch_check" type="checkbox" style="cursor:pointer;" />
+            <span>同时操作其他同SKU待处理订单（<span id="c_swap_batch_count">0</span> 个）</span>
+        </label>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;">
         <button id="c_swap_cancel" style="padding:6px 16px;border:1px solid #d9d9d9;background:#fff;border-radius:4px;cursor:pointer;font-size:13px;">取消</button>
@@ -338,9 +382,77 @@
                         targetAvailable: targetInfo.available,
                         warehouseId: WAREHOUSE_ID
                     });
-                    alert('换货成功！');
+
+                    // 批量换货逻辑
+                    const batchChecked = document.getElementById('c_swap_batch_check')?.checked;
+                    const sameSkuOrders = mask._getSameSkuOrders ? mask._getSameSkuOrders() : [];
+                    let batchSuccess = 0, batchFail = 0;
+                    if (batchChecked && sameSkuOrders.length > 0) {
+                        confirmBtn.innerText = `批量换货中 0/${sameSkuOrders.length}...`;
+                        for (let i = 0; i < sameSkuOrders.length; i++) {
+                            try {
+                                const order = sameSkuOrders[i];
+                                // 获取订单详情
+                                const dResp = await fetch(`/api/v1/order/detail.json?id=${order.id}&historyOrder=0&viewBuyerMessage=false`, {
+                                    headers: { 'clienttype': '1' }
+                                });
+                                const dJson = await dResp.json();
+                                if (dJson.code !== 0 || !dJson.data?.orderDetail?.orderItemVoList?.length) { batchFail++; continue; }
+                                const oItem = dJson.data.orderDetail.orderItemVoList.find(
+                                    item => item.varSku === currentSku || item.inventorySku === currentSku
+                                );
+                                if (!oItem) { batchFail++; continue; }
+                                // 调用换货接口
+                                const bParams = new URLSearchParams({
+                                    orderId: String(order.id),
+                                    orderItemId: String(oItem.id),
+                                    orderState: 'new',
+                                    warehouseId: WAREHOUSE_ID,
+                                    skuId: String(targetInfo.skuId),
+                                    platformSku: targetSku,
+                                    changeType: 'only'
+                                });
+                                const bResp = await fetch('/api/v1/inventory/mappingRelation/changeMappingRelation.json', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'clienttype': '1' },
+                                    body: bParams.toString()
+                                });
+                                const bJson = await bResp.json();
+                                if (bJson.code === 0) {
+                                    batchSuccess++;
+                                    console.log('[Bigseller助手][批量换货] 保存记录, orderNo:', order.platformOrderId, 'packageNo:', order.packageNo, 'id:', order.id);
+                                    await saveSwapRecord({
+                                    orderNo: order.platformOrderId,
+                                        orderId: String(order.id),
+                                        originalSku: currentSku,
+                                        targetSku,
+                                        targetSkuId: String(targetInfo.skuId),
+                                        targetTitle: targetInfo.title,
+                                        targetImage: targetInfo.image,
+                                        targetAvailable: targetInfo.available,
+                                        warehouseId: WAREHOUSE_ID
+                                    });
+                                } else { batchFail++; console.log('[Bigseller助手][批量换货] 换货失败, order:', order.platformOrderId, 'msg:', bJson.msg); }
+                            } catch (e) { batchFail++; }
+                            confirmBtn.innerText = `批量换货中 ${i + 1}/${sameSkuOrders.length}...`;
+                        }
+                    }
+
+                    const batchMsg = batchChecked && sameSkuOrders.length > 0
+                        ? `\n批量操作: 成功 ${batchSuccess} 个, 失败 ${batchFail} 个`
+                        : '';
+                    alert('当前订单换货成功！' + batchMsg);
                     // 在页面SKU下方注入换货结果
                     injectSwapResult(skuTag, targetSku, targetInfo);
+                    // 为页面上其他同SKU订单也注入换货结果
+                    if (batchChecked && batchSuccess > 0) {
+                        document.querySelectorAll('td.merge_el.dt_el div.copy_txt_box > div > span').forEach(span => {
+                            if (span === skuTag) return;
+                            if (span.innerText.trim() === currentSku) {
+                                injectSwapResult(span, targetSku, targetInfo);
+                            }
+                        });
+                    }
                     closeModal();
                 } else {
                     alert('换货失败: ' + (swapJson.msg || '未知错误'));
@@ -403,6 +515,100 @@
         } else {
             recommendEl.innerText = '未找到同款SKU';
         }
+
+        // 查询同SKU待处理订单数量
+        let sameSkuOrders = [];
+        fetchSameSkuOrders(currentSku, orderNo).then(orders => {
+            sameSkuOrders = orders;
+            if (orders.length > 0) {
+                document.getElementById('c_swap_batch_area').style.display = 'block';
+                document.getElementById('c_swap_batch_count').innerText = orders.length;
+            }
+        });
+        // 将 sameSkuOrders 挂到 mask 上，供确认时使用
+        mask._getSameSkuOrders = () => sameSkuOrders;
+    }
+
+    // 取消换货核心逻辑（不带UI交互，返回 {success, msg}）
+    async function doCancelSwap(orderNo, originalSku, targetSku) {
+        try {
+            const originalInfo = await fetchSkuInfo(originalSku);
+            if (!originalInfo || !originalInfo.skuId) {
+                return { success: false, msg: '未找到原SKU信息' };
+            }
+
+            const orderResp = await fetch('/api/v1/order/new/pageList.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'clienttype': '1' },
+                body: JSON.stringify({
+                    searchType: 'orderNo',
+                    searchContent: orderNo,
+                    inquireType: 2,
+                    allOrder: true,
+                    historyOrder: 0,
+                    pageNo: 1,
+                    pageSize: 10,
+                    desc: 1,
+                    orderBy: 'printTime'
+                })
+            });
+            const orderJson = await orderResp.json();
+            if (orderJson.code !== 0 || !orderJson.data?.page?.rows?.length) {
+                return { success: false, msg: '未找到订单' };
+            }
+            const orderId = orderJson.data.page.rows[0].id;
+
+            const detailResp = await fetch(`/api/v1/order/detail.json?id=${orderId}&historyOrder=0&viewBuyerMessage=false`, {
+                headers: { 'clienttype': '1' }
+            });
+            const detailJson = await detailResp.json();
+            if (detailJson.code !== 0 || !detailJson.data?.orderDetail?.orderItemVoList?.length) {
+                return { success: false, msg: '获取订单详情失败' };
+            }
+            const orderItem = detailJson.data.orderDetail.orderItemVoList.find(
+                item => item.varSku === targetSku || item.inventorySku === targetSku
+            );
+            if (!orderItem) {
+                return { success: false, msg: '未找到目标SKU对应商品项' };
+            }
+
+            const swapParams = new URLSearchParams({
+                orderId: String(orderId),
+                orderItemId: String(orderItem.id),
+                orderState: 'new',
+                warehouseId: WAREHOUSE_ID,
+                skuId: String(originalInfo.skuId),
+                platformSku: originalSku,
+                changeType: 'only'
+            });
+            const swapResp = await fetch('/api/v1/inventory/mappingRelation/changeMappingRelation.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'clienttype': '1' },
+                body: swapParams.toString()
+            });
+            const swapJson = await swapResp.json();
+            if (swapJson.code === 0) {
+                await deleteSwapRecord(orderNo, originalSku);
+                return { success: true, msg: '成功' };
+            } else {
+                return { success: false, msg: swapJson.msg || '换货接口失败' };
+            }
+        } catch (e) {
+            return { success: false, msg: e.message };
+        }
+    }
+
+    // 取消换货：恢复原SKU映射并删除云端记录
+    async function cancelSwap(orderNo, originalSku, targetSku, resultDiv) {
+        if (!confirm('确认取消换货？将恢复为原SKU映射')) return;
+
+        const result = await doCancelSwap(orderNo, originalSku, targetSku);
+        if (result.success) {
+            alert('已取消换货，恢复为原SKU');
+            resultDiv.remove();
+        } else {
+            alert('取消换货失败: ' + result.msg);
+        }
     }
 
     // 在页面SKU下方注入换货结果
@@ -413,9 +619,14 @@
         const existing = skuCell.querySelector('.c_swap_result');
         if (existing) existing.remove();
 
+        const originalSku = skuTag.innerText.trim();
+        const row = skuTag.closest('tr');
+        const orderSpan = row ? row.querySelector('td.odn_el div.copy_txt_box > div > span') : null;
+        const orderNo = orderSpan ? orderSpan.innerText.trim() : null;
+
         const resultDiv = document.createElement('div');
         resultDiv.className = 'c_swap_result';
-        resultDiv.style.cssText = 'margin-top:8px;padding:8px;border:1px solid #52c41a;border-radius:6px;background:#f6ffed;';
+        resultDiv.style.cssText = 'margin-top:8px;padding:8px;border:1px solid #52c41a;border-radius:6px;background:#f6ffed;position:relative;';
         resultDiv.innerHTML = `
             <div style="text-align:center;color:#52c41a;font-size:14px;">↓</div>
             <div style="display:flex;align-items:center;gap:8px;">
@@ -425,9 +636,14 @@
                     <div style="font-size:11px;color:#666;word-break:break-all;">${targetInfo.title}</div>
                     <div style="font-size:11px;color:#52c41a;">库存: ${targetInfo.available}</div>
                 </div>
+                <button class="c_cancel_swap_btn" style="padding:2px 8px;border:1px solid #ff4d4f;background:#fff;color:#ff4d4f;border-radius:3px;cursor:pointer;font-size:11px;white-space:nowrap;">取消换货</button>
             </div>
         `;
         skuCell.appendChild(resultDiv);
+
+        resultDiv.querySelector('.c_cancel_swap_btn').onclick = () => {
+            cancelSwap(orderNo, originalSku, targetSku, resultDiv);
+        };
     }
 
     function injectButtons() {
@@ -453,9 +669,98 @@
             };
             tag.parentElement.insertBefore(btn, tag.nextSibling);
         });
+
+        // 注入批量取消换货按钮
+        injectBatchCancelBtn();
+    }
+
+    // 批量取消换货按钮注入
+    function injectBatchCancelBtn() {
+        // 已存在则跳过
+        if (document.querySelector('.c_batch_cancel_swap_btn')) return;
+        // 找到批量操作栏第3个按钮
+        const refBtn = document.querySelector('#CeilingBox > div.rows.flex.star_align > div.lt > div > div > span:nth-child(3) > button');
+        if (!refBtn) return;
+        const btn = document.createElement('button');
+        btn.className = 'c_batch_cancel_swap_btn';
+        btn.innerText = '批量取消换货';
+        btn.style.cssText = 'margin-left:10px;padding:5px 12px;border:1px solid #ff4d4f;background:#fff;color:#ff4d4f;border-radius:4px;cursor:pointer;font-size:13px;white-space:nowrap;';
+        btn.onclick = batchCancelSwap;
+        refBtn.parentElement.after(btn);
+    }
+
+    // 批量取消换货逻辑
+    async function batchCancelSwap() {
+        // 获取所有已勾选的订单行checkbox
+        const checkboxes = document.querySelectorAll('#\\30  > div.list_items_out > div > div.lt > label > input[type=checkbox]');
+        // 实际上需要获取列表中每行的checkbox，上面那个是全选，我们找每行的
+        const rowCheckboxes = document.querySelectorAll('tr td input[type=checkbox]:checked');
+        // 收集已勾选行的订单号
+        const checkedOrderNos = [];
+        rowCheckboxes.forEach(cb => {
+            const row = cb.closest('tr');
+            if (!row) return;
+            const oSpan = row.querySelector('td.odn_el div.copy_txt_box > div > span');
+            if (oSpan) {
+                const no = oSpan.innerText.trim();
+                if (no && /^\d+$/.test(no)) checkedOrderNos.push(no);
+            }
+        });
+
+        if (!checkedOrderNos.length) {
+            alert('未勾选任何订单，或未找到订单号');
+            return;
+        }
+
+        // 查询云端换货记录
+        const records = await querySwapRecords(checkedOrderNos);
+        if (!records.length) {
+            alert('勾选的订单中没有换货记录');
+            return;
+        }
+
+        // 去重，同orderNo+originalSku只取一条
+        const uniqueRecords = [];
+        const seen = new Set();
+        records.forEach(r => {
+            const key = r.orderNo + '_' + r.originalSku;
+            if (!seen.has(key)) { seen.add(key); uniqueRecords.push(r); }
+        });
+
+        if (!confirm(`确认批量取消换货？将对 ${uniqueRecords.length} 条记录恢复原SKU映射`)) return;
+
+        let success = 0, fail = 0;
+        const btn = document.querySelector('.c_batch_cancel_swap_btn');
+        const originalText = btn.innerText;
+
+        for (let i = 0; i < uniqueRecords.length; i++) {
+            const r = uniqueRecords[i];
+            btn.innerText = `批量取消中 ${i + 1}/${uniqueRecords.length}...`;
+            btn.disabled = true;
+            const result = await doCancelSwap(r.orderNo, r.originalSku, r.targetSku);
+            if (result.success) {
+                success++;
+                // 移除页面上对应的换货结果卡片
+                document.querySelectorAll('tr').forEach(row => {
+                    const oSpan = row.querySelector('td.odn_el div.copy_txt_box > div > span');
+                    if (oSpan && oSpan.innerText.trim() === r.orderNo) {
+                        const card = row.querySelector('.c_swap_result');
+                        if (card) card.remove();
+                    }
+                });
+            } else {
+                fail++;
+                console.log('[Bigseller助手] 批量取消失败:', r.orderNo, r.originalSku, result.msg);
+            }
+        }
+
+        btn.innerText = originalText;
+        btn.disabled = false;
+        alert(`批量取消完成！成功: ${success}，失败: ${fail}`);
     }
 
     // 页面加载时从云端查询换货记录并注入显示
+    let _swapRetryCount = 0;
     async function loadSwapRecordsForPage() {
         // 收集当前页所有订单号
         const orderSpans = document.querySelectorAll('td.odn_el div.copy_txt_box > div > span');
@@ -464,33 +769,42 @@
             const no = span.innerText.trim();
             if (no && /^\d+$/.test(no)) orderNos.push(no);
         });
-        console.log('[Bigseller助手] 收集到订单号:', orderNos.length, orderNos.slice(0, 5));
+        console.log('[Bigseller助手] 收集到订单号:', orderNos.length, JSON.stringify(orderNos));
         if (!orderNos.length) return;
 
         const records = await querySwapRecords(orderNos);
-        console.log('[Bigseller助手] 云端返回换货记录:', records.length, records);
+        console.log('[Bigseller助手] 云端返回换货记录:', records.length, JSON.stringify(records.map(r => ({ orderNo: r.orderNo, originalSku: r.originalSku }))));
         if (!records.length) return;
 
-        // 按订单号分组
+        // 按订单号分组（去重，同orderNo+originalSku只取最新一条）
         const recordMap = {};
         records.forEach(r => {
             if (!recordMap[r.orderNo]) recordMap[r.orderNo] = [];
-            recordMap[r.orderNo].push(r);
+            const exists = recordMap[r.orderNo].find(x => x.originalSku === r.originalSku);
+            if (!exists) recordMap[r.orderNo].push(r);
         });
-        console.log('[Bigseller助手] 记录分组:', Object.keys(recordMap));
+        console.log('[Bigseller助手] 记录分组keys:', JSON.stringify(Object.keys(recordMap)));
+        // 对比：哪些订单号在记录里有但页面收集时没有
+        const missingOnPage = Object.keys(recordMap).filter(k => !orderNos.includes(k));
+        if (missingOnPage.length) console.log('[Bigseller助手] 云端有记录但页面未收集到的订单号:', JSON.stringify(missingOnPage));
 
         // 遍历页面，为有换货记录的SKU注入结果
         const allRows = document.querySelectorAll('tr');
         console.log('[Bigseller助手] 页面tr数量:', allRows.length);
         let matched = 0;
+        const foundOrderNos = new Set();
         allRows.forEach(row => {
             const oSpan = row.querySelector('td.odn_el div.copy_txt_box > div > span');
             if (!oSpan) return;
             const orderNo = oSpan.innerText.trim();
             if (!recordMap[orderNo]) return;
+            foundOrderNos.add(orderNo);
 
             const skuSpan = row.querySelector('td.merge_el.dt_el div.copy_txt_box > div > span');
-            if (!skuSpan) return;
+            if (!skuSpan) {
+                console.log('[Bigseller助手] 订单', orderNo, '找到了odn_el但没找到merge_el.dt_el的SKU span');
+                return;
+            }
             const sku = skuSpan.innerText.trim();
 
             const match = recordMap[orderNo].find(r => r.originalSku === sku);
@@ -505,7 +819,7 @@
             matched++;
             const resultDiv = document.createElement('div');
             resultDiv.className = 'c_swap_result';
-            resultDiv.style.cssText = 'margin-top:8px;padding:8px;border:1px solid #52c41a;border-radius:6px;background:#f6ffed;';
+            resultDiv.style.cssText = 'margin-top:8px;padding:8px;border:1px solid #52c41a;border-radius:6px;background:#f6ffed;position:relative;';
             resultDiv.innerHTML = `
                 <div style="text-align:center;color:#52c41a;font-size:14px;">↓</div>
                 <div style="display:flex;align-items:center;gap:8px;">
@@ -515,11 +829,28 @@
                         <div style="font-size:11px;color:#666;word-break:break-all;">${match.targetTitle}</div>
                         <div style="font-size:11px;color:#52c41a;">库存: ${match.targetAvailable}</div>
                     </div>
+                    <button class="c_cancel_swap_btn" style="padding:2px 8px;border:1px solid #ff4d4f;background:#fff;color:#ff4d4f;border-radius:3px;cursor:pointer;font-size:11px;white-space:nowrap;">取消换货</button>
                 </div>
             `;
             skuCell.appendChild(resultDiv);
+
+            resultDiv.querySelector('.c_cancel_swap_btn').onclick = () => {
+                cancelSwap(orderNo, match.originalSku, match.targetSku, resultDiv);
+            };
         });
-        console.log('[Bigseller助手] 成功注入换货结果:', matched);
+        // 汇总：哪些有记录的订单号在tr遍历中没被匹配到
+        const notFoundInRows = Object.keys(recordMap).filter(k => !foundOrderNos.has(k));
+        if (notFoundInRows.length) console.log('[Bigseller助手] 有记录但遍历tr时未找到对应行的订单号:', JSON.stringify(notFoundInRows));
+        console.log('[Bigseller助手] 成功注入换货结果:', matched, '/', Object.keys(recordMap).length);
+
+        // 如果有记录但匹配为0，说明DOM还没渲染完，延迟重试（最多重试5次）
+        if (matched === 0 && Object.keys(recordMap).length > 0 && _swapRetryCount < 5) {
+            _swapRetryCount++;
+            console.log('[Bigseller助手] DOM未就绪，' + _swapRetryCount + '秒后重试 (' + _swapRetryCount + '/5)');
+            setTimeout(loadSwapRecordsForPage, _swapRetryCount * 1000);
+        } else if (matched > 0) {
+            _swapRetryCount = 0;
+        }
     }
 
     // 初始注入 + 监听DOM变化（应对SPA翻页/筛选）
@@ -527,14 +858,15 @@
     observer.observe(document.body, { childList: true, subtree: true });
     setTimeout(injectButtons, 1500);
 
-    // 等待订单列表渲染后查询云端换货记录
-    let swapLoaded = false;
-    const swapObserver = new MutationObserver(async () => {
+    // 等待订单列表渲染后查询云端换货记录（防抖机制，DOM变化时重新检测）
+    let swapDebounceTimer = null;
+    let lastOrderCount = 0;
+    const swapObserver = new MutationObserver(() => {
         const orderSpans = document.querySelectorAll('td.odn_el div.copy_txt_box > div > span');
-        if (orderSpans.length > 0 && !swapLoaded) {
-            swapLoaded = true;
-            // 延迟500ms确保DOM完全稳定
-            setTimeout(loadSwapRecordsForPage, 500);
+        if (orderSpans.length > 0 && orderSpans.length !== lastOrderCount) {
+            lastOrderCount = orderSpans.length;
+            clearTimeout(swapDebounceTimer);
+            swapDebounceTimer = setTimeout(loadSwapRecordsForPage, 800);
         }
     });
     swapObserver.observe(document.body, { childList: true, subtree: true });

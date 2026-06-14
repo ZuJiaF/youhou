@@ -199,7 +199,89 @@
 
 ---
 
-## 2. 查询订单列表
+## 2. 查询订单状态统计
+
+**POST** `/api/v1/order/getOrderStatusCount.json`
+
+### 请求头
+
+| Header       | 值               |
+| ------------ | ---------------- |
+| Content-Type | application/json |
+| clienttype   | 1                |
+
+### 请求参数（JSON Body）
+
+与 pageList 共用同一套筛选参数，主要参数如下：
+
+| 参数                | 类型     | 示例值          | 说明                                    |
+| ------------------- | -------- | --------------- | --------------------------------------- |
+| searchType          | string   | variationSku    | 搜索类型（variationSku/orderNo等）      |
+| searchContent       | string   | JS-017-112      | 搜索内容                                |
+| inquireType         | number   | 2               | 匹配模式：0=模糊，1=前缀，2=精准       |
+| pageWarehouseIds    | string[] | ["54443"]       | 仓库ID列表                              |
+| statusList          | string[] | ["new"]         | 订单状态筛选（new/processing/shipped等）|
+| allOrder            | boolean  | true            | 是否查所有订单                          |
+| historyOrder        | number   | 0               | 是否历史订单（0=否）                    |
+| timeType            | number   | 1               | 时间类型                                |
+| days                | number   | 30              | 查询天数范围                            |
+| desc                | number   | 1               | 降序排列                                |
+| orderBy             | string   | printTime       | 排序字段                                |
+
+### 响应结构
+
+```json
+{
+  "code": 0,
+  "data": {
+    "mode": 1,
+    "warehouseMap": { "54443": "CHILL" },
+    "shopLists": [
+      { "id": 5297723, "name": "Fen (Fen 11D)", "platform": "tiktok", "site": "MY", "status": 1 }
+    ],
+    "platformStatusMap": {
+      "tiktok": [{ "name": "Awaiting Shipment", "value": "Awaiting Shipment" }],
+      "shopee": [{ "name": "Pending", "value": "order.status.shopee.pending" }],
+      "lazada": [{ "name": "待处理", "value": "order.status.lazada.pending" }]
+    },
+    "countMap": { "4657495": 45404, "tiktok": 150778, "shopee": 21397 },
+    "statusCountMap": {
+      "new": 748, "processing": 574, "shipped": 14580,
+      "completed": 120936, "canceled": 35588, "unpaid": 30
+    },
+    "shipProviderList": [
+      { "id": 7872769, "name": "Shopee-TH-J&T Express", "platform": "shopee", "providerChannelId": 85 }
+    ],
+    "labelList": [
+      { "id": 1545, "title": "测评订单", "color": "#4045B2", "category": 1 }
+    ],
+    "shopGroups": [
+      { "id": 80173, "groupName": "Fen" }
+    ]
+  }
+}
+```
+
+### 关键字段
+
+| 字段               | 说明                                              |
+| ------------------ | ------------------------------------------------- |
+| warehouseMap       | 仓库ID→名称映射                                  |
+| shopLists          | 当前账号下所有店铺列表                            |
+| platformStatusMap  | 各平台的订单状态枚举值                            |
+| countMap           | 按店铺ID统计的订单数量，也含平台汇总              |
+| statusCountMap     | 按订单状态统计的数量                              |
+| shipProviderList   | 可用物流商列表                                    |
+| labelList          | 订单标签列表                                      |
+| shopGroups         | 店铺分组列表                                      |
+
+### 用途
+
+该接口用于获取订单页面的侧边栏统计数据（各状态订单数量）及筛选选项（店铺、物流商、标签等），通常在进入订单列表页时调用。
+
+---
+
+## 3. 查询订单列表
 
 **POST** `/api/v1/order/new/pageList.json`
 
@@ -212,17 +294,34 @@
 
 ### 请求参数（JSON Body）
 
-| 参数          | 类型    | 示例值          | 说明                           |
-| ------------- | ------- | --------------- | ------------------------------ |
-| searchType    | string  | orderNo         | 搜索类型                       |
-| searchContent | string  | 123456,789012   | 搜索内容，多个订单号逗号分隔   |
-| inquireType   | number  | 2               | 查询类型                       |
-| allOrder      | boolean | true            | 是否查所有订单                 |
-| historyOrder  | number  | 0               | 是否历史订单（0=否）           |
-| pageNo        | number  | 1               | 页码                           |
-| pageSize      | number  | 300             | 每页条数                       |
-| desc          | number  | 1               | 降序排列                       |
-| orderBy       | string  | printTime       | 排序字段                       |
+| 参数                | 类型     | 示例值          | 说明                                    |
+| ------------------- | -------- | --------------- | --------------------------------------- |
+| searchType          | string   | variationSku    | 搜索类型（variationSku/orderNo等）      |
+| searchContent       | string   | JS-017-112      | 搜索内容                                |
+| inquireType         | number   | 2               | 匹配模式：0=模糊，1=前缀，2=精准       |
+| pageWarehouseIds    | string[] | ["54443"]       | 仓库ID列表                              |
+| statusList          | string[] | ["new"]         | 订单状态筛选（new/processing/shipped等）|
+| allOrder            | boolean  | true            | 是否查所有订单                          |
+| historyOrder        | number   | 0               | 是否历史订单（0=否）                    |
+| timeType            | number   | 1               | 时间类型                                |
+| days                | number   | 30              | 查询天数范围                            |
+| pageNo              | number   | 1               | 页码                                    |
+| pageSize            | number   | 300             | 每页条数                                |
+| desc                | number   | 1               | 降序排列                                |
+| orderBy             | string   | printTime       | 排序字段                                |
+| shopId              | number   | null            | 店铺ID筛选                              |
+| shipProviderId      | number   | null            | 物流商ID筛选                            |
+| platformStatus      | string   | null            | 平台状态筛选                            |
+| shopGroup           | number   | null            | 店铺分组筛选                            |
+| lableIds            | string   | null            | 标签ID筛选                              |
+| paymentMethod       | string   | null            | 付款方式筛选                            |
+
+### searchType 取值说明
+
+| 值             | 说明             |
+| -------------- | ---------------- |
+| variationSku   | 按变体SKU搜索    |
+| orderNo        | 按订单号搜索     |
 
 ### 响应结构
 
@@ -231,27 +330,73 @@
   "code": 0,
   "data": {
     "page": {
-      "rows": [
-        {
-          "id": "订单内部ID",
-          "platformOrderId": "平台订单号"
-        }
-      ]
+      "pageNo": 1,
+      "pageSize": 300,
+      "totalPage": 1,
+      "totalSize": 8,
+      "rows": [{ "...订单对象..." }]
     }
   }
 }
 ```
 
-### 关键字段
+### 订单对象关键字段
 
-| 字段            | 说明                        |
-| --------------- | --------------------------- |
-| id              | Bigseller内部订单ID         |
-| platformOrderId | 平台订单号（即页面显示的号）|
+| 字段                    | 说明                                    |
+| ----------------------- | --------------------------------------- |
+| id                      | Bigseller内部订单ID                     |
+| platformOrderId         | 平台订单号（即页面显示的号）            |
+| shopId                  | 店铺ID                                  |
+| shopName                | 店铺名称                                |
+| state                   | BS内部状态（new/processing/shipped等）  |
+| marketPlaceState        | 平台原始状态                            |
+| platform                | 平台（tiktok/shopee/lazada）            |
+| packageNo               | 包裹号                                  |
+| amount                  | 订单金额                                |
+| amountUnit              | 货币单位                                |
+| buyerUsername            | 买家用户名                              |
+| buyerShippingCarrier    | 买家选择的物流                          |
+| trackingNo              | 物流追踪号                              |
+| orderCreateTimeStr      | 订单创建时间                            |
+| paymentMethod           | 支付方式（Prepaid/COD）                 |
+| warehouseId             | 仓库ID                                  |
+| shipmentWarehouse       | 发货仓库名称                            |
+| error                   | 错误代码（如库存不足）                  |
+| errorMsg                | 错误信息                                |
+| preOrder                | 是否预售订单                            |
+
+### 订单商品项（orderItemList）关键字段
+
+| 字段                | 说明                              |
+| ------------------- | --------------------------------- |
+| id                  | 商品项ID                          |
+| varSku              | 变体SKU                           |
+| varAttr             | 变体属性描述                      |
+| quantity            | 数量                              |
+| image               | 商品图片URL                       |
+| varOriginalPrice    | 原价                              |
+| varDiscountedPrice  | 折后价                            |
+| amount              | 小计金额                          |
+| itemName            | 商品名称                          |
+| inventorySku        | 库存SKU（换货后的SKU）            |
+| platformItemId      | 平台商品ID                        |
+| platformVariationId | 平台变体ID                        |
+
+### 费用明细（feeDetail）关键字段
+
+| 字段                | 说明           |
+| ------------------- | -------------- |
+| totalAmount         | 订单总金额     |
+| discount            | 折扣           |
+| commissionFee       | 佣金           |
+| serviceFee          | 服务费         |
+| estimatedShippingFee| 预估运费       |
+| estimatedProfit     | 预估利润       |
+| profitRate          | 利润率         |
 
 ---
 
-## 3. 查询订单详情
+## 4. 查询订单详情
 
 **GET** `/api/v1/order/detail.json`
 
@@ -300,7 +445,7 @@
 
 ---
 
-## 4. 换货（更换SKU映射关系）
+## 5. 换货（更换SKU映射关系）
 
 **POST** `/api/v1/inventory/mappingRelation/changeMappingRelation.json`
 
