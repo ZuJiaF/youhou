@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bigseller助手
 // @namespace    http://tampermonkey.net/
-// @version      0.6.0
+// @version      0.7.8
 // @match        *://www.bigseller.pro/web/order/index.htm*
 // @match        *://www.bigseller.com/web/order/index.htm*
 // @grant        GM_xmlhttpRequest
@@ -13,8 +13,83 @@
 
     const STYLE = 'margin-left:6px;padding:2px 8px;border:none;background:#722ed1;color:#fff;border-radius:3px;cursor:pointer;font-size:12px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.2);';
 
-    const WAREHOUSE_ID = '54443';
     const CLOUD_BASE = 'https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/bigsellerSwap';
+    const WH_STORAGE_KEY = 'bigseller_helper_warehouse_id';
+
+    // 多仓库支持
+    let warehouseList = [];
+    let currentWarehouseId = localStorage.getItem(WH_STORAGE_KEY) || '';
+
+    function getWarehouseId() {
+        return currentWarehouseId;
+    }
+
+    async function fetchWarehouseList() {
+        try {
+            const resp = await fetch('/api/v1/warehouse/pageList.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'clienttype': '1' },
+                body: 'orderBy=&desc='
+            });
+            const json = await resp.json();
+            if (json.code === 0 && json.data?.rows?.length) {
+                return json.data.rows
+                    .filter(w => w.permission === 1)
+                    .map(w => ({ id: String(w.id), name: w.name, isDefault: w.isDefault === 1 }));
+            }
+        } catch (e) {
+            console.log('[Bigseller助手] 获取仓库列表失败:', e.message || e);
+        }
+        return [];
+    }
+
+    // 订单仓库信息映射（packageNo → warehouseName）
+    const packageWarehouseMap = {};
+
+    // 拦截 XMLHttpRequest 获取订单列表中的仓库信息（页面用 axios/XHR）
+    const origXhrOpen = XMLHttpRequest.prototype.open;
+    const origXhrSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+        this._url = url;
+        return origXhrOpen.call(this, method, url, ...rest);
+    };
+    XMLHttpRequest.prototype.send = function (...args) {
+        this.addEventListener('load', function () {
+            try {
+                if (this._url && this._url.includes('/api/v1/order/new/pageList.json')) {
+                    const json = JSON.parse(this.responseText);
+                    if (json.code === 0 && json.data?.page?.rows?.length) {
+                        json.data.page.rows.forEach(order => {
+                            const whName = order.shipmentWarehouse
+                                || (warehouseList.find(w => w.id === String(order.warehouseId))?.name)
+                                || '';
+                            if (whName && order.packageNo) {
+                                packageWarehouseMap[order.packageNo] = whName;
+                            }
+                        });
+                        setTimeout(injectWarehouseTags, 500);
+                    }
+                }
+            } catch (e) {}
+        });
+        return origXhrSend.apply(this, args);
+    };
+
+    // 在包裹号右边注入仓库标签
+    function injectWarehouseTags() {
+        const packageSpans = document.querySelectorAll('div.list_items_out > div > div.lt > div > div > span');
+        packageSpans.forEach(span => {
+            const text = span.innerText.trim().replace(/^#\s*/, '');
+            if (!text || !packageWarehouseMap[text]) return;
+            if (span.parentElement.querySelector('.c_wh_tag')) return;
+
+            const tag = document.createElement('span');
+            tag.className = 'c_wh_tag';
+            tag.innerText = packageWarehouseMap[text];
+            tag.style.cssText = 'margin-left:8px;padding:1px 6px;background:#f0f5ff;border:1px solid #adc6ff;color:#2f54eb;border-radius:3px;font-size:11px;vertical-align:middle;';
+            span.parentElement.insertBefore(tag, span.nextSibling);
+        });
+    }
 
     // GM_xmlhttpRequest 封装为 Promise
     function gmFetch(url, data) {
@@ -85,7 +160,7 @@
             zoneId: '',
             openFlag: 'false',
             hideZeroInventorySku: '0',
-            warehouseIds: WAREHOUSE_ID
+            warehouseIds: getWarehouseId()
         });
         const resp = await fetch('/api/v1/inventory/pageList.json', {
             method: 'POST',
@@ -118,7 +193,7 @@
             zoneId: '',
             openFlag: 'false',
             hideZeroInventorySku: '0',
-            warehouseIds: WAREHOUSE_ID
+            warehouseIds: getWarehouseId()
         });
         const resp = await fetch('/api/v1/inventory/pageList.json', {
             method: 'POST',
@@ -207,7 +282,7 @@
                 searchType: 'variationSku',
                 searchContent: sku,
                 inquireType: 2,
-                pageWarehouseIds: [WAREHOUSE_ID],
+                pageWarehouseIds: [getWarehouseId()],
                 statusList: ['new'],
                 allOrder: true,
                 historyOrder: 0,
@@ -224,6 +299,19 @@
         return [];
     }
 
+    // 生成仓库选择器HTML（用于弹窗内嵌入）
+    function buildWarehouseSelectorHtml() {
+        const options = warehouseList.map(w =>
+            `<option value="${w.id}" ${w.id === currentWarehouseId ? 'selected' : ''}>${w.name}</option>`
+        ).join('');
+        return `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <label style="font-size:13px;color:#666;font-weight:bold;white-space:nowrap;">仓库:</label>
+                <select id="c_modal_wh_select" style="flex:1;padding:4px 8px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;cursor:pointer;">${options}</select>
+            </div>
+        `;
+    }
+
     // 弹窗相关
     async function showSwapModal(currentSku, currentStock, currentTitle, currentImage, orderNo, skuTag) {
         // 移除已有弹窗
@@ -237,13 +325,14 @@
         mask.innerHTML = `
 <div style="background:#fff;border-radius:8px;padding:24px;width:560px;box-shadow:0 4px 20px rgba(0,0,0,.3);">
     <div style="font-size:16px;font-weight:bold;margin-bottom:16px;">换货操作</div>
+    ${buildWarehouseSelectorHtml()}
     <div style="display:flex;gap:16px;margin-bottom:16px;">
         <div style="flex:1;padding:12px;border:1px solid #d9d9d9;border-radius:6px;background:#fafafa;">
             <label style="font-size:13px;color:#666;font-weight:bold;">当前SKU</label>
             <img src="${currentImage}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;margin-top:8px;display:${currentImage ? 'block' : 'none'};" />
             <div style="margin-top:8px;font-size:14px;word-break:break-all;">${currentSku}</div>
             <div style="margin-top:4px;font-size:12px;color:#666;word-break:break-all;">${currentTitle}</div>
-            <div style="margin-top:6px;font-size:12px;color:#999;">库存: ${currentStock}</div>
+            <div data-current-stock style="margin-top:6px;font-size:12px;color:#999;">库存: ${currentStock}</div>
         </div>
         <div style="display:flex;align-items:center;font-size:20px;color:#999;">→</div>
         <div style="flex:1;padding:12px;border:1px solid #722ed1;border-radius:6px;background:#f9f0ff;">
@@ -288,6 +377,44 @@
         // 点击遮罩或取消关闭
         mask.addEventListener('click', e => { if (e.target === mask) closeModal(); });
         document.getElementById('c_swap_cancel').onclick = () => closeModal();
+
+        // 弹窗内仓库切换
+        const modalWhSelect = document.getElementById('c_modal_wh_select');
+        if (modalWhSelect) {
+            modalWhSelect.addEventListener('change', async () => {
+                currentWarehouseId = modalWhSelect.value;
+                localStorage.setItem(WH_STORAGE_KEY, currentWarehouseId);
+                // 刷新当前SKU库存
+                const refreshedInfo = await fetchSkuInfo(currentSku);
+                const stockEl = mask.querySelector('[data-current-stock]');
+                if (stockEl) stockEl.innerText = '库存: ' + (refreshedInfo ? refreshedInfo.available : '--');
+                // 刷新推荐列表
+                const recommendEl = document.getElementById('c_swap_recommend');
+                recommendEl.innerText = '搜索中...';
+                const list = await fetchRelatedSkus(extractStylePrefix(currentSku), currentSku);
+                if (list.length) {
+                    const sorted = sortRecommendations(list, currentTitle);
+                    recommendEl.innerHTML = sorted.map(item =>
+                        `<div class="c_rec_item" style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;gap:8px;" data-sku="${item.sku}">
+                            <img src="${item.image}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0;${item.image ? '' : 'display:none;'}" />
+                            ${item._label ? `<span style="padding:1px 4px;border-radius:3px;font-size:10px;white-space:nowrap;background:${item._priority === 1 ? '#e6f7ff;color:#1890ff' : item._priority === 2 ? '#f6ffed;color:#52c41a' : '#fff7e6;color:#fa8c16'};">${item._label}</span>` : ''}
+                            <span style="flex:1;word-break:break-all;"><strong>${item.title}</strong><br/>${item.sku}</span>
+                            <span style="margin-left:8px;white-space:nowrap;color:${item.available > 0 ? '#52c41a' : '#999'};">可用: ${item.available}</span>
+                        </div>`
+                    ).join('');
+                    recommendEl.querySelectorAll('.c_rec_item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            const toEl = document.getElementById('c_swap_to');
+                            toEl.value = el.dataset.sku;
+                            toEl.dispatchEvent(new Event('blur'));
+                        });
+                    });
+                } else {
+                    recommendEl.innerText = '未找到同款SKU';
+                }
+            });
+        }
+
         document.getElementById('c_swap_confirm').onclick = async () => {
             const targetSku = document.getElementById('c_swap_to').value.trim();
             if (!targetSku) { alert('请输入目标SKU'); return; }
@@ -358,7 +485,7 @@
                     orderId: String(orderId),
                     orderItemId: String(orderItem.id),
                     orderState: 'new',
-                    warehouseId: WAREHOUSE_ID,
+                    warehouseId: getWarehouseId(),
                     skuId: String(targetInfo.skuId),
                     platformSku: targetSku,
                     changeType: 'only'
@@ -380,7 +507,7 @@
                         targetTitle: targetInfo.title,
                         targetImage: targetInfo.image,
                         targetAvailable: targetInfo.available,
-                        warehouseId: WAREHOUSE_ID
+                        warehouseId: getWarehouseId()
                     });
 
                     // 批量换货逻辑
@@ -407,7 +534,7 @@
                                     orderId: String(order.id),
                                     orderItemId: String(oItem.id),
                                     orderState: 'new',
-                                    warehouseId: WAREHOUSE_ID,
+                                    warehouseId: getWarehouseId(),
                                     skuId: String(targetInfo.skuId),
                                     platformSku: targetSku,
                                     changeType: 'only'
@@ -430,7 +557,7 @@
                                         targetTitle: targetInfo.title,
                                         targetImage: targetInfo.image,
                                         targetAvailable: targetInfo.available,
-                                        warehouseId: WAREHOUSE_ID
+                                        warehouseId: getWarehouseId()
                                     });
                                 } else { batchFail++; console.log('[Bigseller助手][批量换货] 换货失败, order:', order.platformOrderId, 'msg:', bJson.msg); }
                             } catch (e) { batchFail++; }
@@ -576,7 +703,7 @@
                 orderId: String(orderId),
                 orderItemId: String(orderItem.id),
                 orderState: 'new',
-                warehouseId: WAREHOUSE_ID,
+                warehouseId: getWarehouseId(),
                 skuId: String(originalInfo.skuId),
                 platformSku: originalSku,
                 changeType: 'only'
@@ -853,6 +980,24 @@
         }
     }
 
+    // 初始化：获取仓库列表
+    async function init() {
+        warehouseList = await fetchWarehouseList();
+        if (warehouseList.length) {
+            // 如果没有记忆或记忆的仓库不在列表中，使用默认仓库
+            const savedId = localStorage.getItem(WH_STORAGE_KEY);
+            const validSaved = warehouseList.find(w => w.id === savedId);
+            if (validSaved) {
+                currentWarehouseId = savedId;
+            } else {
+                const defaultWh = warehouseList.find(w => w.isDefault) || warehouseList[0];
+                currentWarehouseId = defaultWh.id;
+                localStorage.setItem(WH_STORAGE_KEY, currentWarehouseId);
+            }
+        }
+    }
+    init();
+
     // 初始注入 + 监听DOM变化（应对SPA翻页/筛选）
     const observer = new MutationObserver(() => injectButtons());
     observer.observe(document.body, { childList: true, subtree: true });
@@ -866,7 +1011,10 @@
         if (orderSpans.length > 0 && orderSpans.length !== lastOrderCount) {
             lastOrderCount = orderSpans.length;
             clearTimeout(swapDebounceTimer);
-            swapDebounceTimer = setTimeout(loadSwapRecordsForPage, 800);
+            swapDebounceTimer = setTimeout(() => {
+                loadSwapRecordsForPage();
+                injectWarehouseTags();
+            }, 800);
         }
     });
     swapObserver.observe(document.body, { childList: true, subtree: true });
