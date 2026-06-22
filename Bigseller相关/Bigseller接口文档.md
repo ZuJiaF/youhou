@@ -296,25 +296,50 @@
 
 | 参数                | 类型     | 示例值          | 说明                                    |
 | ------------------- | -------- | --------------- | --------------------------------------- |
-| searchType          | string   | variationSku    | 搜索类型（variationSku/orderNo等）      |
+| searchType          | string   | variationSku    | 搜索类型（variationSku/orderNo/commoditySku等）|
 | searchContent       | string   | JS-017-112      | 搜索内容                                |
 | inquireType         | number   | 2               | 匹配模式：0=模糊，1=前缀，2=精准       |
+| status              | string   | new             | 订单状态筛选（单值，见下方枚举）        |
+| statusList          | string[] | ["new"]         | 订单状态筛选（数组形式，与status二选一）|
+| allOrder            | boolean  | false           | 是否查所有订单（true时可能忽略status过滤）|
+| packState           | string   | "0"             | 处理状态：0=待处理，3=发货中            |
 | pageWarehouseIds    | string[] | ["54443"]       | 仓库ID列表                              |
-| statusList          | string[] | ["new"]         | 订单状态筛选（new/processing/shipped等）|
-| allOrder            | boolean  | true            | 是否查所有订单                          |
+| warehouseIdList     | string[] | ["54443"]       | 仓库ID列表（另一种写法）               |
 | historyOrder        | number   | 0               | 是否历史订单（0=否）                    |
 | timeType            | number   | 1               | 时间类型                                |
-| days                | number   | 30              | 查询天数范围                            |
+| days                | string   | ""              | 查询天数范围                            |
+| beginDate           | string   | ""              | 开始日期                                |
+| endDate             | string   | ""              | 结束日期                                |
 | pageNo              | number   | 1               | 页码                                    |
 | pageSize            | number   | 300             | 每页条数                                |
-| desc                | number   | 1               | 降序排列                                |
-| orderBy             | string   | printTime       | 排序字段                                |
+| desc                | number   | 0               | 排序方向：0=升序，1=降序                |
+| orderBy             | string   | orderTime       | 排序字段（orderTime/printTime/expireTime）|
 | shopId              | number   | null            | 店铺ID筛选                              |
 | shipProviderId      | number   | null            | 物流商ID筛选                            |
 | platformStatus      | string   | null            | 平台状态筛选                            |
 | shopGroup           | number   | null            | 店铺分组筛选                            |
 | lableIds            | string   | null            | 标签ID筛选                              |
 | paymentMethod       | string   | null            | 付款方式筛选                            |
+| waveSearchType      | number   | 1               | 波次搜索类型                            |
+| wareType            | number   | 0               | 仓库类型                                |
+
+### status / state 枚举值
+
+| 值           | 中文含义 | 说明                          |
+| ------------ | -------- | ----------------------------- |
+| new          | 待处理   | 新订单，未开始处理            |
+| processing   | 发货中   | 已打单/待揽收                 |
+| shipped      | 已发货   | 物流已揽收                    |
+| completed    | 已完成   | 订单完成                      |
+| canceled     | 已取消   | 订单取消                      |
+| unpaid       | 未付款   | 待付款订单                    |
+| voided       | 已搁置   | 人工搁置的订单                |
+
+### allOrder 与 status 的关系
+
+- `allOrder: false` + `status: "new"`：严格只返回"待处理"订单（推荐）
+- `allOrder: true`：可能忽略 status/statusList 过滤，返回所有状态订单
+- 建议：需要精确按状态查询时，使用 `allOrder: false` + `status` 组合
 
 ### searchType 取值说明
 
@@ -348,22 +373,34 @@
 | platformOrderId         | 平台订单号（即页面显示的号）            |
 | shopId                  | 店铺ID                                  |
 | shopName                | 店铺名称                                |
-| state                   | BS内部状态（new/processing/shipped等）  |
-| marketPlaceState        | 平台原始状态                            |
+| state                   | BS内部状态（见上方枚举表）              |
+| marketPlaceState        | 平台原始状态（如 Awaiting Shipment / Awaiting Collection）|
+| lastOrderStatus         | 上一个状态（New/To Ship等）             |
+| viewStatus              | 显示状态                                |
+| multilingualViewStatus  | 多语言显示状态（待处理/待打单等）       |
+| packState               | 处理阶段：0=待处理，3=发货中            |
 | platform                | 平台（tiktok/shopee/lazada）            |
 | packageNo               | 包裹号                                  |
 | amount                  | 订单金额                                |
 | amountUnit              | 货币单位                                |
 | buyerUsername            | 买家用户名                              |
 | buyerShippingCarrier    | 买家选择的物流                          |
-| trackingNo              | 物流追踪号                              |
+| shippingCarrierId       | 物流商ID                                |
+| shippingCarrierName     | 物流商名称（如 TikTok-TH-J&T Express）  |
+| trackingNo              | 物流追踪号（发货中/已发货时有值）       |
 | orderCreateTimeStr      | 订单创建时间                            |
 | paymentMethod           | 支付方式（Prepaid/COD）                 |
 | warehouseId             | 仓库ID                                  |
 | shipmentWarehouse       | 发货仓库名称                            |
+| shippedTime             | 发货截止时间（时间戳ms）                |
+| shippedTimeStr          | 发货截止时间（格式化）                  |
+| firstShipped            | 是否首次发货（0=否）                    |
 | error                   | 错误代码（如库存不足）                  |
 | errorMsg                | 错误信息                                |
 | preOrder                | 是否预售订单                            |
+| canCancel               | 是否可取消（1=可以）                    |
+| splitOrder              | 是否拆单                                |
+| tiktokSplitOrCombineTag | TikTok拆合单标记（none/split/combine）  |
 
 ### 订单商品项（orderItemList）关键字段
 
