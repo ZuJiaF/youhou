@@ -1,4 +1,4 @@
-//v0.6.0-beta.1
+//v0.6.0-beta.5
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
@@ -537,6 +537,7 @@ let heJiIndex//存储合计的行id的下标
 let startRow = 4//生成后数据开始行
 let aimSheet//远程链接的表格
 let pdfLink//储存pdf的链接
+let pdfLinkEmpty//储存无数量版pdf的链接
 
 
 main()//执行主函数
@@ -664,6 +665,38 @@ async function huoWuQingDanFunc() {
   if (generatePdfResult.result) {
     pdfLink = generatePdfResult.result
     console.log("PDF链接:", pdfLink)
+  }
+
+  //生成无数量版PDF #无数量版 #空数量
+  let huoWuQingDanDataEmpty = JSON.parse(JSON.stringify(huoWuQingDanData))
+  //通过ID定位"数量"列并清空数据行
+  let shuLiangColIndex = huoWuQingDanDataEmpty.findIndex(col => col[0] && col[0][0] === "ID007")
+  console.log("【调试-无数量版】shuLiangColIndex:", shuLiangColIndex)
+  console.log("【调试-无数量版】各列[0][0]:", huoWuQingDanDataEmpty.map(col => col[0] && col[0][0]))
+  if (shuLiangColIndex !== -1) {
+    console.log("【调试-无数量版】清空前数量列前5行:", JSON.stringify(huoWuQingDanDataEmpty[shuLiangColIndex].slice(0, 8)))
+    for (let k = 3; k < huoWuQingDanDataEmpty[shuLiangColIndex].length; k++) {
+      huoWuQingDanDataEmpty[shuLiangColIndex][k] = [""]
+    }
+    console.log("【调试-无数量版】清空后数量列前5行:", JSON.stringify(huoWuQingDanDataEmpty[shuLiangColIndex].slice(0, 8)))
+  } else {
+    console.log("【调试-无数量版】未找到ID007列！")
+  }
+  let respGeneratePdfEmpty = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/wps/generatePdf', {
+    "huoWuQingDanData": huoWuQingDanDataEmpty,
+    "qiShu": qiShu21 + "(无数量)",
+    "guoJia": guoJia,
+    "postMothod": postMothod26
+  })
+  let generatePdfEmptyResult = respGeneratePdfEmpty.json()
+  console.log("后端generatePdf(无数量版)返回:", JSON.stringify(generatePdfEmptyResult))
+  if (generatePdfEmptyResult.result) {
+    pdfLinkEmpty = generatePdfEmptyResult.result
+    console.log("【调试-无数量版】PDF链接:", pdfLinkEmpty)
+    console.log("【调试-对比】正常版链接:", pdfLink)
+    console.log("【调试-对比】两链接是否相同:", pdfLink === pdfLinkEmpty)
+  } else {
+    console.log("【调试-无数量版】后端未返回result！完整响应:", JSON.stringify(generatePdfEmptyResult))
   }
 }
 
@@ -1368,6 +1401,13 @@ function caigouSheetFuncPart3(aimSheet) {
   caigoubiaosheet.UsedRange.EntireRow.Hidden = false
   //console.log(974)
   caigoubiaosheet.Range("A1:" + columnZm + height).Value2 = caigoubiaoDataMax
+  //在采购表写入无数量版PDF链接到S4 #无数量版链接
+  if (pdfLinkEmpty) {
+    let colNum1025Local = getCol("ID033", 1, "采购表")
+    let titleCellLocal = caigoubiaosheet.Range(`${colNum1025Local}${startRow}`)
+    let titleTextEmpty = `货物清单-无数量(第${qiShu21}期${guoJia}${postMothod26}）`
+    titleCellLocal.Hyperlinks.Add(titleCellLocal, pdfLinkEmpty, "", "", titleTextEmpty)
+  }
   //console.log("1023", pdfLink)
   let colNum1025 = getCol("ID033", 1, "采购表")//储存着行ID的列号字母
   if (aimSheet) {
@@ -1377,6 +1417,12 @@ function caigouSheetFuncPart3(aimSheet) {
     let titleCell = aimSheet.Range(`${colNum1025}3`)
     let titleText = `货物清单(第${qiShu21}期${guoJia}${postMothod26}）`//期数和运输情况 #货物清单标题 #货物清单格式
     titleCell.Hyperlinks.Add(titleCell, pdfLink, "", "", titleText)
+    //在aimSheet写入无数量版PDF链接到第4行 #无数量版链接
+    if (pdfLinkEmpty) {
+      let titleCellEmpty = aimSheet.Range(`${colNum1025}${startRow}`)
+      let titleTextEmpty = `货物清单-无数量(第${qiShu21}期${guoJia}${postMothod26}）`
+      titleCellEmpty.Hyperlinks.Add(titleCellEmpty, pdfLinkEmpty, "", "", titleTextEmpty)
+    }
   }
 
 
