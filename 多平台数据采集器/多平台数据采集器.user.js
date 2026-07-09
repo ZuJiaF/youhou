@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.2.1
+// @version      2.6.1
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -9,13 +9,32 @@
 // @match        https://shopee.com.my/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
+// @grant        unsafeWindow
+// @run-at       document-start
 // @connect      localhost
 // @connect      127.0.0.1
 // @connect      env-00jy671a213o.dev-hz.cloudbasefunction.cn
 // ==/UserScript==
 
+// 调试信息收集器（不依赖 console，直接写到面板）
+const _debugLogs = [];
+function _debug(msg) {
+    _debugLogs.push('[' + new Date().toLocaleTimeString() + '] ' + msg);
+    // 尝试写到页面 console
+    try { unsafeWindow.console.log('[采集器debug]', msg); } catch(e) {}
+    // 尝试更新面板中的调试区
+    try {
+        const el = document.getElementById('tiktok-debug-area');
+        if (el) el.textContent = _debugLogs.slice(-5).join('\n');
+    } catch(e) {}
+}
+
+_debug('脚本开始执行, URL: ' + window.location.href);
+
 (function() {
     'use strict';
+
+    _debug('IIFE 进入');
 
     const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.2';
 
@@ -26,6 +45,209 @@
     // ERP 系统地址
     const ERP_URL = 'http://localhost:5173';
     const API_BASE = 'https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/competitor';
+
+    // 拦截到的价格数据（TikTok SSR 响应）
+    let interceptedPriceData = null;
+
+    // Hook fetch 拦截 TikTok SSR Direct 请求，提取价格区间
+    if (PLATFORM === 'tk') {
+        _debug('开始安装 fetch hook...');
+        const originalFetch = unsafeWindow.fetch;
+        unsafeWindow.fetch = async function(...args) {
+            const response = await originalFetch.apply(this, args);
+            try {
+                const url = (typeof args[0] === 'string') ? args[0] : args[0]?.url || '';
+                if (url.includes('__ssrDirect=true')) {
+                    _debug('fetch 捕获 ssrDirect: ' + url.substring(0, 80));
+                    if (url.includes('/pdp/')) {
+                        _debug('✅ 匹配 /pdp/ SSR Direct');
+                        const cloned = response.clone();
+                        cloned.text().then(text => {
+                            _debug('响应长度: ' + text.length + ', 前80字符: ' + text.substring(0, 80));
+                            try {
+                                // 先尝试直接解析JSON（浏览器可能已解码）
+                                let json;
+                                try {
+                                    json = JSON.parse(text);
+                                    _debug('直接JSON解析成功');
+                                } catch(e1) {
+                                    // 尝试清理后base64解码
+                                    const cleaned = text.replace(/[\s\r\n]/g, '');
+                                    const decoded = atob(cleaned);
+                                    json = JSON.parse(decoded);
+                                    _debug('base64解码后JSON解析成功');
+                                }
+                                _debug('顶层key: ' + Object.keys(json).slice(0, 5).join(','));
+                                const priceInfo = findPriceInSSR(json);
+                                _debug('价格结果: ' + JSON.stringify(priceInfo));
+                                if (priceInfo) {
+                                    interceptedPriceData = priceInfo;
+                                    updatePricePreview();
+                                }
+                            } catch (e) {
+                                _debug('解析失败: ' + e.message);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                _debug('fetch hook异常: ' + e.message);
+            }
+            return response;
+        };
+        _debug('fetch hook 已安装');
+
+        // 同时 hook XMLHttpRequest
+        const originalXHROpen = unsafeWindow.XMLHttpRequest.prototype.open;
+        const originalXHRSend = unsafeWindow.XMLHttpRequest.prototype.send;
+        unsafeWindow.XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+            this._interceptUrl = url;
+            return originalXHROpen.call(this, method, url, ...rest);
+        };
+        unsafeWindow.XMLHttpRequest.prototype.send = function(...args) {
+            if (this._interceptUrl && this._interceptUrl.includes('__ssrDirect=true') && this._interceptUrl.includes('/pdp/')) {
+                _debug('XHR 捕获 SSR Direct');
+                this.addEventListener('load', function() {
+                    _debug('XHR 响应到达, 长度: ' + this.responseText.length);
+                    try {
+                        let json;
+                        try {
+                            json = JSON.parse(this.responseText);
+                        } catch(e1) {
+                            const cleaned = this.responseText.replace(/[\s\r\n]/g, '');
+                            const decoded = atob(cleaned);
+                            json = JSON.parse(decoded);
+                        }
+                        const priceInfo = findPriceInSSR(json);
+                        _debug('XHR 价格结果: ' + JSON.stringify(priceInfo));
+                        if (priceInfo) {
+                            interceptedPriceData = priceInfo;
+                            updatePricePreview();
+                        }
+                    } catch (e) {
+                        _debug('XHR 解析失败: ' + e.message);
+                    }
+                });
+            }
+            return originalXHRSend.apply(this, args);
+        };
+        _debug('XHR hook 已安装');
+
+        // Fallback: 如果3秒后仍未拦截到价格数据，主动发起 SSR 请求
+        setTimeout(() => {
+            if (interceptedPriceData) return;
+            _debug('拦截超时，主动发起 SSR 请求...');
+            const currentUrl = window.location.href.split('?')[0];
+            const region = new URLSearchParams(window.location.search).get('region') || 'MY';
+            const ssrUrl = currentUrl + '?region=' + region + '&__loader=shop%2F%28region%29%2Fpdp%2F%28product_name_slug%24%29%2F%28product_id%29%2Fpage&__ssrDirect=true';
+            _debug('SSR URL: ' + ssrUrl.substring(0, 80));
+            unsafeWindow.fetch(ssrUrl, {
+                credentials: 'include',
+                headers: { 'Accept': '*/*' }
+            }).then(r => r.text()).then(text => {
+                _debug('主动请求响应长度: ' + text.length);
+                try {
+                    let json;
+                    try { json = JSON.parse(text); } catch(e1) {
+                        const cleaned = text.replace(/[\s\r\n]/g, '');
+                        json = JSON.parse(atob(cleaned));
+                    }
+                    const priceInfo = findPriceInSSR(json);
+                    _debug('主动请求价格结果: ' + JSON.stringify(priceInfo));
+                    if (priceInfo) {
+                        interceptedPriceData = priceInfo;
+                        updatePricePreview();
+                    }
+                } catch(e) {
+                    _debug('主动请求解析失败: ' + e.message);
+                }
+            }).catch(e => {
+                _debug('主动请求失败: ' + e.message);
+            });
+        }, 3000);
+    }
+
+    // 从 SSR JSON 中递归查找价格字段
+    // 真实卖家定价 = origin_price_format - seller_subtotal_deduction
+    function findPriceInSSR(obj) {
+        if (!obj || typeof obj !== 'object') return null;
+
+        // 查找 promotion_product_price 节点
+        if (obj.promotion_product_price) {
+            const ppp = obj.promotion_product_price;
+            _debug('promotion_product_price keys: ' + Object.keys(ppp).join(', '));
+
+            // 计算单个 SKU 的真实卖家定价
+            function calcRealPrice(skuObj) {
+                if (!skuObj || typeof skuObj !== 'object') return null;
+                const originPrice = parseFloat(skuObj.origin_price_format);
+                const deduction = skuObj.promotion_deduction_details
+                    ? parseFloat(skuObj.promotion_deduction_details.seller_subtotal_deduction)
+                    : 0;
+                if (isNaN(originPrice)) return null;
+                const realPrice = originPrice - (isNaN(deduction) ? 0 : deduction);
+                return Math.round(realPrice * 100) / 100;
+            }
+
+            // 从 skus_price 遍历所有 SKU，计算真实价格
+            let allRealPrices = [];
+            if (ppp.skus_price) {
+                const skusList = Array.isArray(ppp.skus_price) ? ppp.skus_price : Object.values(ppp.skus_price);
+                _debug('skus_price 数量: ' + skusList.length);
+                for (const sku of skusList) {
+                    const rp = calcRealPrice(sku);
+                    if (rp !== null) allRealPrices.push(rp);
+                }
+                _debug('所有SKU真实价格: ' + allRealPrices.join(', '));
+            }
+
+            // fallback: 如果 skus_price 没拿到，用 min_price
+            if (allRealPrices.length === 0 && ppp.min_price) {
+                const rp = calcRealPrice(ppp.min_price);
+                if (rp !== null) allRealPrices.push(rp);
+            }
+
+            if (allRealPrices.length === 0) return null;
+
+            const minReal = Math.min(...allRealPrices);
+            const maxReal = Math.max(...allRealPrices);
+
+            _debug('价格区间: ' + minReal.toFixed(2) + ' - ' + maxReal.toFixed(2));
+
+            let priceRange = '';
+            if (minReal !== maxReal) {
+                priceRange = minReal.toFixed(2) + ' - ' + maxReal.toFixed(2);
+            } else {
+                priceRange = minReal.toFixed(2);
+            }
+
+            return {
+                rangePrice: priceRange,
+                originRangePrice: null,
+                minRealPrice: minReal,
+                maxRealPrice: maxReal
+            };
+        }
+
+        // 递归查找
+        for (const key of Object.keys(obj)) {
+            if (obj[key] && typeof obj[key] === 'object') {
+                const result = findPriceInSSR(obj[key]);
+                if (result) return result;
+            }
+        }
+        return null;
+    }
+
+    // 更新预览面板中的价格显示
+    function updatePricePreview() {
+        const el = document.getElementById('tiktok-price-range-value');
+        if (el && interceptedPriceData) {
+            const display = interceptedPriceData.rangePrice || '';
+            el.textContent = display || '未获取';
+            el.classList.remove('not-found');
+        }
+    }
 
     // 添加样式
     GM_addStyle(`
@@ -280,6 +502,7 @@
                 <div id="tiktok-preview-hint"></div>
             </div>
             <button id="tiktok-collector-btn">📊 发送到 ERP</button>
+            <pre id="tiktok-debug-area" style="font-size:10px;color:#999;padding:6px 10px;margin:0;max-height:80px;overflow-y:auto;background:#f9f9f9;border-top:1px solid #eee;white-space:pre-wrap;word-break:break-all;"></pre>
         `;
         document.body.appendChild(panel);
 
@@ -365,6 +588,10 @@
 
         // 加载未录入链接列表
         loadNotEnteredList();
+
+        // 刷新调试区（显示之前积累的日志）
+        const debugEl = document.getElementById('tiktok-debug-area');
+        if (debugEl && _debugLogs.length) debugEl.textContent = _debugLogs.slice(-5).join('\n');
 
         // 初始自动刷新预览（等页面渲染稳定后再采集）
         setTimeout(refreshPreview, 1500);
@@ -573,6 +800,7 @@
                 { label: '销量', value: data.soldCount },
                 { label: '评分', value: data.productRating },
                 { label: '本地评价数', value: data.reviewCount },
+                { label: '价格区间', value: interceptedPriceData ? interceptedPriceData.rangePrice : null, valueId: 'tiktok-price-range-value' },
                 { label: '全球评价数', value: data.globalReviewCount, full: true },
             ]
             : [
@@ -587,10 +815,11 @@
 
         grid.innerHTML = fields.map(f => {
             const hasVal = f.value !== null && f.value !== undefined;
+            const idAttr = f.valueId ? ` id="${f.valueId}"` : '';
             return `
                 <div class="preview-item${f.full ? ' full-width' : ''}">
                     <div class="preview-item-label">${f.label}</div>
-                    <div class="preview-item-value${hasVal ? '' : ' not-found'}">${hasVal ? f.value.toLocaleString() : '未采集到'}</div>
+                    <div class="preview-item-value${hasVal ? '' : ' not-found'}"${idAttr}>${hasVal ? (typeof f.value === 'number' ? f.value.toLocaleString() : f.value) : '未采集到'}</div>
                 </div>
             `;
         }).join('');
@@ -1029,6 +1258,14 @@
             // 根据平台添加不同的字段
             if (PLATFORM === 'tk') {
                 dailyPayload.global_review_count = data.globalReviewCount;
+                // 价格区间（从 SSR 拦截获取）
+                _debug('发送时 interceptedPriceData: ' + JSON.stringify(interceptedPriceData));
+                if (interceptedPriceData) {
+                    dailyPayload.price_range = interceptedPriceData.rangePrice || '';
+                    _debug('添加 price_range: ' + dailyPayload.price_range);
+                } else {
+                    _debug('⚠️ interceptedPriceData 为空，price_range 未添加');
+                }
                 console.log(`[${PLATFORM}采集器] TikTok平台，添加 global_review_count:`, data.globalReviewCount);
             } else {
                 dailyPayload.likes = data.likes;
@@ -1038,6 +1275,7 @@
             }
 
             console.log(`[${PLATFORM}采集器] ========== 最终发送的payload ==========`);
+            _debug('最终payload.price_range: ' + (dailyPayload.price_range || '(无)'));
             console.log(`[${PLATFORM}采集器] payload详情:`, JSON.stringify(dailyPayload, null, 2));
             console.log(`[${PLATFORM}采集器] payload.likes 值:`, dailyPayload.likes);
             console.log(`[${PLATFORM}采集器] payload.sales_count 值:`, dailyPayload.sales_count);
