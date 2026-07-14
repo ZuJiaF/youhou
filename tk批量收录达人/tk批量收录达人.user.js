@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         TK批量收录达人
 // @namespace    http://tampermonkey.net/
-// @version      0.2.0
+// @version      0.2.1
 // @description  TikTok Shop 批量收录达人
 // @author       fjh
 // @match        https://affiliate.tiktokshopglobalselling.com/connection/creator*
+// @match        https://affiliate.tiktok.com/connection/creator*
 // @grant        none
 // ==/UserScript==
 
