@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         c仓助手
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.7
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -48,6 +48,9 @@
         right:20px;
         left:auto;
         width:400px;
+        max-width:calc(100vw - 40px);
+        max-height:calc(100vh - 100px);
+        overflow-y:auto;
         background:#fff;
         border:1px solid #ccc;
         z-index:999999;
@@ -337,9 +340,26 @@
         savedPos.left !== undefined &&
         savedPos.top !== undefined
     ) {
-        panel.style.left = savedPos.left + 'px';
-        panel.style.top = savedPos.top + 'px';
-        panel.style.right = 'auto';
+        // 检查保存的位置是否在屏幕内
+        const panelWidth = 400;
+        const panelHeight = 600; // 估算最大高度
+        const maxLeft = window.innerWidth - 50; // 至少保留50px可见
+        const maxTop = window.innerHeight - 50;
+
+        // 如果位置超出屏幕，则使用默认位置
+        if (savedPos.left < -panelWidth + 50 || savedPos.left > maxLeft ||
+            savedPos.top < 0 || savedPos.top > maxTop) {
+            // 位置无效，使用默认位置（右上角）
+            panel.style.right = '20px';
+            panel.style.top = '80px';
+            panel.style.left = 'auto';
+            // 清除无效的保存位置
+            localStorage.removeItem(POS_KEY);
+        } else {
+            panel.style.left = savedPos.left + 'px';
+            panel.style.top = savedPos.top + 'px';
+            panel.style.right = 'auto';
+        }
     }
 
     // ==========================
@@ -404,7 +424,14 @@
     const header =
         document.getElementById('panelHeader');
 
-    header.addEventListener('mousedown', e => {
+    function startDrag(e) {
+        // 如果点击的是按钮、输入框、文本域，不启动拖动
+        if (e.target.id === 'togglePanel' ||
+            e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.tagName === 'BUTTON') {
+            return;
+        }
 
         dragging = true;
 
@@ -418,7 +445,10 @@
         startTop = rect.top;
 
         panel.style.right = 'auto';
-    });
+    }
+
+    header.addEventListener('mousedown', startDrag);
+    panel.addEventListener('mousedown', startDrag);
 
     document.addEventListener('mousemove', e => {
 
@@ -427,11 +457,23 @@
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
 
-        panel.style.left =
-            startLeft + dx + 'px';
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
 
-        panel.style.top =
-            startTop + dy + 'px';
+        // 获取面板实际尺寸
+        const panelRect = panel.getBoundingClientRect();
+        const panelWidth = panelRect.width;
+        const panelHeight = panelRect.height;
+
+        // 四个方向都限制：不能超出视口
+        const maxLeft = window.innerWidth - panelWidth;
+        const maxTop = window.innerHeight - panelHeight;
+
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+
+        panel.style.left = newLeft + 'px';
+        panel.style.top = newTop + 'px';
     });
 
     document.addEventListener('mouseup', () => {
