@@ -177,16 +177,34 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             const ppp = obj.promotion_product_price;
             _debug('promotion_product_price keys: ' + Object.keys(ppp).join(', '));
 
-            // 计算单个 SKU 的真实卖家定价
+            // 计算单个 SKU 的价格。优先按原价减平台扣减计算真实卖家价；
+            // 新版响应可能只返回 sale_price，此时回退到页面实际售价。
             function calcRealPrice(skuObj) {
                 if (!skuObj || typeof skuObj !== 'object') return null;
-                const originPrice = parseFloat(skuObj.origin_price_format);
+                const originValue = skuObj.origin_price_format || skuObj.origin_price_decimal;
+                const originPrice = parseFloat(originValue);
                 const deduction = skuObj.promotion_deduction_details
                     ? parseFloat(skuObj.promotion_deduction_details.seller_subtotal_deduction)
                     : 0;
-                if (isNaN(originPrice)) return null;
-                const realPrice = originPrice - (isNaN(deduction) ? 0 : deduction);
-                return Math.round(realPrice * 100) / 100;
+                if (!isNaN(originPrice)) {
+                    const realPrice = originPrice - (isNaN(deduction) ? 0 : deduction);
+                    return {
+                        value: Math.round(realPrice * 100) / 100,
+                        source: 'origin_price - deduction'
+                    };
+                }
+
+                // 部分响应没有 origin_price_*，但会提供 sale_price_*。
+                const saleValue = skuObj.sale_price_format || skuObj.sale_price_decimal;
+                const salePrice = parseFloat(saleValue);
+                if (!isNaN(salePrice)) {
+                    return {
+                        value: Math.round(salePrice * 100) / 100,
+                        source: 'sale_price'
+                    };
+                }
+
+                return null;
             }
 
             // 从 skus_price 遍历所有 SKU，计算真实价格
@@ -194,17 +212,29 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             if (ppp.skus_price) {
                 const skusList = Array.isArray(ppp.skus_price) ? ppp.skus_price : Object.values(ppp.skus_price);
                 _debug('skus_price 数量: ' + skusList.length);
+                _debug('首个SKU字段: ' + Object.keys(skusList[0] || {}).join(', '));
+                const priceSources = {};
+                let invalidPriceCount = 0;
                 for (const sku of skusList) {
-                    const rp = calcRealPrice(sku);
-                    if (rp !== null) allRealPrices.push(rp);
+                    const result = calcRealPrice(sku);
+                    if (result !== null) {
+                        allRealPrices.push(result.value);
+                        priceSources[result.source] = (priceSources[result.source] || 0) + 1;
+                    } else {
+                        invalidPriceCount++;
+                    }
                 }
-                _debug('所有SKU真实价格: ' + allRealPrices.join(', '));
+                _debug('价格字段来源: ' + JSON.stringify(priceSources) + ', 无效SKU: ' + invalidPriceCount);
+                _debug('所有SKU价格: ' + allRealPrices.join(', '));
             }
 
             // fallback: 如果 skus_price 没拿到，用 min_price
             if (allRealPrices.length === 0 && ppp.min_price) {
-                const rp = calcRealPrice(ppp.min_price);
-                if (rp !== null) allRealPrices.push(rp);
+                const result = calcRealPrice(ppp.min_price);
+                if (result !== null) {
+                    allRealPrices.push(result.value);
+                    _debug('min_price 字段来源: ' + result.source);
+                }
             }
 
             if (allRealPrices.length === 0) return null;
