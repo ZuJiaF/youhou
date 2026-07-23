@@ -1,10 +1,13 @@
 // ==UserScript==
 // @name         Bigseller助手
 // @namespace    http://tampermonkey.net/
-// @version      0.17.2
+// @version      0.17.80
 // @match        *://www.bigseller.pro/web/order/index.htm*
 // @match        *://www.bigseller.com/web/order/index.htm*
+// @match        *://www.bigseller.pro/web/inventory/warehouseInventory.htm*
+// @match        *://www.bigseller.com/web/inventory/warehouseInventory.htm*
 // @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
 // @connect      env-00jy671a213o.dev-hz.cloudbasefunction.cn
 // ==/UserScript==
 
@@ -1222,28 +1225,2186 @@
     init();
 
     // 监听DOM变化注入批量取消按钮
-    const observer = new MutationObserver(() => injectBatchCancelBtn());
-    observer.observe(document.body, { childList: true, subtree: true });
-    setTimeout(injectBatchCancelBtn, 1500);
+    if (location.href.includes('/web/order/')) {
+        const observer = new MutationObserver(() => injectBatchCancelBtn());
+        observer.observe(document.body, { childList: true, subtree: true });
+        setTimeout(injectBatchCancelBtn, 1500);
+    }
 
     // 等待订单列表渲染后查询云端换货记录
-    let swapDebounceTimer = null;
-    let lastOrderListHtml = '';
-    const swapObserver = new MutationObserver(() => {
-        const orderSpans = document.querySelectorAll('td.odn_el div.copy_txt_box > div > span');
-        if (orderSpans.length > 0) {
-            // 用订单号列表的指纹判断是否有变化（tab切换、翻页等）
-            const currentFingerprint = Array.from(orderSpans).map(s => s.innerText.trim()).join(',');
-            if (currentFingerprint !== lastOrderListHtml) {
-                lastOrderListHtml = currentFingerprint;
-                clearTimeout(swapDebounceTimer);
-                swapDebounceTimer = setTimeout(() => {
-                    loadSwapRecordsForPage();
-                    injectOrderUI();
-                    injectCostLabels();
-                }, 800);
+    if (location.href.includes('/web/order/')) {
+        let swapDebounceTimer = null;
+        let lastOrderListHtml = '';
+        const swapObserver = new MutationObserver(() => {
+            const orderSpans = document.querySelectorAll('td.odn_el div.copy_txt_box > div > span');
+            if (orderSpans.length > 0) {
+                const currentFingerprint = Array.from(orderSpans).map(s => s.innerText.trim()).join(',');
+                if (currentFingerprint !== lastOrderListHtml) {
+                    lastOrderListHtml = currentFingerprint;
+                    clearTimeout(swapDebounceTimer);
+                    swapDebounceTimer = setTimeout(() => {
+                        loadSwapRecordsForPage();
+                        injectOrderUI();
+                        injectCostLabels();
+                    }, 800);
+                }
+            }
+        });
+        swapObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    // ========== 仓库库存页面：货架号绑定面板 ==========
+    function initWarehousePanel() {
+        if (!location.pathname.includes('/web/inventory/warehouseInventory.htm')) return;
+        const activeVersion = '0.17.80';
+        // [debug-done][2026-07-23] 货架位选择流程已验证，临时调试输出默认关闭。
+        const warehouseDebug = true;
+        const warehouseSearchDebug = true;
+        const existingPanel = document.getElementById('c_shelf_panel');
+        warehouseDebug && console.log('[debug][2026-07-23][货架脚本版本]', JSON.stringify({
+            version: activeVersion,
+            href: location.href,
+            panelExists: !!existingPanel,
+            existingPanelVersion: existingPanel?.dataset.helperVersion || null,
+            loadedAt: new Date().toISOString()
+        }));
+        if (existingPanel?.dataset.helperVersion === activeVersion) return;
+        if (existingPanel) existingPanel.remove();
+
+        const panel = document.createElement('div');
+        panel.id = 'c_shelf_panel';
+        panel.dataset.helperVersion = activeVersion;
+        panel.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999999;background:#fff;border:1px solid #d9d9d9;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);width:280px;font-size:13px;';
+
+        panel.innerHTML = `
+            <div id="c_shelf_title" style="padding:10px 14px;background:#722ed1;color:#fff;border-radius:8px 8px 0 0;cursor:move;user-select:none;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:bold;">货架号绑定</span>
+                <span id="c_shelf_toggle" style="cursor:pointer;font-size:16px;line-height:1;">−</span>
+            </div>
+            <div id="c_shelf_body" style="padding:14px;">
+                <div style="margin-bottom:10px;">
+                    <label style="display:block;margin-bottom:4px;color:#666;">SKU（多个换行）</label>
+                    <textarea id="c_shelf_sku" placeholder="粘贴 SKU，多个换行" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:monospace;"></textarea>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;margin-bottom:4px;color:#666;">货架号（多个换行）</label>
+                    <textarea id="c_shelf_location" placeholder="粘贴货架号，多个换行" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:monospace;"></textarea>
+                </div>
+                <button id="c_shelf_confirm" style="width:100%;padding:7px 0;background:#722ed1;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;margin-bottom:8px;">批量绑定货架号</button>
+                <button id="c_shelf_clear_job" style="width:100%;padding:5px 0;background:#fff;color:#666;border:1px solid #d9d9d9;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px;">清除断点记录</button>
+                <div id="c_shelf_result" style="margin-top:8px;font-size:12px;min-height:18px;"></div>
+            </div>
+        `;
+        document.body.appendChild(panel);
+
+        // 折叠/展开
+        const body = document.getElementById('c_shelf_body');
+        const toggleBtn = document.getElementById('c_shelf_toggle');
+        toggleBtn.addEventListener('click', () => {
+            const collapsed = body.style.display === 'none';
+            body.style.display = collapsed ? '' : 'none';
+            toggleBtn.innerText = collapsed ? '−' : '+';
+        });
+
+        // 拖动
+        const titleBar = document.getElementById('c_shelf_title');
+        let isDragging = false, dragX = 0, dragY = 0;
+        titleBar.addEventListener('mousedown', e => {
+            if (e.target === toggleBtn) return;
+            isDragging = true;
+            dragX = e.clientX - panel.offsetLeft;
+            dragY = e.clientY - panel.offsetTop;
+            panel.style.right = 'auto';
+        });
+        document.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            panel.style.left = Math.max(0, e.clientX - dragX) + 'px';
+            panel.style.top = Math.max(0, e.clientY - dragY) + 'px';
+        });
+        document.addEventListener('mouseup', () => { isDragging = false; });
+
+        const searchContainerSelector = '#app > div.__root > div.page_body.page_body_Nav > section.rt > div.screen_module > div.filter_type.mt_10 > div.bs_antd_input_search_new';
+        const batchButtonSelector = `${searchContainerSelector} .bs_antd_input_search_batch_btn`;
+        const resultSelectAllSelector = '#app > div.__root > div.page_body.page_body_Nav > section.rt > div.page_list.p_10_20 > table > thead > tr > th.ck_el > label > span > input';
+        const batchOperationTriggerSelector = '#ceilingBox > div:nth-child(1) > div.lt > div > span > button';
+        const batchShelfMenuItemSelector = '#ceilingBox > div:nth-child(1) > div.lt > div > div > div > div > ul > li.ant-dropdown-menu-item';
+        const batchShelfActionSelector = '#ceilingBox > div:nth-child(1) > div.lt > div > div > div > div > ul > li.ant-dropdown-menu-item.ant-dropdown-menu-item-active > div > p > span';
+        const pageSizeSelectSelector = '#ceilingBox > div:nth-child(2) > div.page_flex.mt_10 > div > ul > li.list_num_item > select';
+        const resultProgressSelector = '#exportDetailContent > div.progress.mb_10 > div > div > div > div > div > div';
+        const resultSuccessCountSelector = '#exportDetailContent > div.flex > div:nth-child(1) > span.f_green';
+        const resultFailureCountSelector = '#exportDetailContent > div.flex > div.mr_10 > span.f_red';
+        const resultDetailSelector = '#exportDetailContent > div.detail_box';
+        const SHELF_JOB_STORAGE_KEY = 'bigseller_helper_shelf_job_v2';
+        const SHELF_LEGACY_JOB_STORAGE_KEY = 'bigseller_helper_shelf_job_v1';
+        const SHELF_BATCH_SIZE = 50;
+        const SHELF_PAGE_SIZE = 50;
+        let openingBatchPromise = null;
+        let workflowRunning = false;
+
+        function getPageWindow() {
+            return typeof unsafeWindow !== 'undefined' ? unsafeWindow : document.defaultView;
+        }
+
+        function isVisibleElement(element, pageWindow = getPageWindow()) {
+            if (!element) return false;
+            const style = pageWindow.getComputedStyle(element);
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+            const rect = element.getBoundingClientRect();
+            return !!element.offsetParent || rect.width > 0 || rect.height > 0;
+        }
+
+        function findVisibleElement(selector, pageWindow = getPageWindow()) {
+            return Array.from(pageWindow.document.querySelectorAll(selector))
+                .find(element => isVisibleElement(element, pageWindow)) || null;
+        }
+
+        function waitForElement(selectorOrFinder, timeout = 5000, interval = 100) {
+            const pageDocument = getPageWindow().document;
+            const findElement = typeof selectorOrFinder === 'function'
+                ? selectorOrFinder
+                : () => pageDocument.querySelector(selectorOrFinder);
+            return new Promise(resolve => {
+                const startedAt = Date.now();
+                const check = () => {
+                    let element = null;
+                    try {
+                        element = findElement(pageDocument);
+                    } catch (error) {
+                        warehouseDebug && console.warn('[货架号绑定] 查找页面元素失败:', error);
+                    }
+                    if (element || Date.now() - startedAt >= timeout) {
+                        resolve(element || null);
+                        return;
+                    }
+                    setTimeout(check, interval);
+                };
+                check();
+            });
+        }
+
+        function setTextareaValue(textarea, value) {
+            const pageWindow = getPageWindow();
+            const descriptor = Object.getOwnPropertyDescriptor(pageWindow.HTMLTextAreaElement.prototype, 'value');
+            if (descriptor?.set) descriptor.set.call(textarea, value);
+            else textarea.value = value;
+            textarea.dispatchEvent(new pageWindow.Event('input', { bubbles: true }));
+            textarea.dispatchEvent(new pageWindow.Event('change', { bubbles: true }));
+        }
+
+        function setSelectValue(select, value) {
+            const pageWindow = getPageWindow();
+            const descriptor = Object.getOwnPropertyDescriptor(pageWindow.HTMLSelectElement.prototype, 'value');
+            if (descriptor?.set) descriptor.set.call(select, value);
+            else select.value = value;
+            select.dispatchEvent(new pageWindow.Event('input', { bubbles: true }));
+            select.dispatchEvent(new pageWindow.Event('change', { bubbles: true }));
+        }
+
+        async function clickShelfSearchButton(searchBtn) {
+            const pageWindow = getPageWindow();
+            const pageDocument = pageWindow.document;
+            const beforeRows = Array.from(pageDocument.querySelectorAll('table.list_items > tbody > tr.list_item'))
+                .map(row => normalizeShelfText(row.textContent))
+                .join('\u0001');
+
+            warehouseSearchDebug && console.log('[DEBUG-HB9][search] before-click', {
+                buttonConnected: !!searchBtn?.isConnected,
+                buttonClass: searchBtn?.className || null,
+                buttonPath: getElementCssPath(searchBtn, pageDocument),
+                containerClass: searchBtn?.closest('.bs_antd_input_search_new')?.className || null,
+                textareaValue: searchBtn?.closest('.bs_antd_input_search_new')?.querySelector('textarea')?.value || '',
+                rowCount: beforeRows ? beforeRows.split('\u0001').length : 0
+            });
+
+            clickPageElement(searchBtn);
+            const submitted = await waitForElement(() => {
+                const loading = Array.from(pageDocument.querySelectorAll('.ant-spin-spinning, .bs_loading, .loading'))
+                    .some(element => isVisibleElement(element, pageWindow));
+                const currentRows = Array.from(pageDocument.querySelectorAll('table.list_items > tbody > tr.list_item'))
+                    .map(row => normalizeShelfText(row.textContent))
+                    .join('\u0001');
+                return loading || currentRows !== beforeRows ? pageDocument.body : null;
+            }, 800, 50);
+
+            warehouseSearchDebug && console.log('[DEBUG-HB9][search] native-result', {
+                submitted: !!submitted,
+                loading: Array.from(pageDocument.querySelectorAll('.ant-spin-spinning, .bs_loading, .loading'))
+                    .some(element => isVisibleElement(element, pageWindow)),
+                rowCount: pageDocument.querySelectorAll('table.list_items > tbody > tr.list_item').length,
+                textareaValue: searchBtn?.closest('.bs_antd_input_search_new')?.querySelector('textarea')?.value || ''
+            });
+
+            if (!submitted) {
+                // userscript 上下文的原生 click 可能不会触发页面 Vue 事件。
+                warehouseSearchDebug && console.log('[DEBUG-HB9][search] dispatch-fallback');
+                dispatchMouseClick(searchBtn, pageWindow);
             }
         }
-    });
-    swapObserver.observe(document.body, { childList: true, subtree: true });
+
+        function setInputValue(input, value) {
+            const pageWindow = getPageWindow();
+            const descriptor = Object.getOwnPropertyDescriptor(pageWindow.HTMLInputElement.prototype, 'value');
+            if (descriptor?.set) descriptor.set.call(input, value);
+            else input.value = value;
+            input.dispatchEvent(new pageWindow.Event('input', { bubbles: true }));
+            input.dispatchEvent(new pageWindow.Event('change', { bubbles: true }));
+            input.dispatchEvent(new pageWindow.KeyboardEvent('keyup', {
+                bubbles: true,
+                cancelable: true,
+                key: 'End',
+                code: 'End'
+            }));
+        }
+
+        function clickPageElement(element, selector) {
+            const pageWindow = getPageWindow();
+            const pageElement = selector ? pageWindow.document.querySelector(selector) : null;
+            const target = pageElement || element;
+            if (!target) return false;
+            /* [调试完成][2026-07-23] 定位页面上下文与按钮事件入口
+            const beforeContainer = target.closest('.bs_antd_input_search_new');
+            warehouseDebug && console.log('[DEBUG-HB7][click] target', {
+                ownerDocumentIsPage: target.ownerDocument === pageWindow.document,
+                connected: target.isConnected,
+                className: target.className,
+                containerClass: beforeContainer?.className
+            });
+            */
+            try {
+                target.click();
+                /* [调试完成][2026-07-23]
+                warehouseDebug && console.log('[DEBUG-HB7][click] native click returned');
+                setTimeout(() => {
+                    const afterContainer = target.isConnected
+                        ? target.closest('.bs_antd_input_search_new')
+                        : pageWindow.document.querySelector(batchButtonSelector)?.closest('.bs_antd_input_search_new');
+                    const afterTextarea = afterContainer?.querySelector('textarea.bs_antd_textarea');
+                    warehouseDebug && console.log('[DEBUG-HB7][click] state +100ms', {
+                        connected: target.isConnected,
+                        containerClass: afterContainer?.className,
+                        outerDisplay: afterTextarea?.closest('.bs_antd_textarea_outer')
+                            ? pageWindow.getComputedStyle(afterTextarea.closest('.bs_antd_textarea_outer')).display
+                            : null
+                    });
+                }, 100);
+                */
+                return true;
+            } catch (error) {
+                warehouseDebug && console.warn('[货架号绑定] 原生 click 失败，改用事件分发:', error);
+                dispatchMouseClick(target, pageWindow);
+                return true;
+            }
+        }
+
+        function dispatchMouseClick(target, pageWindow = getPageWindow()) {
+            const eventInit = { bubbles: true, cancelable: true, view: pageWindow, detail: 1, button: 0, buttons: 1 };
+            try { target.focus(); } catch (error) { /* 非 focusable 图标 */ }
+            target.dispatchEvent(new pageWindow.MouseEvent('mousedown', eventInit));
+            target.dispatchEvent(new pageWindow.MouseEvent('mouseup', { ...eventInit, buttons: 0 }));
+            target.dispatchEvent(new pageWindow.MouseEvent('click', { ...eventInit, buttons: 0 }));
+        }
+
+        function dispatchHoverEvents(target, pageWindow = getPageWindow()) {
+            const eventInit = { bubbles: true, cancelable: true, view: pageWindow, detail: 0, buttons: 0 };
+            const pointerTypes = ['pointerover', 'pointerenter', 'pointermove'];
+            const mouseTypes = ['mouseover', 'mouseenter', 'mousemove'];
+            pointerTypes.forEach(type => {
+                const EventCtor = pageWindow.PointerEvent || pageWindow.MouseEvent;
+                target.dispatchEvent(new EventCtor(type, eventInit));
+            });
+            mouseTypes.forEach(type => target.dispatchEvent(new pageWindow.MouseEvent(type, eventInit)));
+        }
+
+        async function ensureResultRowsSelected() {
+            const pageDocument = getPageWindow().document;
+            const checkbox = await waitForElement(resultSelectAllSelector, 5000);
+            if (!checkbox) return false;
+            if (checkbox.checked) return true;
+
+            clickPageElement(checkbox);
+            const selectedCheckbox = await waitForElement(() => {
+                const current = pageDocument.querySelector(resultSelectAllSelector);
+                return current?.checked ? current : null;
+            }, 1000, 50);
+            return !!selectedCheckbox;
+        }
+
+        function getInventoryRowSkuCandidates(row) {
+            const infoCell = row?.querySelector('td.info_el');
+            if (!infoCell) return [];
+            const elements = [infoCell, ...infoCell.querySelectorAll('div, span')];
+            return Array.from(new Set(elements
+                .filter(element => !element.children.length)
+                .map(element => normalizeShelfText(element.textContent))
+                .filter(Boolean)));
+        }
+
+        function findInventoryResultRow(sku, pageWindow = getPageWindow()) {
+            const normalizedSku = normalizeShelfText(sku);
+            const rows = Array.from(pageWindow.document.querySelectorAll('table.list_items > tbody > tr.list_item'));
+            const exactRow = rows.find(row => getInventoryRowSkuCandidates(row).includes(normalizedSku));
+            warehouseSearchDebug && !exactRow && console.log('[debug][2026-07-23][SKU精确匹配未找到]', {
+                sku,
+                rowCount: rows.length,
+                candidateSkus: rows.flatMap(getInventoryRowSkuCandidates).slice(0, 100)
+            });
+            return exactRow || null;
+        }
+
+        async function clearResultRowsSelected() {
+            const pageDocument = getPageWindow().document;
+            const checkbox = await waitForElement(resultSelectAllSelector, 2000, 50);
+            if (!checkbox || !checkbox.checked) return !!checkbox;
+            clickPageElement(checkbox);
+            return !!await waitForElement(() => {
+                const current = pageDocument.querySelector(resultSelectAllSelector);
+                return current && !current.checked ? current : null;
+            }, 1000, 50);
+        }
+
+        async function selectResultRowsForSkus(skuList) {
+            const pageWindow = getPageWindow();
+            warehouseSearchDebug && console.log('[DEBUG-HB11][reselect] start', { skuList });
+            warehouseSearchDebug && console.log('[DEBUG-HB12][selection-targets]', JSON.stringify({ skuList }));
+            if (!await clearResultRowsSelected()) return false;
+            for (const sku of skuList) {
+                const row = findInventoryResultRow(sku, pageWindow);
+                const checkbox = row?.querySelector('input[type="checkbox"]');
+                if (!checkbox) {
+                    warehouseSearchDebug && console.log('[DEBUG-HB11][reselect] checkbox-missing', {
+                        sku,
+                        rowText: row?.textContent.trim() || null
+                    });
+                    return false;
+                }
+                if (!checkbox.checked) {
+                    clickPageElement(checkbox);
+                    const selected = await waitForElement(() => checkbox.checked ? checkbox : null, 500, 50);
+                    if (!selected) {
+                        warehouseSearchDebug && console.log('[DEBUG-HB11][reselect] checkbox-not-selected', { sku });
+                        return false;
+                    }
+                }
+            }
+            warehouseSearchDebug && console.log('[DEBUG-HB11][reselect] complete', {
+                selectedCount: skuList.length,
+                headerChecked: pageWindow.document.querySelector(resultSelectAllSelector)?.checked || false
+            });
+            return true;
+        }
+
+        async function waitForSearchResults(expectedSkuList = []) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return waitForElement(() => {
+                const pageDocument = getPageWindow().document;
+                const checkbox = pageDocument.querySelector(resultSelectAllSelector);
+                const rows = Array.from(pageDocument.querySelectorAll('table.list_items > tbody > tr.list_item'));
+                const loading = Array.from(pageDocument.querySelectorAll('.ant-spin-spinning, .bs_loading, .loading'))
+                    .some(element => isVisibleElement(element));
+                const pageText = normalizeShelfText(pageDocument.body?.innerText || pageDocument.body?.textContent);
+                const emptyState = Array.from(pageDocument.querySelectorAll(
+                    '.ant-empty, .ant-empty-description, .bs_empty, .empty_data, .no_data'
+                )).some(element => isVisibleElement(element, getPageWindow()));
+                const noData = rows.length === 0 && (emptyState || /暂无数据|暂无记录|Nodata|NoData|No data/i.test(pageText));
+                const rowTexts = rows.map(row => normalizeShelfText(row.textContent));
+                const matchingRows = expectedSkuList.filter(sku => {
+                    const normalizedSku = normalizeShelfText(sku);
+                    return rowTexts.some(text => text.includes(normalizedSku));
+                }).length;
+                const expectedLoaded = !expectedSkuList.length || matchingRows > 0 || noData;
+                if (noData) return noData;
+                if (loading || !expectedLoaded) return null;
+                return checkbox && rows.length > 0 ? checkbox : null;
+            }, 10000);
+        }
+
+        function getInventoryRowShelf(row) {
+            const directShelf = normalizeShelfText(row.querySelector('td.shelf_el')?.textContent);
+            if (directShelf) return directShelf;
+            const table = row.closest('table');
+            const headers = Array.from(table?.querySelectorAll('thead th') || []);
+            const shelfColumnIndex = headers.findIndex(header => normalizeShelfText(header.textContent) === '货架位');
+            if (shelfColumnIndex < 0) return '';
+            const cells = Array.from(row.children).filter(cell => cell.tagName === 'TD');
+            return normalizeShelfText(cells[shelfColumnIndex]?.textContent);
+        }
+
+        function getShelfSearchPairs(skuList, shelfList, pageWindow = getPageWindow()) {
+            const rows = Array.from(pageWindow.document.querySelectorAll('table.list_items > tbody > tr.list_item'));
+            const usedRows = new Set();
+            const available = [];
+            const unchanged = [];
+            const missing = [];
+
+            skuList.forEach((sku, index) => {
+                const normalizedSku = normalizeShelfText(sku);
+                const rowIndex = rows.findIndex((row, candidateIndex) => {
+                    if (usedRows.has(candidateIndex)) return false;
+                    return getInventoryRowSkuCandidates(row).includes(normalizedSku);
+                });
+                const pair = { sku, shelf: shelfList[index] };
+                if (rowIndex < 0) {
+                    missing.push(pair);
+                    return;
+                }
+                usedRows.add(rowIndex);
+                pair.currentShelf = getInventoryRowShelf(rows[rowIndex]);
+                if (pair.currentShelf && pair.currentShelf === normalizeShelfText(pair.shelf)) {
+                    unchanged.push(pair);
+                } else {
+                    available.push(pair);
+                }
+            });
+
+            return { available, unchanged, missing, rowCount: rows.length };
+        }
+
+        function getShelfPageSizeControl(pageWindow = getPageWindow()) {
+            const nativeSelect = pageWindow.document.querySelector(pageSizeSelectSelector);
+            if (nativeSelect && isVisibleElement(nativeSelect, pageWindow)) return nativeSelect;
+            return Array.from(pageWindow.document.querySelectorAll('.ant-select'))
+                .filter(control => isVisibleElement(control, pageWindow))
+                .find(control => /^\d+\/Page$/.test(normalizeShelfText(control.textContent))) || null;
+        }
+
+        function getShelfPageSize(pageWindow = getPageWindow()) {
+            const control = getShelfPageSizeControl(pageWindow);
+            const text = normalizeShelfText(control instanceof pageWindow.HTMLSelectElement
+                ? control.options[control.selectedIndex]?.textContent
+                : control?.textContent);
+            const match = text.match(/^(\d+)\/Page$/);
+            return match ? Number(match[1]) : null;
+        }
+
+        function findShelfPageSizeOption(pageWindow = getPageWindow()) {
+            const expectedText = `${SHELF_PAGE_SIZE}/Page`;
+            return Array.from(pageWindow.document.querySelectorAll(
+                '.ant-select-dropdown .ant-select-dropdown-menu-item, .ant-select-dropdown [role="option"]'
+            )).find(option => isVisibleElement(option, pageWindow)
+                && normalizeShelfText(option.textContent) === expectedText) || null;
+        }
+
+        async function ensureShelfPageSize() {
+            const pageWindow = getPageWindow();
+            const control = getShelfPageSizeControl(pageWindow);
+            if (!control) {
+                warehouseSearchDebug && console.log('[DEBUG-HB9][page-size] control-missing');
+                return false;
+            }
+            if (getShelfPageSize(pageWindow) === SHELF_PAGE_SIZE) return true;
+
+            warehouseSearchDebug && console.log('[DEBUG-HB9][page-size] changing', {
+                current: getShelfPageSize(pageWindow),
+                target: SHELF_PAGE_SIZE,
+                path: getElementCssPath(control, pageWindow.document)
+            });
+
+            if (control instanceof pageWindow.HTMLSelectElement) {
+                const option = Array.from(control.options).find(item => (
+                    normalizeShelfText(item.textContent) === `${SHELF_PAGE_SIZE}/Page`
+                ));
+                if (!option) return false;
+                setSelectValue(control, option.value);
+                const changed = await waitForElement(() => (
+                    getShelfPageSize(pageWindow) === SHELF_PAGE_SIZE ? pageWindow.document.body : null
+                ), 1500, 50);
+                warehouseSearchDebug && console.log('[DEBUG-HB9][page-size] native-select-result', {
+                    changed: !!changed,
+                    current: getShelfPageSize(pageWindow),
+                    optionText: option.textContent.trim()
+                });
+                return !!changed;
+            }
+
+            clickPageElement(control);
+            let option = await waitForElement(() => findShelfPageSizeOption(pageWindow), 1000, 50);
+            if (!option) {
+                dispatchMouseClick(control, pageWindow);
+                option = await waitForElement(() => findShelfPageSizeOption(pageWindow), 1000, 50);
+            }
+            if (!option) return false;
+
+            clickPageElement(option);
+            let changed = await waitForElement(() => (
+                getShelfPageSize(pageWindow) === SHELF_PAGE_SIZE ? pageWindow.document.body : null
+            ), 1500, 50);
+            if (!changed) {
+                dispatchMouseClick(option, pageWindow);
+                changed = await waitForElement(() => (
+                    getShelfPageSize(pageWindow) === SHELF_PAGE_SIZE ? pageWindow.document.body : null
+                ), 1500, 50);
+            }
+            warehouseSearchDebug && console.log('[DEBUG-HB9][page-size] changed', {
+                changed: !!changed,
+                current: getShelfPageSize(pageWindow)
+            });
+            return !!changed;
+        }
+
+        function getShelfJobFingerprint(skuList, shelfList) {
+            return JSON.stringify({ skuList, shelfList });
+        }
+
+        function readShelfJob() {
+            try {
+                const raw = localStorage.getItem(SHELF_JOB_STORAGE_KEY);
+                if (raw) return JSON.parse(raw);
+
+                // v1 的 300 条批次可能只提交了当前页 50 条，迁移时必须从头开始。
+                const legacyRaw = localStorage.getItem(SHELF_LEGACY_JOB_STORAGE_KEY);
+                if (!legacyRaw) return null;
+                const legacyJob = JSON.parse(legacyRaw);
+                return {
+                    ...legacyJob,
+                    version: 2,
+                    batchSize: SHELF_BATCH_SIZE,
+                    completedCount: 0,
+                    missingItems: [],
+                    failedItems: []
+                };
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function writeShelfJob(job) {
+            try {
+                localStorage.setItem(SHELF_JOB_STORAGE_KEY, JSON.stringify({
+                    ...job,
+                    updatedAt: new Date().toISOString()
+                }));
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function clearShelfJob() {
+            try {
+                localStorage.removeItem(SHELF_JOB_STORAGE_KEY);
+                localStorage.removeItem(SHELF_LEGACY_JOB_STORAGE_KEY);
+            } catch (error) { /* storage unavailable */ }
+        }
+
+        function getOrCreateShelfJob(skuList, shelfList) {
+            const fingerprint = getShelfJobFingerprint(skuList, shelfList);
+            const saved = readShelfJob();
+            if (saved?.fingerprint === fingerprint
+                && Array.isArray(saved.skuList)
+                && Array.isArray(saved.shelfList)
+                && saved.skuList.length === skuList.length
+                && saved.shelfList.length === shelfList.length
+                && Number.isInteger(saved.completedCount)
+                && saved.completedCount >= 0
+                && saved.completedCount <= skuList.length) {
+                saved.missingItems ||= [];
+                saved.failedItems ||= [];
+                return saved;
+            }
+            return {
+                version: 2,
+                fingerprint,
+                skuList: [...skuList],
+                shelfList: [...shelfList],
+                batchSize: SHELF_BATCH_SIZE,
+                completedCount: 0,
+                missingItems: [],
+                failedItems: [],
+                updatedAt: new Date().toISOString()
+            };
+        }
+
+        function splitShelfBatches(skuList, shelfList, startIndex = 0) {
+            const batches = [];
+            for (let start = startIndex; start < skuList.length; start += SHELF_BATCH_SIZE) {
+                const end = Math.min(start + SHELF_BATCH_SIZE, skuList.length);
+                batches.push({
+                    start,
+                    end,
+                    skuList: skuList.slice(start, end),
+                    shelfList: shelfList.slice(start, end)
+                });
+            }
+            return batches;
+        }
+
+        async function waitForShelfModalConfirmation(timeout = 30 * 60 * 1000) {
+            const pageWindow = getPageWindow();
+            const modal = await waitForElement(() => findVisibleElement('.ant-modal-wrap', pageWindow), 2000, 50);
+            if (!modal) return { confirmed: false, action: 'missing-modal' };
+
+            let action = 'pending';
+            const onClick = event => {
+                const button = event.target?.closest?.('button, .ant-btn');
+                const text = button?.textContent?.replace(/\s+/g, '').trim() || '';
+                if (text.includes('确定')) action = 'confirm';
+                else if (text.includes('取消')) action = 'cancel';
+            };
+            modal.addEventListener('click', onClick, true);
+
+            return new Promise(resolve => {
+                const startedAt = Date.now();
+                const finish = result => {
+                    modal.removeEventListener('click', onClick, true);
+                    resolve(result);
+                };
+                const check = () => {
+                    const stillOpen = getModalRows(pageWindow).length > 0;
+                    if (!stillOpen) {
+                        finish({ confirmed: action === 'confirm', action });
+                        return;
+                    }
+                    if (Date.now() - startedAt >= timeout) {
+                        finish({ confirmed: false, action: 'timeout' });
+                        return;
+                    }
+                    setTimeout(check, 250);
+                };
+                check();
+            });
+        }
+
+        function findVisibleModalButton(modal, buttonText, pageWindow = getPageWindow()) {
+            const expectedText = normalizeShelfText(buttonText);
+            return Array.from(modal?.querySelectorAll('button, .ant-btn') || [])
+                .find(button => isVisibleElement(button, pageWindow)
+                    && normalizeShelfText(button.textContent) === expectedText) || null;
+        }
+
+        function findShelfOperationResultModal(pageWindow = getPageWindow()) {
+            return Array.from(pageWindow.document.querySelectorAll('.ant-modal-wrap'))
+                .filter(modal => isVisibleElement(modal, pageWindow))
+                .find(modal => {
+                    const resultContent = modal.querySelector('#exportDetailContent');
+                    const progress = modal.querySelector(resultProgressSelector);
+                    // resultProgressSelector 已精确定位到 .ant-progress-bg 本身。
+                    const progressWidth = progress?.style.width;
+                    const successCount = modal.querySelector(resultSuccessCountSelector);
+                    const failureCount = modal.querySelector(resultFailureCountSelector);
+                    return !!progress
+                        && progressWidth === '100%'
+                        && (!!successCount || !!failureCount
+                            || /操作成功\s*[：:]\s*\d+/.test(resultContent.textContent || '')
+                            || /操作失败\s*[：:]\s*\d+/.test(resultContent.textContent || ''));
+                }) || null;
+        }
+
+        function findShelfOperationErrorMessage(pageWindow = getPageWindow()) {
+            const errorPattern = /(锁定库存|拣货失败|货架位[^。\n]{0,40}失败|设置货架[^。\n]{0,40}失败)/i;
+            const candidates = Array.from(pageWindow.document.querySelectorAll(
+                '.ant-message-notice, .ant-message-notice-content, .ant-notification-notice, .ant-alert-error'
+            )).filter(element => isVisibleElement(element, pageWindow));
+            return candidates.map(element => element.textContent.replace(/\s+/g, ' ').trim())
+                .find(text => errorPattern.test(text)) || null;
+        }
+
+        async function waitForShelfOperationOutcome(pageWindow = getPageWindow(), timeout = 120000) {
+            return new Promise(resolve => {
+                const startedAt = Date.now();
+                const check = () => {
+                    const resultModal = findShelfOperationResultModal(pageWindow);
+                    const errorMessage = findShelfOperationErrorMessage(pageWindow);
+                    if (resultModal || errorMessage || Date.now() - startedAt >= timeout) {
+                        resolve({ resultModal, errorMessage });
+                        return;
+                    }
+                    setTimeout(check, 100);
+                };
+                check();
+            });
+        }
+
+        function parseShelfOperationResult(resultModal) {
+            const resultContent = resultModal?.querySelector('#exportDetailContent');
+            const progressElement = resultModal?.querySelector(resultProgressSelector);
+            const progressWidth = progressElement?.style.width || null;
+            const text = resultContent?.textContent || resultModal?.textContent || '';
+            // 这两个是用户在结果弹窗中确认的精确路径，必须从弹窗根节点查找，
+            // 不能从 #exportDetailContent 内部再次以 #exportDetailContent 开头查询。
+            const successText = resultModal?.querySelector(resultSuccessCountSelector)?.textContent.trim();
+            const failureText = resultModal?.querySelector(resultFailureCountSelector)?.textContent.trim();
+            const success = Number(successText || (text.match(/操作成功\s*[：:]\s*(\d+)/) || [])[1]);
+            const failure = Number(failureText || (text.match(/操作失败\s*[：:]\s*(\d+)/) || [])[1]);
+            const detailLines = Array.from(resultModal?.querySelector(resultDetailSelector)?.children || [])
+                .map(item => item.textContent.trim())
+                .filter(Boolean);
+            const reportedFailureSkuCandidates = detailLines.map(line => (
+                line.match(/^(.+?)\s*:\s*(?:failed|失败|error)/i)?.[1]?.trim() || null
+            )).filter(Boolean);
+            return {
+                success: Number.isFinite(success) ? success : null,
+                failure: Number.isFinite(failure) ? failure : null,
+                detailLines,
+                reportedFailureSkuCandidates,
+                progressValue: progressElement?.closest('[role="progressbar"]')?.getAttribute('aria-valuenow') || null,
+                progressWidth,
+                progressPathFound: !!progressElement,
+                progressCompleted: !!resultContent?.querySelector('.ant-progress-status-success') && progressWidth === '100%'
+            };
+        }
+
+        function collectShelfModalLifecycleState(pageWindow = getPageWindow()) {
+            const pageDocument = pageWindow.document;
+            return {
+                activeElementPath: getElementCssPath(pageDocument.activeElement, pageDocument),
+                modalCount: pageDocument.querySelectorAll('.ant-modal-wrap').length,
+                visibleModalCount: Array.from(pageDocument.querySelectorAll('.ant-modal-wrap'))
+                    .filter(modal => isVisibleElement(modal, pageWindow)).length,
+                modals: Array.from(pageDocument.querySelectorAll('.ant-modal-wrap')).map((modal, index) => {
+                    const content = modal.querySelector('#exportDetailContent');
+                    const progress = modal.querySelector(resultProgressSelector);
+                    const progressBar = progress?.closest('[role="progressbar"]');
+                    const buttons = Array.from(modal.querySelectorAll('button'))
+                        .map(button => ({
+                            text: button.textContent.replace(/\s+/g, ' ').trim(),
+                            disabled: !!button.disabled,
+                            visible: isVisibleElement(button, pageWindow)
+                        }))
+                        .filter(button => button.visible);
+                    return {
+                        index,
+                        visible: isVisibleElement(modal, pageWindow),
+                        connected: modal.isConnected,
+                        className: modal.className,
+                        display: modal.style.display || pageWindow.getComputedStyle(modal).display,
+                        isResult: !!content,
+                        isSetting: !!modal.querySelector('.page_list > table > tbody > tr'),
+                        progressWidth: progress?.style.width || null,
+                        progressValue: progressBar?.getAttribute('aria-valuenow') || null,
+                        hasSuccessCount: !!modal.querySelector(resultSuccessCountSelector),
+                        successText: modal.querySelector(resultSuccessCountSelector)?.textContent.trim() || null,
+                        hasFailureCount: !!modal.querySelector(resultFailureCountSelector),
+                        failureText: modal.querySelector(resultFailureCountSelector)?.textContent.trim() || null,
+                        resultText: content?.innerText?.slice(0, 300) || null,
+                        buttons
+                    };
+                })
+            };
+        }
+
+        function scheduleShelfResultLifecycleDebug(pageWindow, label) {
+            if (!warehouseSearchDebug) return;
+            const delays = [0, 100, 300, 600, 1000, 2000, 5000, 10000];
+            delays.forEach(delay => setTimeout(() => {
+                console.log('[debug][2026-07-23][货架结果弹窗时序]', {
+                    label,
+                    delay,
+                    state: collectShelfModalLifecycleState(pageWindow)
+                });
+            }, delay));
+        }
+
+        async function verifyInventoryShelfPositions(skuList, shelfList) {
+            const pageWindow = getPageWindow();
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架实际核验输入]', {
+                skuCount: Array.isArray(skuList) ? skuList.length : null,
+                shelfCount: Array.isArray(shelfList) ? shelfList.length : null,
+                skuList,
+                shelfList
+            });
+            if (!Array.isArray(skuList) || !Array.isArray(shelfList) || skuList.length !== shelfList.length) {
+                return { verified: false, details: [] };
+            }
+            const matchesTargets = () => skuList.every((sku, index) => {
+                const row = findInventoryResultRow(sku, pageWindow);
+                return normalizeShelfText(getInventoryRowShelf(row || pageWindow.document.createElement('tr')))
+                    === normalizeShelfText(shelfList[index]);
+            });
+            const verified = await waitForElement(() => (
+                matchesTargets() ? pageWindow.document.body : null
+            ), 5000, 100);
+            const details = skuList.map((sku, index) => {
+                const row = findInventoryResultRow(sku, pageWindow);
+                return {
+                    sku,
+                    actualShelf: normalizeShelfText(getInventoryRowShelf(row || pageWindow.document.createElement('tr'))),
+                    targetShelf: shelfList[index]
+                };
+            });
+            warehouseSearchDebug && console.log('[DEBUG-HB14][post-submit-verify]', JSON.stringify({
+                verified: !!verified,
+                details
+            }));
+            return { verified: !!verified, details };
+        }
+
+        async function autoConfirmShelfModal(expectedProcessedCount) {
+            const pageWindow = getPageWindow();
+            const pageDocument = pageWindow.document;
+            const modal = await waitForElement(() => findVisibleElement('.ant-modal-wrap', pageWindow), 2000, 50);
+            if (!modal) return { confirmed: false, action: 'missing-modal' };
+
+            const confirmButton = modal.querySelector('.ant-modal-footer span.bs-antd-button.mode-main > button')
+                || findVisibleModalButton(modal, '确定', pageWindow);
+            if (!confirmButton) return { confirmed: false, action: 'missing-confirm-button' };
+
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架确认入口]', {
+                expectedProcessedCount,
+                modalPath: getElementCssPath(modal, pageDocument),
+                confirmPath: getElementCssPath(confirmButton, pageDocument),
+                confirmConnected: confirmButton.isConnected,
+                confirmVisible: isVisibleElement(confirmButton, pageWindow),
+                confirmDisabled: !!confirmButton.disabled,
+                state: collectShelfModalLifecycleState(pageWindow)
+            });
+
+            warehouseSearchDebug && console.log('[DEBUG-HB9][confirm] click', {
+                expectedProcessedCount,
+                path: getElementCssPath(confirmButton, pageDocument),
+                disabled: confirmButton.disabled,
+                className: confirmButton.className
+            });
+            const nativeClickResult = clickPageElement(confirmButton);
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架确认原生点击返回]', {
+                nativeClickResult,
+                state: collectShelfModalLifecycleState(pageWindow)
+            });
+            scheduleShelfResultLifecycleDebug(pageWindow, 'native-click-after');
+            await new Promise(resolve => setTimeout(resolve, 150));
+            let resultModal = findShelfOperationResultModal(pageWindow);
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架确认150ms后]', {
+                resultFound: !!resultModal,
+                confirmConnected: confirmButton.isConnected,
+                confirmDisabled: !!confirmButton.disabled,
+                state: collectShelfModalLifecycleState(pageWindow)
+            });
+            if (!resultModal && confirmButton.isConnected && !confirmButton.disabled) {
+                warehouseSearchDebug && console.log('[DEBUG-HB9][confirm] mouse-fallback', {
+                    visible: isVisibleElement(confirmButton, pageWindow),
+                    disabled: confirmButton.disabled
+                });
+                const fallbackClickResult = dispatchMouseClick(confirmButton, pageWindow);
+                warehouseSearchDebug && console.log('[debug][2026-07-23][货架确认鼠标点击返回]', {
+                    fallbackClickResult,
+                    state: collectShelfModalLifecycleState(pageWindow)
+                });
+                scheduleShelfResultLifecycleDebug(pageWindow, 'mouse-fallback-after');
+            }
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架确认开始等待结果]', {
+                resultFoundBeforeWait: !!resultModal,
+                state: collectShelfModalLifecycleState(pageWindow)
+            });
+            const operationOutcome = resultModal
+                ? { resultModal, errorMessage: null }
+                : await waitForShelfOperationOutcome(pageWindow, 120000);
+            resultModal = operationOutcome.resultModal;
+            if (!resultModal && operationOutcome.errorMessage) {
+                const modalClosed = await closeShelfModalWithoutSubmitting();
+                warehouseSearchDebug && console.log('[debug][2026-07-23][货架提交错误提示已跳过]', {
+                    expectedProcessedCount,
+                    errorMessage: operationOutcome.errorMessage,
+                    modalClosed,
+                    state: collectShelfModalLifecycleState(pageWindow)
+                });
+                return {
+                    confirmed: !!modalClosed,
+                    action: 'toast-failure-skipped',
+                    success: 0,
+                    failure: expectedProcessedCount,
+                    reportedProcessedCount: expectedProcessedCount,
+                    resultCountMatches: true,
+                    detailLines: [operationOutcome.errorMessage],
+                    reportedFailureSkuCandidates: (operationOutcome.errorMessage.match(/[A-Z]{2,}[\w-]*/g) || [])
+                };
+            }
+            if (!resultModal) {
+                warehouseSearchDebug && console.log('[debug][2026-07-23][货架结果弹窗等待超时]', {
+                    expectedProcessedCount,
+                    state: collectShelfModalLifecycleState(pageWindow)
+                });
+                return { confirmed: false, action: 'result-timeout' };
+            }
+
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架结果弹窗已找到]', {
+                expectedProcessedCount,
+                state: collectShelfModalLifecycleState(pageWindow)
+            });
+
+            const result = parseShelfOperationResult(resultModal);
+            const reportedProcessedCount = Number.isFinite(result.success) && Number.isFinite(result.failure)
+                ? result.success + result.failure
+                : null;
+            const resultCountMatches = reportedProcessedCount === expectedProcessedCount;
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架提交结果核对]', {
+                expectedProcessedCount,
+                reportedSuccess: result.success,
+                reportedFailure: result.failure,
+                reportedProcessedCount,
+                resultCountMatches,
+                resultText: resultModal.querySelector('#exportDetailContent')?.innerText || null,
+                reportedFailureSkuCandidates: result.reportedFailureSkuCandidates,
+                detailLines: result.detailLines,
+                ...result
+            });
+            // BigSeller 的结果数必须覆盖本次实际提交的每一行；否则保留弹窗和断点，
+            // 防止页面只处理了部分 SKU 后脚本误进入下一批。
+            if (!resultCountMatches) {
+                return {
+                    confirmed: false,
+                    action: 'result-count-mismatch',
+                    expectedProcessedCount,
+                    reportedProcessedCount,
+                    ...result
+                };
+            }
+            const closeButton = findVisibleModalButton(resultModal, '关闭', pageWindow)
+                || resultModal.querySelector('.ant-modal-footer > div > button');
+            if (!closeButton) return { confirmed: false, action: 'missing-result-close', ...result };
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架结果关闭]', {
+                expectedProcessedCount,
+                reportedProcessedCount,
+                resultCountMatches,
+                closeButtonPath: getElementCssPath(closeButton, pageDocument)
+            });
+            const resultCloseClick = clickPageElement(closeButton);
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架结果关闭点击返回]', {
+                resultCloseClick,
+                state: collectShelfModalLifecycleState(pageWindow)
+            });
+            let resultClosed = await waitForElement(() => (
+                !resultModal.isConnected || !isVisibleElement(resultModal, pageWindow) ? pageDocument.body : null
+            ), 3000, 50);
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架结果关闭等待]', {
+                resultClosed: !!resultClosed,
+                state: collectShelfModalLifecycleState(pageWindow)
+            });
+            if (!resultClosed) {
+                const resultCloseFallback = dispatchMouseClick(closeButton, pageWindow);
+                resultClosed = await waitForElement(() => (
+                    !resultModal.isConnected || !isVisibleElement(resultModal, pageWindow) ? pageDocument.body : null
+                ), 3000, 50);
+                warehouseSearchDebug && console.log('[debug][2026-07-23][货架结果关闭鼠标兜底]', {
+                    resultCloseFallback,
+                    resultClosed: !!resultClosed,
+                    state: collectShelfModalLifecycleState(pageWindow)
+                });
+            }
+            if (!resultClosed) return { confirmed: false, action: 'result-close-timeout', ...result };
+
+            let parentClosed = await waitForElement(() => (
+                !modal.isConnected || !isVisibleElement(modal, pageWindow) ? pageDocument.body : null
+            ), 3000, 50);
+            if (!parentClosed) {
+                const parentCloseButton = modal.querySelector(
+                    '.ant-modal-close, .ant-modal-header .close, .ant-modal-content > button'
+                );
+                if (parentCloseButton) {
+                    const parentCloseClick = clickPageElement(parentCloseButton);
+                    parentClosed = await waitForElement(() => (
+                        !modal.isConnected || !isVisibleElement(modal, pageWindow) ? pageDocument.body : null
+                    ), 3000, 50);
+                    warehouseSearchDebug && console.log('[debug][2026-07-23][货架设置弹窗关闭]', {
+                        parentCloseClick,
+                        parentClosed: !!parentClosed,
+                        state: collectShelfModalLifecycleState(pageWindow)
+                    });
+                }
+            }
+            return parentClosed
+                ? {
+                    confirmed: true,
+                    action: 'result-count-confirmed',
+                    expectedProcessedCount,
+                    reportedProcessedCount,
+                    resultCountMatches,
+                    ...result
+                }
+                : { confirmed: false, action: 'parent-close-timeout', ...result };
+        }
+
+        function getModalRows(pageWindow = getPageWindow()) {
+            const modal = findVisibleElement('.ant-modal-wrap', pageWindow);
+            if (!modal) return [];
+            return Array.from(modal.querySelectorAll('.page_list > table > tbody > tr.list_item'));
+        }
+
+        function getElementCssPath(element, pageDocument = getPageWindow().document) {
+            if (!element || element.nodeType !== 1) return null;
+            const parts = [];
+            let current = element;
+            while (current && current !== pageDocument.body && current.nodeType === 1) {
+                let part = current.tagName.toLowerCase();
+                if (current.id) {
+                    part += `#${current.id}`;
+                    parts.unshift(part);
+                    break;
+                }
+                const classes = Array.from(current.classList || [])
+                    .filter(className => /^[A-Za-z0-9_-]+$/.test(className))
+                    .slice(0, 3);
+                if (classes.length) part += `.${classes.join('.')}`;
+                const parent = current.parentElement;
+                if (parent) {
+                    const sameTagSiblings = Array.from(parent.children)
+                        .filter(child => child.tagName === current.tagName);
+                    if (sameTagSiblings.length > 1) {
+                        part += `:nth-of-type(${sameTagSiblings.indexOf(current) + 1})`;
+                    }
+                }
+                parts.unshift(part);
+                current = parent;
+            }
+            return parts.length ? `body > ${parts.join(' > ')}` : 'body';
+        }
+
+        function describeShelfDebugInputs(pageWindow = getPageWindow()) {
+            const pageDocument = pageWindow.document;
+            return Array.from(pageDocument.querySelectorAll(
+                '.ant-modal-wrap input, .ant-modal-wrap textarea, .ant-modal-wrap [contenteditable="true"]'
+            )).filter(element => isVisibleElement(element, pageWindow) || element === pageDocument.activeElement)
+                .slice(0, 30)
+                .map(element => ({
+                    path: getElementCssPath(element, pageDocument),
+                    tag: element.tagName,
+                    className: element.className,
+                    type: element.getAttribute('type'),
+                    placeholder: element.getAttribute('placeholder'),
+                    value: 'value' in element ? element.value : element.textContent.trim(),
+                    active: element === pageDocument.activeElement
+                }));
+        }
+
+        function describeShelfDebugDropdowns(pageWindow = getPageWindow()) {
+            const pageDocument = pageWindow.document;
+            return Array.from(pageDocument.querySelectorAll(
+                '.ant-modal-wrap *, .ant-select-dropdown, .ant-dropdown, .bs-antd-select-dropdown, [class*="dropdown"]'
+            )).filter(element => isVisibleElement(element, pageWindow))
+                .filter(element => /dropdown|option|item|select/i.test(String(element.className || '')))
+                .slice(0, 40)
+                .map(element => ({
+                    path: getElementCssPath(element, pageDocument),
+                    tag: element.tagName,
+                    className: element.className,
+                    role: element.getAttribute('role'),
+                    text: element.textContent.trim().slice(0, 180),
+                    html: element.outerHTML.slice(0, 600)
+                }));
+        }
+
+        function attachShelfDropdownDebugListener(pageWindow = getPageWindow()) {
+            const pageDocument = pageWindow.document;
+            if (pageDocument.__bigSellerShelfDebugAttached) return;
+            pageDocument.__bigSellerShelfDebugAttached = true;
+
+            const logSnapshot = (eventName, target) => {
+                warehouseDebug && console.log(`[debug][2026-07-23][货架输入监听][${eventName}]`, JSON.stringify({
+                    targetPath: getElementCssPath(target, pageDocument),
+                    targetHtml: target?.outerHTML?.slice(0, 800) || null,
+                    activePath: getElementCssPath(pageDocument.activeElement, pageDocument),
+                    activeHtml: pageDocument.activeElement?.outerHTML?.slice(0, 800) || null,
+                    inputs: describeShelfDebugInputs(pageWindow),
+                    dropdowns: describeShelfDebugDropdowns(pageWindow)
+                }));
+            };
+
+            pageDocument.addEventListener('click', event => {
+                if (!findVisibleElement('.ant-modal-wrap', pageWindow)) return;
+                const target = event.target?.closest?.(
+                    'td.new_shelf_el.list_container, .ant-select-dropdown, .ant-dropdown, [class*="dropdown"], [class*="option"], [class*="item"]'
+                );
+                if (!target) return;
+                logSnapshot('click-capture', event.target);
+                setTimeout(() => logSnapshot('click-after-0ms', event.target), 0);
+                setTimeout(() => logSnapshot('click-after-100ms', event.target), 100);
+            }, true);
+
+            pageDocument.addEventListener('focusin', event => {
+                const target = event.target;
+                if (!findVisibleElement('.ant-modal-wrap', pageWindow)) return;
+                if (!/INPUT|TEXTAREA/.test(target.tagName) && !target.isContentEditable) return;
+                logSnapshot('focusin', target);
+            }, true);
+
+            const observer = new pageWindow.MutationObserver(mutations => {
+                const added = [];
+                mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
+                    if (node.nodeType !== 1) return;
+                    const text = node.textContent?.trim() || '';
+                    const className = String(node.className || '');
+                    if (/dropdown|option|item|select/i.test(className) || /下拉|货架/.test(text)) {
+                        added.push({
+                            path: getElementCssPath(node, pageDocument),
+                            tag: node.tagName,
+                            className,
+                            text: text.slice(0, 240),
+                            html: node.outerHTML.slice(0, 800)
+                        });
+                    }
+                }));
+                if (added.length) {
+                    warehouseDebug && console.log('[debug][2026-07-23][货架输入监听][mutation]', JSON.stringify({
+                        added: added.slice(0, 30),
+                        activePath: getElementCssPath(pageDocument.activeElement, pageDocument)
+                    }));
+                }
+            });
+            observer.observe(pageDocument.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'aria-expanded'] });
+        }
+
+        function getModalRowSku(row) {
+            return row.querySelector('td.sku_el > div > div.ml_10 > div:nth-child(2) > div > div > span')?.textContent.trim() || '';
+        }
+
+        function normalizeShelfText(text) {
+            return String(text || '').replace(/\s+/g, '').trim();
+        }
+
+        function getVisibleShelfCandidates(shelf, pageWindow = getPageWindow()) {
+            const normalizedShelf = normalizeShelfText(shelf);
+            const selectors = [
+                '.ant-select-dropdown .option',
+                '.ant-select-dropdown [role="option"]',
+                '.ant-select-dropdown li',
+                '.ant-select-dropdown-menu-item',
+                '.ant-dropdown-menu-item',
+                '.bs-antd-select-dropdown li',
+                '[class*="dropdown"] [class*="option"]',
+                '[class*="dropdown"] [class*="item"]'
+            ];
+            const selectorCandidates = selectors.flatMap(selector => Array.from(
+                pageWindow.document.querySelectorAll(selector)
+            ));
+            return selectorCandidates.filter((option, index) => selectorCandidates.indexOf(option) === index)
+                .filter(option => isVisibleElement(option, pageWindow))
+                .filter(option => normalizeShelfText(option.textContent) === normalizedShelf);
+        }
+
+        function findVisibleShelfOption(shelf, pageWindow = getPageWindow()) {
+            return getVisibleShelfCandidates(shelf, pageWindow)[0] || null;
+        }
+
+        function describeVisibleShelfNodes(shelf, pageWindow = getPageWindow()) {
+            const normalizedShelf = normalizeShelfText(shelf);
+            return Array.from(pageWindow.document.querySelectorAll('body *'))
+                .filter(element => isVisibleElement(element, pageWindow))
+                .filter(element => {
+                    const text = normalizeShelfText(element.textContent);
+                    return text && (text === normalizedShelf || text.includes(normalizedShelf));
+                })
+                .slice(0, 40)
+                .map(element => ({
+                    tag: element.tagName,
+                    className: element.className,
+                    role: element.getAttribute('role'),
+                    text: element.textContent.trim().slice(0, 160),
+                    childCount: element.children.length
+                }));
+        }
+
+        function waitForShelfOption(shelf, pageWindow = getPageWindow(), timeout = 5000) {
+            return new Promise(resolve => {
+                const pageDocument = pageWindow.document;
+                let completed = false;
+                let observer = null;
+                let intervalId = null;
+                let timeoutId = null;
+
+                const finish = option => {
+                    if (completed) return;
+                    completed = true;
+                    observer?.disconnect();
+                    if (intervalId) clearInterval(intervalId);
+                    if (timeoutId) clearTimeout(timeoutId);
+                    if (option) {
+                        warehouseDebug && console.log('[debug][2026-07-23][货架下拉] option-captured', JSON.stringify({
+                            shelf,
+                            optionClass: option.className,
+                            optionText: option.textContent.trim(),
+                            optionPath: getElementCssPath(option, pageDocument),
+                            optionHtml: option.outerHTML.slice(0, 500)
+                        }));
+                    }
+                    resolve(option || null);
+                };
+
+                const check = () => {
+                    const option = findVisibleShelfOption(shelf, pageWindow);
+                    if (option) finish(option);
+                };
+
+                observer = new pageWindow.MutationObserver(check);
+                observer.observe(pageDocument.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['class', 'style'],
+                    characterData: true
+                });
+                intervalId = setInterval(check, 25);
+                timeoutId = setTimeout(() => finish(null), timeout);
+                check();
+            });
+        }
+
+        function getShelfSelectionState(row, pageWindow = getPageWindow()) {
+            const select = row.querySelector('td.shelf_info td.new_shelf_el.list_container .ant-select');
+            const selectedValue = select?.querySelector('.ant-select-selection-selected-value');
+            const placeholder = select?.querySelector('.ant-select-selection__placeholder');
+            const searchInput = select?.querySelector('input.ant-select-search__field');
+            return {
+                selectClass: select?.className || null,
+                open: !!select?.classList.contains('ant-select-open'),
+                selectedText: selectedValue?.textContent.trim() || '',
+                placeholderText: placeholder?.textContent.trim() || '',
+                searchValue: searchInput?.value || '',
+                cellText: row.querySelector('td.shelf_info td.new_shelf_el.list_container')?.textContent.trim() || '',
+                activePath: getElementCssPath(pageWindow.document.activeElement, pageWindow.document)
+            };
+        }
+
+        function getShelfOptionClickTarget(option) {
+            if (!option) return null;
+            if (option.classList?.contains('option')) return option;
+            return option.querySelector?.('.option') || option;
+        }
+
+        function dispatchShelfSelectionEvents(option, pageWindow = getPageWindow()) {
+            if (!option) return [];
+            const child = option.classList?.contains('option')
+                ? option
+                : option.querySelector?.('.option');
+            const targets = [child, option, option.parentElement]
+                .filter(Boolean)
+                .filter((target, index, list) => list.indexOf(target) === index);
+            const dispatched = [];
+            targets.forEach(target => {
+                const rect = target.getBoundingClientRect();
+                const eventInit = {
+                    bubbles: true,
+                    cancelable: true,
+                    view: pageWindow,
+                    detail: 1,
+                    button: 0,
+                    buttons: 1,
+                    clientX: rect.left + Math.max(1, rect.width / 2),
+                    clientY: rect.top + Math.max(1, rect.height / 2)
+                };
+                try {
+                    const PointerCtor = pageWindow.PointerEvent || pageWindow.MouseEvent;
+                    target.dispatchEvent(new PointerCtor('pointerover', eventInit));
+                    target.dispatchEvent(new pageWindow.MouseEvent('mouseover', eventInit));
+                    target.dispatchEvent(new PointerCtor('pointermove', eventInit));
+                    target.dispatchEvent(new pageWindow.MouseEvent('mousemove', eventInit));
+                    target.dispatchEvent(new PointerCtor('pointerdown', eventInit));
+                    target.dispatchEvent(new pageWindow.MouseEvent('mousedown', eventInit));
+                    target.dispatchEvent(new PointerCtor('pointerup', { ...eventInit, buttons: 0 }));
+                    target.dispatchEvent(new pageWindow.MouseEvent('mouseup', { ...eventInit, buttons: 0 }));
+                    target.dispatchEvent(new pageWindow.MouseEvent('click', { ...eventInit, buttons: 0 }));
+                    dispatched.push({
+                        path: getElementCssPath(target, pageWindow.document),
+                        className: String(target.className || ''),
+                        text: target.textContent.trim().slice(0, 120)
+                    });
+                } catch (error) {
+                    warehouseDebug && console.warn('[debug][2026-07-23][货架选择探针] 事件分发失败', error);
+                }
+            });
+            return dispatched;
+        }
+
+        function dispatchShelfKeyboardSelection(row, pageWindow = getPageWindow()) {
+            const input = row.querySelector(
+                'td.shelf_info td.new_shelf_el.list_container .ant-select-open input.ant-select-search__field'
+            );
+            if (!input) return false;
+            try {
+                input.focus();
+                ['ArrowDown', 'Enter'].forEach(key => {
+                    const init = {
+                        bubbles: true,
+                        cancelable: true,
+                        key,
+                        code: key,
+                        keyCode: key === 'Enter' ? 13 : 40,
+                        which: key === 'Enter' ? 13 : 40
+                    };
+                    input.dispatchEvent(new pageWindow.KeyboardEvent('keydown', init));
+                    input.dispatchEvent(new pageWindow.KeyboardEvent('keyup', init));
+                });
+                return true;
+            } catch (error) {
+                warehouseDebug && console.warn('[debug][2026-07-23][货架选择探针] 键盘事件失败', error);
+                return false;
+            }
+        }
+
+        async function clickShelfOptionAndVerify(option, row, shelf, pageWindow = getPageWindow()) {
+            const normalizedShelf = normalizeShelfText(shelf);
+            const sku = getModalRowSku(row);
+            let lastProbeSignature = '';
+            const isCommitted = () => {
+                const state = getShelfSelectionState(row, pageWindow);
+                const selectedValueMatches = normalizeShelfText(state.selectedText) === normalizedShelf;
+                const closedCellMatches = !state.open
+                    && !state.searchValue
+                    && normalizeShelfText(state.cellText) === normalizedShelf;
+                const probeSignature = JSON.stringify({
+                    open: state.open,
+                    selectedText: state.selectedText,
+                    searchValue: state.searchValue,
+                    cellText: state.cellText,
+                    activePath: state.activePath
+                });
+                if (selectedValueMatches || closedCellMatches) {
+                    warehouseDebug && console.log('[debug][2026-07-23][货架提交判定] committed', JSON.stringify({
+                        sku,
+                        shelf,
+                        reason: selectedValueMatches ? 'selected-value' : 'closed-cell',
+                        state
+                    }));
+                    return state;
+                }
+                if (probeSignature !== lastProbeSignature) {
+                    lastProbeSignature = probeSignature;
+                    warehouseDebug && console.log('[debug][2026-07-23][货架提交判定] pending', JSON.stringify({ sku, shelf, state }));
+                }
+                return null;
+            };
+            const before = getShelfSelectionState(row, pageWindow);
+            const clickTarget = getShelfOptionClickTarget(option);
+            const dispatched = dispatchShelfSelectionEvents(option, pageWindow);
+            warehouseDebug && console.log('[debug][2026-07-23][货架选择探针] pointer-mouse', JSON.stringify({
+                shelf,
+                optionPath: getElementCssPath(option, pageWindow.document),
+                clickTargetPath: getElementCssPath(clickTarget, pageWindow.document),
+                optionClass: String(option?.className || ''),
+                clickTargetClass: String(clickTarget?.className || ''),
+                dispatched
+            }));
+            let committed = await waitForElement(isCommitted, 500, 25);
+            let fallbackTarget = clickTarget;
+            if (!committed) {
+                fallbackTarget = clickTarget?.isConnected
+                    ? clickTarget
+                    : getShelfOptionClickTarget(findVisibleShelfOption(shelf, pageWindow));
+                if (fallbackTarget) {
+                    warehouseDebug && console.log('[debug][2026-07-23][货架下拉] option-click-fallback', JSON.stringify({
+                        shelf,
+                        before,
+                        optionPath: getElementCssPath(clickTarget, pageWindow.document),
+                        optionConnected: clickTarget?.isConnected,
+                        fallbackClass: fallbackTarget.className,
+                        fallbackText: fallbackTarget.textContent.trim(),
+                        fallbackPath: getElementCssPath(fallbackTarget, pageWindow.document)
+                    }));
+                    const fallbackEvents = dispatchShelfSelectionEvents(fallbackTarget, pageWindow);
+                    warehouseDebug && console.log('[debug][2026-07-23][货架选择探针] fallback-pointer-mouse', JSON.stringify({
+                        shelf,
+                        fallbackPath: getElementCssPath(fallbackTarget, pageWindow.document),
+                        fallbackEvents
+                    }));
+                    committed = await waitForElement(isCommitted, 1000, 25);
+                }
+            }
+            if (!committed) {
+                const keyboardDispatched = dispatchShelfKeyboardSelection(row, pageWindow);
+                committed = await waitForElement(isCommitted, 1000, 25);
+                warehouseDebug && console.log('[debug][2026-07-23][货架选择探针] keyboard', JSON.stringify({
+                    shelf,
+                    keyboardDispatched,
+                    committed: !!committed,
+                    state: getShelfSelectionState(row, pageWindow)
+                }));
+            }
+            const after = getShelfSelectionState(row, pageWindow);
+            warehouseDebug && console.log('[debug][2026-07-23][货架下拉] option-click-result', JSON.stringify({
+                sku,
+                shelf,
+                committed: !!committed,
+                before,
+                after,
+                optionPath: getElementCssPath(clickTarget, pageWindow.document),
+                optionConnected: clickTarget?.isConnected,
+                fallbackConnected: !!fallbackTarget?.isConnected
+            }));
+            return !!committed;
+        }
+
+        async function selectShelfForRow(row, shelf) {
+            const pageWindow = getPageWindow();
+            const shelfCell = row.querySelector('td.shelf_info td.new_shelf_el.list_container');
+            const trigger = shelfCell?.querySelector('.placeholder_txt > span')
+                || shelfCell?.querySelector('.placeholder_txt')
+                || shelfCell?.querySelector('.ant-select-selection')
+                || shelfCell?.querySelector('.ant-select');
+            warehouseDebug && console.log('[debug][2026-07-23][货架下拉] trigger', JSON.stringify({
+                shelf,
+                found: !!trigger,
+                triggerClass: trigger?.className || null,
+                shelfCellClass: shelfCell?.className || null,
+                rowText: row.textContent.trim().slice(0, 240),
+                triggerHtml: trigger?.outerHTML?.slice(0, 500) || null
+            }));
+            if (!trigger) return false;
+
+            row.scrollIntoView({ block: 'center', inline: 'nearest' });
+            await new Promise(resolve => setTimeout(resolve, 80));
+            dispatchHoverEvents(trigger, pageWindow);
+            clickPageElement(trigger);
+            const searchInput = await waitForElement(() => row.querySelector(
+                'td.shelf_info td.new_shelf_el.list_container .ant-select-open input.ant-select-search__field'
+            ), 1500, 50);
+            warehouseDebug && console.log('[debug][2026-07-23][货架下拉] search-input', JSON.stringify({
+                shelf,
+                found: !!searchInput,
+                path: getElementCssPath(searchInput, pageWindow.document),
+                className: searchInput?.className || null,
+                value: searchInput?.value || ''
+            }));
+            const optionPromise = waitForShelfOption(shelf, pageWindow, 5000);
+            if (searchInput) setInputValue(searchInput, shelf);
+
+            let option = await optionPromise;
+            warehouseDebug && console.log('[debug][2026-07-23][货架下拉] after-open', JSON.stringify({
+                shelf,
+                optionFound: !!option,
+                dropdowns: Array.from(pageWindow.document.querySelectorAll(
+                    '.ant-select-dropdown, .ant-dropdown, .bs-antd-select-dropdown'
+                )).map(dropdown => ({
+                    className: dropdown.className,
+                    visible: isVisibleElement(dropdown, pageWindow),
+                    text: dropdown.textContent.trim().slice(0, 500),
+                    options: Array.from(dropdown.querySelectorAll('li, [role="option"], .ant-dropdown-menu-item'))
+                        .map(item => ({ className: item.className, text: item.textContent.trim() }))
+                        .slice(0, 30)
+                }))
+                , visibleShelfNodes: describeVisibleShelfNodes(shelf, pageWindow)
+            }));
+            if (!option) {
+                const fallbackTrigger = shelfCell.querySelector('.ant-select-selection, .ant-select') || trigger;
+                warehouseSearchDebug && console.log('[DEBUG-HB13][dropdown-retry]', {
+                    shelf,
+                    sku: getModalRowSku(row),
+                    hadSearchInput: !!searchInput,
+                    fallbackPath: getElementCssPath(fallbackTrigger, pageWindow.document)
+                });
+                dispatchMouseClick(fallbackTrigger, pageWindow);
+                const fallbackSearchInput = await waitForElement(() => row.querySelector(
+                    'td.shelf_info td.new_shelf_el.list_container .ant-select-open input.ant-select-search__field'
+                ), 1500, 50);
+                if (fallbackSearchInput) setInputValue(fallbackSearchInput, shelf);
+                option = await waitForShelfOption(shelf, pageWindow, 5000);
+            }
+            if (!option) {
+                warehouseDebug && console.log('[debug][2026-07-23][货架下拉] option-missing', JSON.stringify({
+                    shelf,
+                    normalizedShelf: normalizeShelfText(shelf),
+                    visibleText: Array.from(pageWindow.document.querySelectorAll(
+                        '.ant-select-dropdown, .ant-dropdown, .bs-antd-select-dropdown'
+                    )).filter(dropdown => isVisibleElement(dropdown, pageWindow))
+                        .map(dropdown => dropdown.textContent.trim().slice(0, 500)),
+                    visibleShelfNodes: describeVisibleShelfNodes(shelf, pageWindow)
+                }));
+                return false;
+            }
+
+            const selected = await clickShelfOptionAndVerify(option, row, shelf, pageWindow);
+            warehouseDebug && console.log('[debug][2026-07-23][货架下拉] selected', JSON.stringify({
+                shelf,
+                selected,
+                cellText: shelfCell?.textContent.trim() || null,
+                optionClass: option.className,
+                optionText: option.textContent.trim()
+            }));
+            return selected;
+        }
+
+        function closeOpenShelfDropdown(row, pageWindow = getPageWindow()) {
+            const input = row?.querySelector(
+                'td.shelf_info td.new_shelf_el.list_container .ant-select-open input.ant-select-search__field'
+            );
+            const openSelect = row?.querySelector(
+                'td.shelf_info td.new_shelf_el.list_container .ant-select-open'
+            );
+            if (!input && !openSelect) return false;
+            try {
+                const target = input || openSelect;
+                target.focus?.();
+                target.dispatchEvent(new pageWindow.KeyboardEvent('keydown', {
+                    bubbles: true,
+                    cancelable: true,
+                    key: 'Escape',
+                    code: 'Escape',
+                    keyCode: 27,
+                    which: 27
+                }));
+                target.dispatchEvent(new pageWindow.KeyboardEvent('keyup', {
+                    bubbles: true,
+                    cancelable: true,
+                    key: 'Escape',
+                    code: 'Escape',
+                    keyCode: 27,
+                    which: 27
+                }));
+            } catch (error) {
+                warehouseSearchDebug && console.warn('[debug][2026-07-23][货架失败项关闭下拉异常]', error);
+            }
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架失败项关闭下拉]', {
+                sku: getModalRowSku(row),
+                inputConnected: !!input?.isConnected,
+                openSelectConnected: !!openSelect?.isConnected,
+                state: getShelfSelectionState(row, pageWindow)
+            });
+            return true;
+        }
+
+        async function fillModalShelfLocations(skuList, shelfList) {
+            const pageWindow = getPageWindow();
+            const rows = await waitForElement(() => {
+                const currentRows = getModalRows(pageWindow);
+                return currentRows.length ? currentRows : null;
+            }, 10000);
+            if (!rows) return { ok: false, message: '未找到设置货架位弹窗内容' };
+            attachShelfDropdownDebugListener(pageWindow);
+
+            warehouseDebug && console.log('[debug][2026-07-23][货架下拉] modal-rows', JSON.stringify({
+                rowCount: rows.length,
+                rowSkus: rows.map(getModalRowSku),
+                requestedSkus: skuList,
+                requestedShelves: shelfList
+            }));
+
+            const rowBySku = new Map(rows.map(row => [getModalRowSku(row), row]));
+            const unchanged = [];
+            const updatePairs = [];
+            for (let i = 0; i < skuList.length; i += 1) {
+                const row = rowBySku.get(skuList[i]);
+                if (!row) return { ok: false, message: `弹窗中未找到 SKU：${skuList[i]}` };
+                const currentShelf = normalizeShelfText(row.querySelector('td.shelf_el')?.textContent);
+                if (currentShelf && currentShelf === normalizeShelfText(shelfList[i])) {
+                    unchanged.push({ sku: skuList[i], shelf: shelfList[i], currentShelf });
+                    continue;
+                }
+                updatePairs.push({ sku: skuList[i], shelf: shelfList[i], row });
+            }
+
+            warehouseSearchDebug && console.log('[DEBUG-HB11][modal-preflight]', {
+                modalSkus: rows.map(getModalRowSku),
+                unchanged: unchanged.map(pair => ({ sku: pair.sku, current: pair.currentShelf, target: pair.shelf })),
+                updates: updatePairs.map(pair => ({
+                    sku: pair.sku,
+                    current: normalizeShelfText(pair.row.querySelector('td.shelf_el')?.textContent),
+                    target: pair.shelf
+                }))
+            });
+
+            if (unchanged.length) {
+                return {
+                    ok: true,
+                    requiresReselect: true,
+                    unchanged,
+                    updateSkuList: updatePairs.map(pair => pair.sku),
+                    updateShelfList: updatePairs.map(pair => pair.shelf),
+                    updatedCount: 0
+                };
+            }
+
+            const failed = [];
+            const selectedPairs = [];
+            for (const pair of updatePairs) {
+                if (!await selectShelfForRow(pair.row, pair.shelf)) {
+                    warehouseSearchDebug && console.log('[DEBUG-HB11][select-failed]', {
+                        sku: pair.sku,
+                        currentShelf: normalizeShelfText(pair.row.querySelector('td.shelf_el')?.textContent),
+                        targetShelf: pair.shelf,
+                        rowHtml: pair.row.outerHTML.slice(0, 3000),
+                        visibleDropdowns: Array.from(pageWindow.document.querySelectorAll(
+                            '.ant-select-dropdown, .ant-dropdown, .bs-antd-select-dropdown'
+                        )).filter(dropdown => isVisibleElement(dropdown, pageWindow)).map(dropdown => ({
+                            className: dropdown.className,
+                            text: dropdown.textContent.trim().slice(0, 1000),
+                            html: dropdown.outerHTML.slice(0, 3000)
+                        }))
+                    });
+                    failed.push({
+                        sku: pair.sku,
+                        shelf: pair.shelf,
+                        currentShelf: normalizeShelfText(pair.row.querySelector('td.shelf_el')?.textContent),
+                        reason: 'shelf-option-not-selected'
+                    });
+                    closeOpenShelfDropdown(pair.row, pageWindow);
+                    continue;
+                }
+                selectedPairs.push(pair);
+            }
+            warehouseSearchDebug && failed.length && console.log('[debug][2026-07-23][货架失败项已跳过]', {
+                failed,
+                selected: selectedPairs.map(pair => ({ sku: pair.sku, shelf: pair.shelf }))
+            });
+            return {
+                ok: true,
+                requiresReselect: unchanged.length > 0 || failed.length > 0,
+                unchanged,
+                failed,
+                updateSkuList: selectedPairs.map(pair => pair.sku),
+                updateShelfList: selectedPairs.map(pair => pair.shelf),
+                updatedCount: selectedPairs.length
+            };
+        }
+
+        async function closeShelfModalWithoutSubmitting() {
+            const pageWindow = getPageWindow();
+            const pageDocument = pageWindow.document;
+            const modal = Array.from(pageDocument.querySelectorAll('.ant-modal-wrap'))
+                .filter(candidate => isVisibleElement(candidate, pageWindow))
+                .find(candidate => candidate.querySelector('.page_list > table > tbody'))
+                || findVisibleElement('.ant-modal-wrap', pageWindow);
+            const closeButton = modal?.querySelector('.ant-modal-close, .ant-modal-header .close, .ant-modal-content > button');
+            if (!modal || !closeButton) return false;
+
+            clickPageElement(closeButton);
+            let closed = await waitForElement(() => (
+                !modal.isConnected || !isVisibleElement(modal, pageWindow) ? pageDocument.body : null
+            ), 2000, 50);
+            if (!closed) {
+                dispatchMouseClick(closeButton, pageWindow);
+                closed = await waitForElement(() => (
+                    !modal.isConnected || !isVisibleElement(modal, pageWindow) ? pageDocument.body : null
+                ), 2000, 50);
+            }
+            return !!closed;
+        }
+
+        async function clickBatchShelfAction() {
+            const pageWindow = getPageWindow();
+            const pageDocument = pageWindow.document;
+            let action = await waitForElement(() => findVisibleElement(batchShelfActionSelector, pageWindow), 1000);
+            if (!action) {
+                const trigger = findVisibleElement(batchOperationTriggerSelector, pageWindow);
+                if (!trigger) return false;
+                warehouseDebug && console.log('[DEBUG-HB8][menu] before hover', {
+                    triggerClass: trigger.className,
+                    triggerVisible: isVisibleElement(trigger, pageWindow),
+                    triggerRect: trigger.getBoundingClientRect().toJSON(),
+                    triggerCount: pageDocument.querySelectorAll(batchOperationTriggerSelector).length,
+                    actionCount: pageDocument.querySelectorAll(batchShelfActionSelector).length
+                });
+                dispatchHoverEvents(trigger, pageWindow);
+                const menuItem = await waitForElement(() => findVisibleElement(batchShelfMenuItemSelector, pageWindow), 1000, 50);
+                if (menuItem) dispatchHoverEvents(menuItem, pageWindow);
+                action = await waitForElement(() => findVisibleElement(batchShelfActionSelector, pageWindow), 500, 50);
+                warehouseDebug && console.log('[DEBUG-HB8][menu] after hover', {
+                    actionVisible: !!action,
+                    menuItemVisible: !!menuItem,
+                    actionCount: pageDocument.querySelectorAll(batchShelfActionSelector).length
+                });
+                if (action) {
+                    clickPageElement(action);
+                    return true;
+                }
+                clickPageElement(trigger);
+                action = await waitForElement(() => findVisibleElement(batchShelfActionSelector, pageWindow), 300, 50);
+                if (!action) {
+                    warehouseDebug && console.log('[DEBUG-HB8][menu] native trigger click did not open; dispatching mouse sequence');
+                    dispatchMouseClick(trigger, pageWindow);
+                }
+                action = await waitForElement(() => findVisibleElement(batchShelfActionSelector, pageWindow), 5000);
+            }
+            if (!action) return false;
+            clickPageElement(action);
+            return true;
+        }
+
+        async function openBatchSearch(resultEl) {
+            if (openingBatchPromise) return openingBatchPromise;
+            openingBatchPromise = (async () => {
+                const pageWindow = getPageWindow();
+                const pageDocument = pageWindow.document;
+                const batchBtn = pageDocument.querySelector(batchButtonSelector);
+                if (!batchBtn) {
+                    resultEl.innerHTML = '<span style="color:#ff4d4f;">未找到批量输入按钮</span>';
+                    return null;
+                }
+
+                const searchContainer = batchBtn.closest('.bs_antd_input_search_new');
+                /* [调试完成][2026-07-23] 定位页面上下文与按钮重渲染
+                warehouseDebug && console.log('[DEBUG-HB7][open] start', {
+                    sameDocument: pageDocument === document,
+                    batchCount: pageDocument.querySelectorAll('.bs_antd_input_search_batch_btn').length,
+                    buttonConnected: batchBtn.isConnected,
+                    containerClass: searchContainer?.className,
+                    textareaCount: searchContainer?.querySelectorAll('textarea.bs_antd_textarea').length
+                });
+                */
+                const isOpen = () => {
+                    if (!searchContainer) return false;
+                    if (searchContainer.classList.contains('is_open')) return true;
+                    const outer = searchContainer.querySelector('.bs_antd_textarea_outer');
+                    return !!outer && pageWindow.getComputedStyle(outer).display !== 'none';
+                };
+                /* [调试完成][2026-07-23]
+                warehouseDebug && console.log('[DEBUG-HB7][open] before click', {
+                    isOpen: isOpen(),
+                    containerClass: searchContainer?.className,
+                    outerDisplay: searchContainer?.querySelector('.bs_antd_textarea_outer')
+                        ? pageWindow.getComputedStyle(searchContainer.querySelector('.bs_antd_textarea_outer')).display
+                        : null
+                });
+                */
+                if (!isOpen()) {
+                    clickPageElement(batchBtn);
+                    await waitForElement(() => isOpen() ? searchContainer : null, 300, 50);
+                    if (!isOpen()) {
+                        // 原生 click 在此页面不触发 Vue 事件，补发页面上下文鼠标事件。
+                        dispatchMouseClick(batchBtn, pageWindow);
+                        /* [调试完成][2026-07-23]
+                        setTimeout(() => {
+                            const fallbackTextarea = searchContainer.querySelector('textarea.bs_antd_textarea');
+                            warehouseDebug && console.log('[DEBUG-HB7][open] fallback state +100ms', {
+                                containerClass: searchContainer.className,
+                                outerDisplay: fallbackTextarea?.closest('.bs_antd_textarea_outer')
+                                    ? pageWindow.getComputedStyle(fallbackTextarea.closest('.bs_antd_textarea_outer')).display
+                                    : null
+                            });
+                        }, 100);
+                        */
+                    }
+                }
+
+                const searchTextarea = await waitForElement(() => {
+                    if (!searchContainer || !isOpen()) return null;
+                    const textarea = searchContainer.querySelector('textarea.bs_antd_textarea');
+                    const outer = textarea?.closest('.bs_antd_textarea_outer');
+                    const visible = !!textarea && isVisibleElement(outer || textarea, pageWindow);
+                    return visible ? textarea : null;
+                }, 10000);
+                /* [调试完成][2026-07-23]
+                warehouseDebug && console.log('[DEBUG-HB7][open] completed', {
+                    found: !!searchTextarea,
+                    containerClass: searchContainer?.className,
+                    buttonStillConnected: batchBtn.isConnected
+                });
+                */
+
+                if (!searchTextarea) {
+                    resultEl.innerHTML = '<span style="color:#ff4d4f;">批量输入框未展开，请将 [debug] 日志发回</span>';
+                }
+                return searchTextarea;
+            })().finally(() => { openingBatchPromise = null; });
+            return openingBatchPromise;
+        }
+
+        async function processShelfBatch(batch, batchNumber, totalBatches, resultEl) {
+            const { skuList, shelfList } = batch;
+            let submissionStarted = false;
+            const fail = message => ({ ok: false, message, retryable: !submissionStarted });
+            resultEl.innerHTML = `<span style="color:#1890ff;">正在处理第 ${batchNumber}/${totalBatches} 批（${skuList.length} 个 SKU）...</span>`;
+            const searchTextarea = await openBatchSearch(resultEl);
+            if (!searchTextarea) return fail('批量输入框未展开');
+
+            setTextareaValue(searchTextarea, skuList.join('\n'));
+            const searchContainer = searchTextarea.closest('.bs_antd_input_search_new');
+            const searchBtn = Array.from(searchContainer?.querySelectorAll('.search_btn, i.bsicon_search1') || [])
+                .find(button => getPageWindow().getComputedStyle(button).display !== 'none')
+                || searchContainer?.querySelector('i.bsicon_search1');
+            if (!searchBtn) return fail('未找到搜索按钮');
+
+            warehouseSearchDebug && console.log('[DEBUG-HB9][search] input-set', {
+                skuCount: skuList.length,
+                firstSku: skuList[0] || null,
+                lastSku: skuList[skuList.length - 1] || null,
+                textareaValue: searchTextarea.value,
+                textareaPath: getElementCssPath(searchTextarea, getPageWindow().document)
+            });
+            await clickShelfSearchButton(searchBtn);
+            resultEl.innerHTML = `<span style="color:#1890ff;">第 ${batchNumber}/${totalBatches} 批正在等待搜索结果...</span>`;
+            let resultsReady = await waitForSearchResults(skuList);
+            warehouseSearchDebug && console.log('[DEBUG-HB9][search] wait-result', {
+                ready: !!resultsReady,
+                rowCount: getPageWindow().document.querySelectorAll('table.list_items > tbody > tr.list_item').length,
+                textareaValue: searchTextarea.value
+            });
+            if (!resultsReady) return fail(`第 ${batchNumber} 批搜索结果未完整加载`);
+
+            const searchPairs = getShelfSearchPairs(skuList, shelfList);
+            warehouseSearchDebug && console.log('[DEBUG-HB10][shelf-compare]', {
+                needsUpdate: searchPairs.available.map(pair => ({ sku: pair.sku, current: pair.currentShelf, target: pair.shelf })),
+                unchanged: searchPairs.unchanged.map(pair => ({ sku: pair.sku, shelf: pair.shelf })),
+                missing: searchPairs.missing.map(pair => pair.sku)
+            });
+            warehouseSearchDebug && console.log('[DEBUG-HB12][search-shelf-compare]', JSON.stringify({
+                needsUpdate: searchPairs.available.map(pair => ({ sku: pair.sku, currentShelf: pair.currentShelf, targetShelf: pair.shelf })),
+                unchanged: searchPairs.unchanged.map(pair => ({ sku: pair.sku, currentShelf: pair.currentShelf, targetShelf: pair.shelf })),
+                missing: searchPairs.missing.map(pair => ({ sku: pair.sku, targetShelf: pair.shelf }))
+            }));
+            if (!searchPairs.available.length) {
+                return { ok: true, skipped: true, missing: searchPairs.missing, unchanged: searchPairs.unchanged };
+            }
+
+            if (!await ensureShelfPageSize()) {
+                return fail(`第 ${batchNumber} 批未能切换为 ${SHELF_PAGE_SIZE} 条/页`);
+            }
+            resultsReady = await waitForSearchResults(skuList);
+            if (!resultsReady) return fail(`第 ${batchNumber} 批切换分页后搜索结果未完整加载`);
+
+            const availableSkuList = searchPairs.available.map(pair => pair.sku);
+            const availableShelfList = searchPairs.available.map(pair => pair.shelf);
+            if (!await selectResultRowsForSkus(availableSkuList)) {
+                return fail(`第 ${batchNumber} 批未能仅勾选需要修改的 SKU`);
+            }
+            if (!await clickBatchShelfAction()) {
+                return fail(`第 ${batchNumber} 批未找到批量绑定货架号操作`);
+            }
+
+            let fillResult = await fillModalShelfLocations(availableSkuList, availableShelfList);
+            if (!fillResult.ok) return fail(fillResult.message);
+
+            let unchangedPairs = searchPairs.unchanged.concat(fillResult.unchanged || []);
+            let skippedShelfPairs = [...(fillResult.failed || [])];
+            // 选择失败的 SKU 不再阻断整批；关闭预检弹窗后，只重新勾选尚未失败的 SKU。
+            for (let reselectAttempt = 0; fillResult.requiresReselect; reselectAttempt += 1) {
+                if (reselectAttempt >= 3) {
+                    return fail(`第 ${batchNumber} 批货架位选择失败项过多，已跳过 ${skippedShelfPairs.length} 个但仍无法稳定重试`);
+                }
+                if (!await closeShelfModalWithoutSubmitting()) {
+                    return fail(`第 ${batchNumber} 批未能关闭预检货架位弹窗`);
+                }
+                if (!fillResult.updateSkuList.length) {
+                    return {
+                        ok: true,
+                        skipped: true,
+                        missing: searchPairs.missing,
+                        unchanged: unchangedPairs,
+                        unverifiedItems: skippedShelfPairs.map(item => ({
+                            sku: item.sku,
+                            actualShelf: item.currentShelf,
+                            targetShelf: item.shelf
+                        }))
+                    };
+                }
+                warehouseSearchDebug && console.log('[debug][2026-07-23][货架失败项重选剩余SKU]', {
+                    batchNumber,
+                    reselectAttempt: reselectAttempt + 1,
+                    skippedShelfPairs,
+                    remainingSkuList: fillResult.updateSkuList,
+                    remainingShelfList: fillResult.updateShelfList
+                });
+                if (!await selectResultRowsForSkus(fillResult.updateSkuList)) {
+                    return fail(`第 ${batchNumber} 批未能仅勾选未失败的 SKU`);
+                }
+                if (!await clickBatchShelfAction()) {
+                    return fail(`第 ${batchNumber} 批未能重新打开设置货架位弹窗`);
+                }
+                fillResult = await fillModalShelfLocations(fillResult.updateSkuList, fillResult.updateShelfList);
+                if (!fillResult.ok) return fail(fillResult.message);
+                unchangedPairs = unchangedPairs.concat(fillResult.unchanged || []);
+                skippedShelfPairs = skippedShelfPairs.concat(fillResult.failed || []);
+            }
+            if (!fillResult.updatedCount) {
+                if (!await closeShelfModalWithoutSubmitting()) {
+                    return fail(`第 ${batchNumber} 批无需修改，但未能关闭货架位弹窗`);
+                }
+                return {
+                    ok: true,
+                    skipped: true,
+                    missing: searchPairs.missing,
+                    unchanged: unchangedPairs,
+                    unverifiedItems: skippedShelfPairs.map(item => ({
+                        sku: item.sku,
+                        actualShelf: item.currentShelf,
+                        targetShelf: item.shelf
+                    }))
+                };
+            }
+
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架提交前数量]', {
+                batchNumber,
+                searchedCount: skuList.length,
+                missingCount: searchPairs.missing.length,
+                unchangedCount: unchangedPairs.length,
+                expectedProcessedCount: fillResult.updatedCount,
+                submitSkuList: fillResult.updateSkuList,
+                submitShelfList: fillResult.updateShelfList
+            });
+            const unchangedMessage = unchangedPairs.length ? `，${unchangedPairs.length} 个无需修改` : '';
+            resultEl.innerHTML = `<span style="color:#1890ff;">第 ${batchNumber}/${totalBatches} 批已填入，本次提交 ${fillResult.updatedCount} 个，正在自动提交${unchangedMessage}...</span>`;
+            submissionStarted = true;
+            const confirmation = await autoConfirmShelfModal(fillResult.updatedCount);
+            if (!confirmation.confirmed) {
+                const reportedText = confirmation.reportedProcessedCount == null
+                    ? '未读到成功/失败数'
+                    : `成功+失败=${confirmation.reportedProcessedCount}`;
+                return fail(`第 ${batchNumber} 批结果未核对通过：应处理 ${fillResult.updatedCount} 个，${reportedText}（${confirmation.action}），结果弹窗和断点已保留`);
+            }
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架批次已核对]', {
+                batchNumber,
+                expectedProcessedCount: fillResult.updatedCount,
+                reportedSuccess: confirmation.success,
+                reportedFailure: confirmation.failure,
+                reportedProcessedCount: confirmation.reportedProcessedCount,
+                resultCountMatches: confirmation.resultCountMatches
+            });
+            // 结果详情是 BigSeller 的接口报告，不作为最终结果；提交后主列表的实际货架位才是兜底依据。
+            const submittedSkuList = fillResult.updateSkuList;
+            const submittedShelfList = fillResult.updateShelfList;
+            const verification = await verifyInventoryShelfPositions(submittedSkuList, submittedShelfList);
+            const unverifiedItems = verification.details.filter(item => (
+                normalizeShelfText(item.actualShelf) !== normalizeShelfText(item.targetShelf)
+            ));
+            skippedShelfPairs.forEach(item => {
+                if (!unverifiedItems.some(existing => existing.sku === item.sku)) {
+                    unverifiedItems.push({
+                        sku: item.sku,
+                        actualShelf: item.currentShelf,
+                        targetShelf: item.shelf
+                    });
+                }
+            });
+            const reportedFailureSkuSet = new Set((confirmation.reportedFailureSkuCandidates || [])
+                .map(normalizeShelfText));
+            const resultDetailComparison = verification.details.map(item => ({
+                ...item,
+                reportedFailed: reportedFailureSkuSet.has(normalizeShelfText(item.sku)),
+                actuallyApplied: normalizeShelfText(item.actualShelf) === normalizeShelfText(item.targetShelf)
+            }));
+            warehouseSearchDebug && console.log('[debug][2026-07-23][货架详情与实际货架位兜底]', {
+                batchNumber,
+                reportedFailureSkuCandidates: confirmation.reportedFailureSkuCandidates || [],
+                detailLines: confirmation.detailLines || [],
+                reportedFailedButActuallyApplied: resultDetailComparison.filter(item => (
+                    item.reportedFailed && item.actuallyApplied
+                )),
+                actualFailedButNotReported: resultDetailComparison.filter(item => (
+                    !item.reportedFailed && !item.actuallyApplied
+                )),
+                actualUnverifiedItems: unverifiedItems
+            });
+            return {
+                ok: true,
+                skipped: false,
+                missing: searchPairs.missing,
+                unchanged: unchangedPairs,
+                unverifiedItems
+            };
+        }
+
+        async function closeShelfModalForRetry() {
+            const pageWindow = getPageWindow();
+            const pageDocument = pageWindow.document;
+            const modal = Array.from(pageDocument.querySelectorAll('.ant-modal-wrap'))
+                .filter(candidate => isVisibleElement(candidate, pageWindow))
+                .find(candidate => candidate.querySelector('.page_list > table > tbody'));
+            if (!modal) return true;
+            const closeButton = modal.querySelector('.ant-modal-close, .ant-modal-header .close, .ant-modal-content > button');
+            if (!closeButton) return false;
+            clickPageElement(closeButton);
+            let closed = await waitForElement(() => (
+                !modal.isConnected || !isVisibleElement(modal, pageWindow) ? pageDocument.body : null
+            ), 2000, 50);
+            if (!closed) {
+                dispatchMouseClick(closeButton, pageWindow);
+                closed = await waitForElement(() => (
+                    !modal.isConnected || !isVisibleElement(modal, pageWindow) ? pageDocument.body : null
+                ), 2000, 50);
+            }
+            return !!closed;
+        }
+
+        async function processShelfBatchWithRetry(batch, batchNumber, totalBatches, resultEl) {
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+                let result;
+                try {
+                    result = await processShelfBatch(batch, batchNumber, totalBatches, resultEl);
+                } catch (error) {
+                    console.error('[货架号绑定] 提交前批次异常:', error);
+                    return { ok: false, message: `第 ${batchNumber} 批发生异常，未自动重试以避免重复提交` };
+                }
+                if (result.ok || !result.retryable || attempt === maxAttempts) return result;
+
+                const modalClosed = await closeShelfModalForRetry();
+                warehouseSearchDebug && console.log('[debug][2026-07-23][货架批次自动重试]', {
+                    batchNumber,
+                    attempt,
+                    nextAttempt: attempt + 1,
+                    failureMessage: result.message,
+                    modalClosed
+                });
+                resultEl.innerHTML = `<span style="color:#fa8c16;">第 ${batchNumber}/${totalBatches} 批遇到问题，已关闭弹窗，正在第 ${attempt + 1}/3 次重试...</span>`;
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            return { ok: false, message: `第 ${batchNumber} 批重试次数已用尽` };
+        }
+
+        async function verifyAllShelfBindings(skuList, shelfList, resultEl) {
+            if (!await ensureShelfPageSize()) {
+                return { ok: false, message: `最终复核未能切换为 ${SHELF_PAGE_SIZE} 条/页` };
+            }
+            const batches = splitShelfBatches(skuList, shelfList);
+            const missingItems = [];
+            const unverifiedItems = [];
+            for (let index = 0; index < batches.length; index += 1) {
+                const batch = batches[index];
+                const batchNumber = index + 1;
+                resultEl.innerHTML = `<span style="color:#1890ff;">全部提交完成，正在最终复核第 ${batchNumber}/${batches.length} 批（${batch.skuList.length} 个 SKU）...</span>`;
+                const searchTextarea = await openBatchSearch(resultEl);
+                if (!searchTextarea) return { ok: false, message: '最终复核未能展开批量输入框' };
+
+                setTextareaValue(searchTextarea, batch.skuList.join('\n'));
+                const searchContainer = searchTextarea.closest('.bs_antd_input_search_new');
+                const searchButton = Array.from(searchContainer?.querySelectorAll('.search_btn, i.bsicon_search1') || [])
+                    .find(button => getPageWindow().getComputedStyle(button).display !== 'none')
+                    || searchContainer?.querySelector('i.bsicon_search1');
+                if (!searchButton) return { ok: false, message: '最终复核未找到搜索按钮' };
+                await clickShelfSearchButton(searchButton);
+                if (!await waitForSearchResults(batch.skuList)) {
+                    return { ok: false, message: `最终复核第 ${batchNumber} 批搜索结果未加载` };
+                }
+
+                const pairs = getShelfSearchPairs(batch.skuList, batch.shelfList);
+                missingItems.push(...pairs.missing);
+                unverifiedItems.push(...pairs.available.map(pair => ({
+                    sku: pair.sku,
+                    actualShelf: pair.currentShelf,
+                    targetShelf: pair.shelf
+                })));
+                warehouseSearchDebug && console.log('[debug][2026-07-23][货架最终复核]', {
+                    batchNumber,
+                    totalBatches: batches.length,
+                    checkedCount: batch.skuList.length,
+                    matchedCount: pairs.unchanged.length,
+                    missingItems: pairs.missing,
+                    unverifiedItems: pairs.available.map(pair => ({
+                        sku: pair.sku,
+                        actualShelf: pair.currentShelf,
+                        targetShelf: pair.shelf
+                    }))
+                });
+            }
+            return { ok: true, missingItems, unverifiedItems };
+        }
+
+        document.getElementById('c_shelf_clear_job').addEventListener('click', () => {
+            clearShelfJob();
+            document.getElementById('c_shelf_result').innerHTML = '<span style="color:#666;">断点记录已清除</span>';
+        });
+
+        // 绑定按钮：批量处理 SKU 和货架号
+        document.getElementById('c_shelf_confirm').addEventListener('click', async () => {
+            if (workflowRunning) return;
+            workflowRunning = true;
+            const confirmBtn = document.getElementById('c_shelf_confirm');
+            confirmBtn.disabled = true;
+            try {
+                const skuText = document.getElementById('c_shelf_sku').value.trim();
+                const shelfText = document.getElementById('c_shelf_location').value.trim();
+                const resultEl = document.getElementById('c_shelf_result');
+                if (!skuText || !shelfText) {
+                    resultEl.innerHTML = '<span style="color:#ff4d4f;">请填写 SKU 和货架号</span>';
+                    return;
+                }
+
+                const skuList = skuText.split(/[\n\r]+/).map(s => s.trim()).filter(s => s);
+                const shelfList = shelfText.split(/[\n\r]+/).map(s => s.trim()).filter(s => s);
+                if (skuList.length !== shelfList.length) {
+                    resultEl.innerHTML = '<span style="color:#ff4d4f;">SKU 和货架号数量不一致</span>';
+                    return;
+                }
+
+                let job = getOrCreateShelfJob(skuList, shelfList);
+                job.missingItems ||= [];
+                job.failedItems ||= [];
+                if (job.completedCount >= skuList.length && job.finalVerification?.completed) {
+                    clearShelfJob();
+                    job = getOrCreateShelfJob(skuList, shelfList);
+                }
+                writeShelfJob(job);
+
+                const batches = splitShelfBatches(skuList, shelfList, job.completedCount);
+
+                for (let index = 0; index < batches.length; index += 1) {
+                    const batch = batches[index];
+                    const batchNumber = Math.floor(batch.start / SHELF_BATCH_SIZE) + 1;
+                    const totalBatches = Math.ceil(skuList.length / SHELF_BATCH_SIZE);
+                    const batchResult = await processShelfBatchWithRetry(batch, batchNumber, totalBatches, resultEl);
+                    if (!batchResult.ok) {
+                        resultEl.innerHTML = `<span style="color:#ff4d4f;">${batchResult.message}</span>`;
+                        return;
+                    }
+                    const missingKeys = new Set(job.missingItems.map(item => `${item.sku}\u0000${item.shelf}`));
+                    (batchResult.missing || []).forEach(item => {
+                        const key = `${item.sku}\u0000${item.shelf}`;
+                        if (!missingKeys.has(key)) {
+                            missingKeys.add(key);
+                            job.missingItems.push(item);
+                        }
+                    });
+                    const failedKeys = new Set(job.failedItems.map(item => `${item.sku}\u0000${item.targetShelf}`));
+                    (batchResult.unverifiedItems || []).forEach(item => {
+                        const key = `${item.sku}\u0000${item.targetShelf}`;
+                        if (!failedKeys.has(key)) {
+                            failedKeys.add(key);
+                            job.failedItems.push(item);
+                        }
+                    });
+                    job.completedCount = batch.end;
+                    writeShelfJob(job);
+                    const batchMissingCount = (batchResult.missing || []).length;
+                    const batchUnchangedCount = (batchResult.unchanged || []).length;
+                    const batchUnverifiedCount = (batchResult.unverifiedItems || []).length;
+                    const missingMessage = batchMissingCount ? `；本批未找到 ${batchMissingCount} 个` : '';
+                    const unchangedMessage = batchUnchangedCount ? `；${batchUnchangedCount} 个已是目标货架位` : '';
+                    const unverifiedMessage = batchUnverifiedCount ? `；待核对 ${batchUnverifiedCount} 个` : '';
+                    const batchStatus = batchResult.skipped ? '已跳过' : '已确认';
+                    resultEl.innerHTML = `<span style="color:#52c41a;">第 ${batchNumber}/${totalBatches} 批${batchStatus}，已完成 ${job.completedCount}/${skuList.length} 个 SKU${unchangedMessage}${missingMessage}${unverifiedMessage}</span>`;
+                }
+                job.finalVerification = { completed: false, startedAt: new Date().toISOString() };
+                writeShelfJob(job);
+                const finalVerification = await verifyAllShelfBindings(skuList, shelfList, resultEl);
+                if (!finalVerification.ok) {
+                    resultEl.innerHTML = `<span style="color:#ff4d4f;">${finalVerification.message}，最终复核断点已保留</span>`;
+                    return;
+                }
+                // 最终结果仅以重新搜索到的实际货架位为准，覆盖过程中的临时接口结果。
+                job.missingItems = finalVerification.missingItems;
+                job.failedItems = finalVerification.unverifiedItems;
+                job.finalVerification = {
+                    completed: true,
+                    completedAt: new Date().toISOString(),
+                    missingCount: job.missingItems.length,
+                    unverifiedCount: job.failedItems.length
+                };
+                writeShelfJob(job);
+                const successCount = skuList.length - job.missingItems.length - job.failedItems.length;
+                const missingSummary = job.missingItems.length ? `，成功 ${successCount} 个，未找到 ${job.missingItems.length} 个` : '';
+                const failedSummary = job.failedItems.length ? `，待核对 ${job.failedItems.length} 个` : '';
+                resultEl.innerHTML = `<span style="color:#52c41a;">全部 ${skuList.length} 个 SKU 已提交并完成最终复核${missingSummary}${failedSummary}，断点记录已保存</span>`;
+            } catch (error) {
+                console.error('[货架号绑定] 批量流程失败:', error);
+                document.getElementById('c_shelf_result').innerHTML = '<span style="color:#ff4d4f;">批量流程执行失败，请查看控制台</span>';
+            } finally {
+                workflowRunning = false;
+                confirmBtn.disabled = false;
+            }
+        });
+
+        const savedShelfJob = readShelfJob();
+        if (savedShelfJob?.skuList?.length && savedShelfJob?.shelfList?.length) {
+            document.getElementById('c_shelf_sku').value = savedShelfJob.skuList.join('\n');
+            document.getElementById('c_shelf_location').value = savedShelfJob.shelfList.join('\n');
+            const total = savedShelfJob.skuList.length;
+            const completed = Math.min(savedShelfJob.completedCount || 0, total);
+            const missingCount = Array.isArray(savedShelfJob.missingItems) ? savedShelfJob.missingItems.length : 0;
+            const failedCount = Array.isArray(savedShelfJob.failedItems) ? savedShelfJob.failedItems.length : 0;
+            const finalVerified = savedShelfJob.finalVerification?.completed === true;
+            document.getElementById('c_shelf_result').innerHTML = completed >= total && finalVerified
+                ? `<span style="color:#52c41a;">上次任务已处理并最终复核 ${total} 个 SKU，成功 ${total - missingCount - failedCount} 个，未找到 ${missingCount} 个，待核对 ${failedCount} 个，可清除断点后重新开始</span>`
+                : completed >= total
+                    ? `<span style="color:#1890ff;">全部 ${total} 个 SKU 已提交，最终复核尚未完成，点击按钮继续复核</span>`
+                : `<span style="color:#1890ff;">发现断点：已完成 ${completed}/${total} 个 SKU，未找到 ${missingCount} 个，待核对 ${failedCount} 个，点击按钮可从第 ${Math.floor(completed / SHELF_BATCH_SIZE) + 1} 批继续</span>`;
+        }
+    }
+
+    // 根据当前页面初始化对应功能
+    if (location.pathname.includes('/web/inventory/warehouseInventory.htm')) {
+        // 等待页面渲染后初始化
+        const whObserver = new MutationObserver(() => {
+            if (document.body && !document.getElementById('c_shelf_panel')) {
+                initWarehousePanel();
+            }
+        });
+        whObserver.observe(document.documentElement, { childList: true, subtree: true });
+        setTimeout(initWarehousePanel, 1000);
+    }
+
 })();
