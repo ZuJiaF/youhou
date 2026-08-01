@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         c仓助手
 // @namespace    http://tampermonkey.net/
-// @version      1.7
+// @version      1.10.0
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -165,6 +165,7 @@
 
     let autoQueryActive = false;
     let orderIdCache = {};
+    let packageWarehouseCache = {};
 
     async function waitForSelector(selector, maxWait = 30000) {
         let wait = 200;
@@ -237,14 +238,12 @@
                 }
             }
 
-            // 所有层级加载完成，触发查询
-            const btn = document.getElementById('queryInventoryBtn');
-            if (btn) btn.click();
-
-            // 等待DOM停止变化后再注入按钮（应对排序重渲染）
+            // 等待DOM停止变化后再注入按钮并查询（应对排序重渲染）
             await waitForDomStable('#pageList');
             injectReplaceGoodsBtn();
-            autoFetchOrderIds();
+
+            const btn = document.getElementById('queryInventoryBtn');
+            if (btn) btn.click();
         } finally {
             autoQueryActive = false;
         }
@@ -285,9 +284,11 @@
         document.querySelectorAll('.c_inv_tag').forEach(el => el.remove());
         document.querySelectorAll('.c_replace_btn').forEach(el => el.remove());
         document.querySelectorAll('.c_replace_tag').forEach(el => el.remove());
+        document.querySelectorAll('.c_warehouse_tag').forEach(el => el.remove());
         // 重置状态锁
         autoQueryActive = false;
         orderIdCache = {};
+        packageWarehouseCache = {};
         // 延迟1秒等旧DOM卸载、新DOM开始渲染
         setTimeout(() => {
             autoQueryWhenReady();
@@ -704,11 +705,15 @@
     // 异常包裹页 - 查询货架/库存
     // ==========================
 
-    const WAREHOUSE_ID = '54443';
     const BATCH_SIZE = 30;
+    const STOCK_WARNING_THRESHOLD = 5;
 
     document.getElementById('queryInventoryBtn').onclick = async () => {
         const msgEl = document.getElementById('inventoryMsg');
+        msgEl.innerText = '正在获取订单仓库...';
+
+        await autoFetchOrderIds();
+
         msgEl.innerText = '正在收集SKU...';
 
         // 移除之前注入的标签
@@ -726,25 +731,72 @@
 
         // 去重收集SKU
         const skuSet = new Set();
+        const skuRecords = [];
+        const warehouseSkuMap = new Map();
+        const missingWarehousePackages = new Set();
+
         skuSpans.forEach(span => {
             const sku = span.innerText.trim();
-            if (sku) skuSet.add(sku);
+            if (!sku) return;
+
+            skuSet.add(sku);
+
+            const packageEl = span.closest('.list_items_out');
+            const titleEl = packageEl?.querySelector('.items_tit');
+            const packageNo = titleEl ? getPackageNoFromTitle(titleEl) : '';
+            const warehouse = packageWarehouseCache[packageNo];
+            const isStockout = packageEl?.innerText.includes('商品缺货') || false;
+
+            if (!warehouse) {
+                missingWarehousePackages.add(packageNo || '未知包裹');
+                skuRecords.push({ span, sku, packageNo, warehouse: null, isStockout });
+                return;
+            }
+
+            skuRecords.push({ span, sku, packageNo, warehouse, isStockout });
+
+            if (!warehouseSkuMap.has(warehouse.id)) {
+                warehouseSkuMap.set(warehouse.id, new Set());
+            }
+            warehouseSkuMap.get(warehouse.id).add(sku);
         });
 
         const allSkus = [...skuSet];
-        msgEl.innerText = `找到 ${allSkus.length} 个SKU，正在查询...`;
+        msgEl.innerText =
+            `找到 ${allSkus.length} 个SKU、${warehouseSkuMap.size} 个仓库，正在查询...`;
 
-        // 分批查询
+        console.log(
+            '[debug][2026-07-24][queryInventory] 查询开始',
+            JSON.stringify({
+                skuCount: allSkus.length,
+                warehouses: [...warehouseSkuMap.entries()].map(([warehouseId, skus]) => ({
+                    warehouseId,
+                    skus: [...skus]
+                })),
+                missingWarehousePackages: [...missingWarehousePackages]
+            })
+        );
+
+        // 按订单所属仓库分组、分批查询
         const skuDataMap = {};
-        const batches = [];
-        for (let i = 0; i < allSkus.length; i += BATCH_SIZE) {
-            batches.push(allSkus.slice(i, i + BATCH_SIZE));
-        }
+        const inventoryKey = (warehouseId, sku) => `${warehouseId}::${sku}`;
 
         try {
-            for (let i = 0; i < batches.length; i++) {
-                const batch = batches[i];
-                msgEl.innerText = `正在查询第 ${i + 1}/${batches.length} 批...`;
+            const queryGroups = [];
+            warehouseSkuMap.forEach((skus, warehouseId) => {
+                const skuList = [...skus];
+                for (let i = 0; i < skuList.length; i += BATCH_SIZE) {
+                    queryGroups.push({
+                        warehouseId,
+                        skus: skuList.slice(i, i + BATCH_SIZE)
+                    });
+                }
+            });
+
+            for (let i = 0; i < queryGroups.length; i++) {
+                const group = queryGroups[i];
+                const batch = group.skus;
+                msgEl.innerText = `正在查询第 ${i + 1}/${queryGroups.length} 批...`;
 
                 const params = new URLSearchParams({
                     pageNo: '1',
@@ -762,7 +814,7 @@
                     zoneId: '',
                     openFlag: 'false',
                     hideZeroInventorySku: '0',
-                    warehouseIds: WAREHOUSE_ID
+                    warehouseIds: group.warehouseId
                 });
 
                 const resp = await fetch(
@@ -778,10 +830,33 @@
                 );
 
                 const json = await resp.json();
+                const responseRows = json.data?.page?.rows || [];
+
+                console.log(
+                    `[debug][2026-07-24][queryInventory] 第 ${i + 1} 批响应`,
+                    JSON.stringify({
+                        httpStatus: resp.status,
+                        code: json.code,
+                        message: json.message || json.msg || '',
+                        warehouseId: group.warehouseId,
+                        requestSkus: batch,
+                        rowCount: responseRows.length,
+                        firstRowFields: responseRows[0] ? Object.keys(responseRows[0]) : [],
+                        responseRows: responseRows.map(item => ({
+                            sku: item.sku,
+                            skuName: item.skuName,
+                            warehouseId: item.warehouseId,
+                            warehouseName: item.warehouseName
+                        }))
+                    })
+                );
 
                 if (json.code === 0 && json.data && json.data.page) {
                     json.data.page.rows.forEach(item => {
-                        skuDataMap[item.sku] = {
+                        const responseSku = item.sku || item.skuName;
+                        if (!responseSku) return;
+
+                        skuDataMap[inventoryKey(group.warehouseId, responseSku)] = {
                             shelfName: item.shelfName || '--',
                             onhand: item.onhand ?? '--',
                             available: item.available ?? '--'
@@ -794,12 +869,35 @@
             return;
         }
 
+        console.log(
+            '[debug][2026-07-24][queryInventory] 匹配汇总',
+            JSON.stringify({
+                requestedCount: skuRecords.filter(record => record.warehouse).length,
+                mappedCount: Object.keys(skuDataMap).length,
+                mappedSkus: Object.keys(skuDataMap),
+                unmatchedSkus: skuRecords
+                    .filter(record => record.warehouse)
+                    .filter(record => !skuDataMap[inventoryKey(record.warehouse.id, record.sku)])
+                    .map(record => ({
+                        packageNo: record.packageNo,
+                        warehouseId: record.warehouse.id,
+                        sku: record.sku
+                    }))
+            })
+        );
+
         // 注入标签到页面
         let injected = 0;
-        skuSpans.forEach(span => {
-            const sku = span.innerText.trim();
-            const info = skuDataMap[sku];
+        skuRecords.forEach(record => {
+            const { span, sku, warehouse, isStockout } = record;
+            if (!warehouse) return;
+
+            const info = skuDataMap[inventoryKey(warehouse.id, sku)];
             if (!info) return;
+
+            const onhand = Number(info.onhand);
+            const needsPhysicalCheck =
+                isStockout && Number.isFinite(onhand) && onhand > STOCK_WARNING_THRESHOLD;
 
             // 插到span.ml_10的直接父div中
             const parent = span.parentElement;
@@ -807,16 +905,29 @@
 
             const tag = document.createElement('div');
             tag.className = 'c_inv_tag';
-            tag.style.cssText =
-                'margin-left:10px;margin-top:2px;padding:1px 6px;border-radius:3px;font-size:12px;background:#e6f7ff;color:#1890ff;line-height:1.5;';
-            tag.innerHTML = `${info.shelfName}<br>现有库存:${info.onhand}<br>整仓可用:${info.available}`;
+            tag.style.cssText = needsPhysicalCheck
+                ? 'display:inline-block;max-width:190px;margin-left:10px;margin-top:2px;padding:4px 7px;border:1px solid #ff4d4f;border-radius:3px;font-size:12px;background:#fff1f0;color:#cf1322;line-height:1.5;white-space:normal;'
+                : 'display:inline-block;margin-left:10px;margin-top:2px;padding:1px 6px;border-radius:3px;font-size:12px;background:#e6f7ff;color:#1890ff;line-height:1.5;';
+            tag.innerHTML =
+                `${info.shelfName}<br>现有库存:${info.onhand}<br>整仓可用:${info.available}` +
+                (needsPhysicalCheck
+                    ? '<br><strong>库存较多，疑似误报<br>请主管实地检查</strong>'
+                    : '');
             parent.appendChild(tag);
             injected++;
         });
 
-        const notFound = allSkus.length - Object.keys(skuDataMap).length;
+        const notFoundKeys = new Set(
+            skuRecords
+                .filter(record => record.warehouse)
+                .filter(record => !skuDataMap[inventoryKey(record.warehouse.id, record.sku)])
+                .map(record => inventoryKey(record.warehouse.id, record.sku))
+        );
+        const missingWarehouseCount = missingWarehousePackages.size;
+
         msgEl.innerText = `完成！已标注 ${injected} 处` +
-            (notFound > 0 ? `，${notFound} 个SKU未查到` : '');
+            (notFoundKeys.size > 0 ? `，${notFoundKeys.size} 个仓库SKU未查到` : '') +
+            (missingWarehouseCount > 0 ? `，${missingWarehouseCount} 个包裹未识别仓库` : '');
 
         // 兜底：查询完成后注入换货按钮（防重复逻辑在函数内部）
         injectReplaceGoodsBtn();
@@ -849,6 +960,39 @@
             btn.onclick = () => queryReplaceForPackage(btn, tit);
             lt.appendChild(btn);
         });
+
+        injectWarehouseTags();
+    }
+
+    function getPackageNoFromTitle(titleEl) {
+        const lt = titleEl.querySelector('.lt') || titleEl;
+        const match = lt.innerText.match(/\bBS[A-Z0-9]+\b/i);
+        return match ? match[0].toUpperCase() : '';
+    }
+
+    function injectWarehouseTags() {
+        const titles = document.querySelectorAll('#pageList .items_tit');
+        titles.forEach(tit => {
+            const packageNo = getPackageNoFromTitle(tit);
+            const warehouse = packageWarehouseCache[packageNo];
+            if (!warehouse) return;
+
+            const lt = tit.querySelector('.lt') || tit;
+            let tag = lt.querySelector('.c_warehouse_tag');
+            if (!tag) {
+                tag = document.createElement('span');
+                tag.className = 'c_warehouse_tag';
+                tag.style.cssText =
+                    'margin-left:8px;padding:2px 8px;border:1px solid #91caff;background:#e6f4ff;color:#0958d9;border-radius:3px;font-size:12px;white-space:nowrap;vertical-align:middle;';
+
+                const replaceBtn = lt.querySelector('.c_replace_btn');
+                if (replaceBtn) replaceBtn.after(tag);
+                else lt.appendChild(tag);
+            }
+
+            tag.innerText = `仓库：${warehouse.name}`;
+            tag.title = `仓库ID：${warehouse.id}`;
+        });
     }
 
     // 自动收集订单号并批量获取ID（与SKU查询同时进行）
@@ -861,8 +1005,8 @@
         const orderTds = document.querySelectorAll(tdSel);
         const orderNos = [];
         orderTds.forEach(td => {
-            const text = td.innerText.trim();
-            if (text && /^\d+$/.test(text)) {
+            const text = td.innerText.replace(/\s+/g, '').trim();
+            if (text) {
                 orderNos.push(text);
             }
         });
@@ -870,33 +1014,56 @@
         if (!orderNos.length) return;
 
         try {
-            const resp = await fetch('/api/v1/order/new/pageList.json', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'clienttype': '1'
-                },
-                body: JSON.stringify({
-                    searchType: 'orderNo',
-                    searchContent: orderNos.join(','),
-                    inquireType: 2,
-                    allOrder: true,
-                    historyOrder: 0,
-                    pageNo: 1,
-                    pageSize: 300,
-                    desc: 1,
-                    orderBy: 'printTime'
-                })
-            });
+            orderIdCache = {};
+            packageWarehouseCache = {};
 
-            const json = await resp.json();
-            if (json.code === 0 && json.data && json.data.page) {
-                orderIdCache = {};
-                json.data.page.rows.forEach(order => {
-                    orderIdCache[order.platformOrderId] = order.id;
-                });
-                console.log(`[c仓助手] 已缓存 ${Object.keys(orderIdCache).length} 个订单ID`);
+            const uniqueOrderNos = [...new Set(orderNos)];
+            const orderBatches = [];
+            for (let i = 0; i < uniqueOrderNos.length; i += BATCH_SIZE) {
+                orderBatches.push(uniqueOrderNos.slice(i, i + BATCH_SIZE));
             }
+
+            for (const batch of orderBatches) {
+                const resp = await fetch('/api/v1/order/new/pageList.json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'clienttype': '1'
+                    },
+                    body: JSON.stringify({
+                        searchType: 'orderNo',
+                        searchContent: batch.join(','),
+                        inquireType: 2,
+                        allOrder: true,
+                        historyOrder: 0,
+                        pageNo: 1,
+                        pageSize: 300,
+                        desc: 1,
+                        orderBy: 'printTime'
+                    })
+                });
+
+                const json = await resp.json();
+                if (json.code !== 0 || !json.data?.page?.rows) continue;
+
+                json.data.page.rows.forEach(order => {
+                    if (order.platformOrderId) {
+                        orderIdCache[order.platformOrderId] = order.id;
+                    }
+                    if (order.packageNo && order.warehouseId) {
+                        packageWarehouseCache[String(order.packageNo).toUpperCase()] = {
+                            id: String(order.warehouseId),
+                            name: order.shipmentWarehouse || `仓库 ${order.warehouseId}`
+                        };
+                    }
+                });
+            }
+
+            console.log(
+                `[c仓助手] 已缓存 ${Object.keys(orderIdCache).length} 个订单ID，` +
+                `${Object.keys(packageWarehouseCache).length} 个包裹仓库`
+            );
+            injectWarehouseTags();
         } catch (e) {
             console.log('[c仓助手] 获取订单ID失败:', e.message);
         }
