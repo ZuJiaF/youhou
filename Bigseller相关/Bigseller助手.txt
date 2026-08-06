@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bigseller助手
 // @namespace    http://tampermonkey.net/
-// @version      0.17.80
+// @version      0.17.81
 // @match        *://www.bigseller.pro/web/order/index.htm*
 // @match        *://www.bigseller.com/web/order/index.htm*
 // @match        *://www.bigseller.pro/web/inventory/warehouseInventory.htm*
@@ -258,7 +258,11 @@
     }
     function sortRecommendations(list, currentTitle) {
         const current = parseTitleInfo(currentTitle);
+        // 原SKU尺寸没解析出来时（标题缺失/格式异常），任何尺寸比较都是拿 0 当基准，
+        // 会把所有候选都标成"异图更大"，此时干脆不打尺寸标签
+        const hasCurrentSize = current.area > 0;
         function getPriority(info) {
+            if (!hasCurrentSize || info.area <= 0) return { level: 4, label: '' };
             const sameSize = info.width === current.width && info.height === current.height;
             const samePattern = info.pattern === current.pattern;
             const largerSize = info.area > current.area;
@@ -552,8 +556,13 @@
             const prefix = extractStylePrefix(sku);
             const list = await fetchRelatedSkus(prefix, sku);
             if (!list.length) { recList.innerHTML = '未找到同款SKU'; return; }
-            const info = await fetchSkuInfo(sku);
-            const currentTitle = info ? info.title : '';
+            // 原SKU标题必须用订单所在仓库查询，否则拿不到尺寸，推荐标签会全部误判为"异图更大"
+            const info = await fetchSkuInfo(sku, orderWarehouseId);
+            const rowTitle = (row.querySelector('.c_sku_title')?.innerText || '').trim();
+            const currentTitle = info?.title && info.title !== '--' ? info.title : rowTitle;
+            if (!currentTitle) {
+                console.log('[Bigseller助手][推荐] 未取到原SKU标题，跳过尺寸标签 sku=%s, wh=%s', sku, orderWarehouseId);
+            }
             const sorted = sortRecommendations(list, currentTitle);
             const html = sorted.map(item =>
                 `<div class="c_rec_item" style="display:flex;align-items:center;padding:4px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;gap:6px;" data-sku="${item.sku}">
