@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         c仓助手
 // @namespace    http://tampermonkey.net/
-// @version      1.10.2
+// @version      1.10.3
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -857,7 +857,7 @@
         };
     }
 
-    document.getElementById('fillBtn').onclick = () => {
+    document.getElementById('fillBtn').onclick = async () => {
 
         window.__cWarehouseDebug = [];
 
@@ -920,9 +920,16 @@
             return;
         }
 
-        let success = 0;
+        // ========== 新增：虚拟列表滚动填表逻辑 ==========
+        const virtualInfo = getReceiveVirtualInfo(tableInfo.table);
+        const isVirtual = virtualInfo && virtualInfo.virtualRoot;
 
-        const rows = tableInfo.rows;
+        receiveDebug('fill-virtual-check', {
+            isVirtual,
+            virtualInfo
+        });
+
+        let success = 0;
         const targetResults = skuArr.map((sku, index) => ({
             sku,
             qty: qtyArr[index],
@@ -930,147 +937,227 @@
             writes: []
         }));
         const writtenRefs = [];
+        const filledSkus = new Set(); // 已填写的 SKU
 
-        receiveDebug('fill-table-snapshot', {
-            tableIndex: Array.from(
-                document.querySelectorAll('table')
-            ).indexOf(tableInfo.table),
-            rows: tableInfo.rows.length,
-            skuRows: tableInfo.skuRows,
-            inputRows: tableInfo.inputRows,
-            pairedRows: tableInfo.pairedRows,
-            hasShelfMarker: tableInfo.hasShelfMarker,
-            score: tableInfo.score,
-            virtual: getReceiveVirtualInfo(tableInfo.table),
-            rowSnapshots: rows.map((row, rowIndex) => {
-                const input = findRowReceiveInput(row);
-                return getReceiveRowDebug(
-                    row, rowIndex, skuArr, input
-                );
-            })
+        // 获取滚动容器
+        let scrollContainer = null;
+        if (isVirtual && virtualInfo.containers && virtualInfo.containers.length > 0) {
+            // 取第一个可滚动的容器
+            scrollContainer = virtualInfo.containers.find(c => {
+                const elem = document.querySelector(`.${c.className.split(' ')[0]}`);
+                return elem && elem.scrollHeight > elem.clientHeight;
+            });
+            if (scrollContainer) {
+                const elem = document.querySelector(`.${scrollContainer.className.split(' ')[0]}`);
+                scrollContainer = elem;
+            }
+        }
+
+        // 如果没找到虚拟列表容器，尝试常规滚动容器
+        if (!scrollContainer) {
+            scrollContainer = tableInfo.table.closest('.bs_newtable-body')
+                || tableInfo.table.closest('.bs-micro-modal-body')
+                || tableInfo.table.closest('[style*="overflow"]');
+        }
+
+        receiveDebug('fill-scroll-container', {
+            found: !!scrollContainer,
+            tagName: scrollContainer?.tagName,
+            className: scrollContainer?.className,
+            scrollHeight: scrollContainer?.scrollHeight,
+            clientHeight: scrollContainer?.clientHeight,
+            scrollTop: scrollContainer?.scrollTop
         });
 
-        rows.forEach((row, rowIndex) => {
+        const msgEl = document.getElementById('msg');
+        msgEl.innerText = '开始填写...';
 
-            const sku = getRowSku(row, skuMap);
-            const input = findRowReceiveInput(row);
-            const rowDebug = getReceiveRowDebug(
-                row, rowIndex, skuArr, input
-            );
+        let scrollAttempts = 0;
+        const MAX_SCROLL_ATTEMPTS = 50;
 
-            receiveDebug('fill-row-scan', {
-                ...rowDebug,
-                resolvedSku: sku
+        // 滚动填表循环
+        while (scrollAttempts < MAX_SCROLL_ATTEMPTS && filledSkus.size < skuArr.length) {
+            scrollAttempts++;
+
+            receiveDebug('fill-scroll-attempt', {
+                attempt: scrollAttempts,
+                filled: filledSkus.size,
+                target: skuArr.length
             });
 
-            if (!(sku in skuMap))
-                return;
+            msgEl.innerText = `填写中 ${filledSkus.size}/${skuArr.length} (滚动第${scrollAttempts}轮)`;
 
-            const targetResult = targetResults.find(
-                result => result.sku === sku
-            );
+            // 重新获取当前可见行
+            const rows = Array.from(tableInfo.table.querySelectorAll('tbody > tr'));
+            let filledThisRound = 0;
 
-            if (targetResult) {
-                targetResult.matchedRows.push({
-                    rowIndex,
-                    dataRowIndex: rowDebug.dataRowIndex,
-                    explicitSku: rowDebug.explicitSku,
-                    textHitTargets: rowDebug.textHitTargets,
-                    inputFound: Boolean(input),
-                    rowText: rowDebug.rowText
-                });
-            }
+            receiveDebug('fill-round-scan', {
+                attempt: scrollAttempts,
+                visibleRows: rows.length
+            });
 
-            if (!input) {
-                receiveDebug('fill-row-input-missing', {
-                    sku,
-                    row: rowDebug
-                });
-                return;
-            }
+            // 扫描并填写当前可见行
+            rows.forEach((row, rowIndex) => {
+                const sku = getRowSku(row, skuMap);
 
-            const value =
-                skuMap[sku];
-            const beforeValue = input.value;
+                if (!sku || !(sku in skuMap) || filledSkus.has(sku)) {
+                    return;
+                }
 
-            input.focus();
+                const input = findRowReceiveInput(row);
 
-            // 兼容 React 受控组件的值设置
-            const nativeInputValueSetter =
-                Object.getOwnPropertyDescriptor(
+                if (!input) {
+                    return;
+                }
+
+                const value = skuMap[sku];
+                const beforeValue = input.value;
+
+                // 填写
+                input.focus();
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
                     window.HTMLInputElement.prototype,
                     'value'
                 ).set;
+                nativeInputValueSetter.call(input, value);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+                input.blur();
 
-            nativeInputValueSetter.call(
-                input, value
-            );
+                const afterValue = input.value;
+                row.style.background = 'rgba(0,255,0,.15)';
 
-            input.dispatchEvent(
-                new Event('input', {
-                    bubbles: true
-                })
-            );
+                // 记录
+                filledSkus.add(sku);
+                filledThisRound++;
 
-            input.dispatchEvent(
-                new Event('change', {
-                    bubbles: true
-                })
-            );
+                const targetResult = targetResults.find(r => r.sku === sku);
+                if (targetResult) {
+                    targetResult.writes.push({
+                        rowIndex,
+                        beforeValue,
+                        requestedValue: value,
+                        afterValue,
+                        inputConnected: input.isConnected,
+                        rowConnected: row.isConnected
+                    });
+                }
 
-            input.dispatchEvent(
-                new KeyboardEvent(
-                    'keyup',
-                    {
-                        bubbles: true
-                    }
-                )
-            );
+                writtenRefs.push({
+                    sku,
+                    rowIndex,
+                    requestedValue: value,
+                    input,
+                    row
+                });
 
-            input.blur();
-
-            const afterValue = input.value;
-
-            row.style.background =
-                'rgba(0,255,0,.15)';
-
-            if (targetResult) {
-                targetResult.writes.push({
+                receiveDebug('fill-row-written', {
+                    sku,
                     rowIndex,
                     beforeValue,
                     requestedValue: value,
                     afterValue,
-                    inputConnected: input.isConnected,
-                    rowConnected: row.isConnected
+                    scrollAttempt: scrollAttempts
                 });
+
+                success++;
+            });
+
+            receiveDebug('fill-round-result', {
+                attempt: scrollAttempts,
+                filledThisRound,
+                totalFilled: filledSkus.size,
+                remaining: skuArr.length - filledSkus.size
+            });
+
+            // 全部填完，退出
+            if (filledSkus.size >= skuArr.length) {
+                break;
             }
 
-            writtenRefs.push({
-                sku,
-                rowIndex,
-                requestedValue: value,
-                input,
-                row
-            });
+            // 如果本轮没填到新的，需要滚动
+            if (filledThisRound === 0 && scrollContainer) {
+                const beforeScrollTop = scrollContainer.scrollTop;
+                scrollContainer.scrollTop += 500;
 
-            receiveDebug('fill-row-written', {
-                sku,
-                rowIndex,
-                beforeValue,
-                requestedValue: value,
-                afterValue,
-                inputConnected: input.isConnected,
-                rowConnected: row.isConnected
-            });
+                // 等待虚拟列表渲染
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-            success++;
-        });
+                const afterScrollTop = scrollContainer.scrollTop;
+
+                receiveDebug('fill-scroll-action', {
+                    attempt: scrollAttempts,
+                    beforeScrollTop,
+                    afterScrollTop,
+                    scrollDelta: afterScrollTop - beforeScrollTop,
+                    scrollHeight: scrollContainer.scrollHeight,
+                    clientHeight: scrollContainer.clientHeight,
+                    reachedBottom: afterScrollTop >= scrollContainer.scrollHeight - scrollContainer.clientHeight - 10
+                });
+
+                // 滚动不动了（到底了）
+                if (Math.abs(afterScrollTop - beforeScrollTop) < 10) {
+                    receiveDebug('fill-scroll-stuck', {
+                        message: '滚动到底，最后确认一轮'
+                    });
+
+                    // 等待一下，再扫最后一轮
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    const finalRows = Array.from(tableInfo.table.querySelectorAll('tbody > tr'));
+                    finalRows.forEach(row => {
+                        const sku = getRowSku(row, skuMap);
+                        if (!sku || !(sku in skuMap) || filledSkus.has(sku)) return;
+
+                        const input = findRowReceiveInput(row);
+                        if (!input) return;
+
+                        const value = skuMap[sku];
+                        const beforeValue = input.value;
+
+                        input.focus();
+                        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                            window.HTMLInputElement.prototype, 'value'
+                        ).set;
+                        nativeInputValueSetter.call(input, value);
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                        input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+                        input.blur();
+
+                        const afterValue = input.value;
+                        row.style.background = 'rgba(0,255,0,.15)';
+
+                        filledSkus.add(sku);
+                        success++;
+
+                        receiveDebug('fill-row-written-final', {
+                            sku,
+                            beforeValue,
+                            requestedValue: value,
+                            afterValue
+                        });
+                    });
+
+                    break; // 到底了，退出
+                }
+            } else if (filledThisRound === 0 && !scrollContainer) {
+                // 没有滚动容器且本轮无新填写，退出
+                receiveDebug('fill-no-scroll-container', {
+                    message: '无滚动容器且当前行已扫完'
+                });
+                break;
+            }
+        }
+        // ========== 虚拟列表滚动填表逻辑结束 ==========
 
         receiveDebug('fill-summary', {
             requestedCount: skuArr.length,
             success,
+            scrollAttempts,
             missingTargets: targetResults
-                .filter(result => result.matchedRows.length === 0)
+                .filter(result => result.writes.length === 0)
                 .map(result => result.sku),
             matchedWithoutWrite: targetResults
                 .filter(result =>
@@ -1123,9 +1210,12 @@
             }, delay);
         });
 
+        const missingCount = skuArr.length - success;
+        const missingSummary = missingCount > 0 ? `，未找到 ${missingCount} 个` : '';
+
         document.getElementById('msg')
             .innerText =
-            `成功填写 ${success} 个SKU`;
+            `成功填写 ${success}/${skuArr.length} 个SKU${missingSummary}`;
     };
 
     // ==========================
