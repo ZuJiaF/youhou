@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         c仓助手
 // @namespace    http://tampermonkey.net/
-// @version      1.10.3
+// @version      1.10.4
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -875,6 +875,7 @@
             .map(v => v.trim())
             .filter(Boolean);
 
+        // [debug][2026-08-12] 记录输入数据的前5个值，方便排查格式错误
         receiveDebug('fill-start', {
             url: location.href,
             orderNumbers: Array.from(new Set(
@@ -883,8 +884,8 @@
             )).slice(0, 20),
             skuCount: skuArr.length,
             qtyCount: qtyArr.length,
-            skuArr,
-            qtyArr
+            skuArrSample: skuArr.slice(0, 5),
+            qtyArrSample: qtyArr.slice(0, 5)
         });
 
         if (skuArr.length !== qtyArr.length) {
@@ -898,6 +899,34 @@
                 `SKU数量(${skuArr.length}) 与 数量行数(${qtyArr.length}) 不一致`
             );
 
+            return;
+        }
+
+        // [debug][2026-08-12] 检测两个输入框内容是否完全一样（用户误填）
+        const skuArrStr = skuArr.join('|');
+        const qtyArrStr = qtyArr.join('|');
+        if (skuArrStr === qtyArrStr) {
+            receiveDebug('fill-input-duplicate', {
+                message: 'SKU列表和数量列表内容完全相同',
+                sample: skuArr.slice(0, 3)
+            });
+
+            alert('两个输入框内容完全相同，请检查是否误填！\n\n' +
+                  '左侧应填SKU（如 JS-016-01），右侧应填数量（如 40）');
+            return;
+        }
+
+        // [debug][2026-08-12] 检测数量列表是否全是数字
+        const nonNumericQty = qtyArr.filter(v => !/^\d+$/.test(v));
+        if (nonNumericQty.length > 0) {
+            receiveDebug('fill-qty-not-numeric', {
+                nonNumericCount: nonNumericQty.length,
+                sample: nonNumericQty.slice(0, 5)
+            });
+
+            alert(`数量列表中有 ${nonNumericQty.length} 个非数字值，请检查！\n\n` +
+                  `示例：${nonNumericQty.slice(0, 3).join(', ')}\n\n` +
+                  '数量列表应该全是数字（如 40、110、20）');
             return;
         }
 
@@ -999,6 +1028,19 @@
             // 扫描并填写当前可见行
             rows.forEach((row, rowIndex) => {
                 const sku = getRowSku(row, skuMap);
+
+                // [debug][2026-08-12] 记录每行的匹配情况，帮助排查为什么某些行匹配不上
+                if (scrollAttempts <= 2 || (sku && !(sku in skuMap)) || (sku && filledSkus.has(sku))) {
+                    const rowText = (row.innerText || row.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+                    receiveDebug('fill-row-check', {
+                        attempt: scrollAttempts,
+                        rowIndex,
+                        resolvedSku: sku,
+                        inSkuMap: sku ? (sku in skuMap) : false,
+                        alreadyFilled: sku ? filledSkus.has(sku) : false,
+                        rowText
+                    });
+                }
 
                 if (!sku || !(sku in skuMap) || filledSkus.has(sku)) {
                     return;

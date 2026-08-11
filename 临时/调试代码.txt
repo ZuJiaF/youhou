@@ -130,9 +130,152 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-start] {
   "orderNumbers": [
     "PO12ZF0258353"
   ],
-  "skuCount": 143,
-  "qtyCount": 143,
+  "skuCount": 286,
+  "qtyCount": 286,
   "skuArr": [
+    "40",
+    "190",
+    "20",
+    "10",
+    "60",
+    "130",
+    "100",
+    "20",
+    "110",
+    "40",
+    "205",
+    "15",
+    "10",
+    "10",
+    "100",
+    "20",
+    "10",
+    "20",
+    "20",
+    "20",
+    "30",
+    "10",
+    "10",
+    "50",
+    "50",
+    "50",
+    "60",
+    "150",
+    "170",
+    "180",
+    "40",
+    "30",
+    "360",
+    "90",
+    "40",
+    "70",
+    "30",
+    "30",
+    "150",
+    "70",
+    "40",
+    "100",
+    "30",
+    "40",
+    "10",
+    "20",
+    "30",
+    "10",
+    "60",
+    "20",
+    "10",
+    "160",
+    "20",
+    "0",
+    "10",
+    "10",
+    "45",
+    "10",
+    "20",
+    "50",
+    "20",
+    "20",
+    "60",
+    "10",
+    "10",
+    "250",
+    "110",
+    "0",
+    "20",
+    "110",
+    "75",
+    "10",
+    "40",
+    "10",
+    "10",
+    "70",
+    "50",
+    "10",
+    "50",
+    "50",
+    "10",
+    "70",
+    "20",
+    "10",
+    "30",
+    "10",
+    "140",
+    "40",
+    "60",
+    "685",
+    "370",
+    "100",
+    "90",
+    "630",
+    "40",
+    "40",
+    "40",
+    "760",
+    "140",
+    "180",
+    "40",
+    "190",
+    "70",
+    "110",
+    "40",
+    "190",
+    "40",
+    "140",
+    "105",
+    "0",
+    "0",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "0",
+    "20",
+    "10",
+    "10",
+    "0",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "0",
+    "20",
+    "10",
+    "10",
+    "25",
+    "20",
+    "20",
+    "30",
+    "30",
+    "10",
+    "10",
+    "10",
+    "0",
     "JS-016-01",
     "JS-016-07",
     "JS-016-104",
@@ -420,7 +563,150 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-start] {
     "10",
     "10",
     "10",
-    "0"
+    "0",
+    "JS-016-01",
+    "JS-016-07",
+    "JS-016-104",
+    "JS-016-114",
+    "JS-016-118",
+    "JS-016-119",
+    "JS-016-123",
+    "JS-016-125",
+    "JS-016-128",
+    "JS-016-13",
+    "JS-016-14",
+    "JS-016-140",
+    "JS-016-148",
+    "JS-016-149",
+    "JS-016-15",
+    "JS-016-157",
+    "JS-016-160",
+    "JS-016-17",
+    "JS-016-171",
+    "JS-016-172",
+    "JS-016-182",
+    "JS-016-183",
+    "JS-016-184",
+    "JS-016-19",
+    "JS-016-191",
+    "JS-016-23",
+    "JS-016-24",
+    "JS-016-29",
+    "JS-016-30",
+    "JS-016-31",
+    "JS-016-32",
+    "JS-016-33",
+    "JS-016-35",
+    "JS-016-36",
+    "JS-016-37",
+    "JS-016-38",
+    "JS-016-39",
+    "JS-016-40",
+    "JS-016-41",
+    "JS-016-44",
+    "JS-016-49",
+    "JS-016-57",
+    "JS-016-65",
+    "JS-016-66",
+    "JS-016-68",
+    "JS-016-69",
+    "JS-016-72",
+    "JS-016-76",
+    "JS-016-77",
+    "JS-016-78",
+    "JS-016-86",
+    "JS-017-001",
+    "JS-017-005",
+    "JS-017-007",
+    "JS-017-013",
+    "JS-017-019",
+    "JS-017-024",
+    "JS-017-033",
+    "JS-017-037",
+    "JS-017-038",
+    "JS-017-047",
+    "JS-017-048",
+    "JS-017-098",
+    "JS-017-102",
+    "JS-017-104",
+    "JS-017-109",
+    "JS-017-110",
+    "JS-017-113",
+    "JS-017-117",
+    "JS-017-119",
+    "JS-017-120",
+    "JS-017-125",
+    "JS-017-126",
+    "JS-017-127",
+    "JS-017-130",
+    "JS-017-133",
+    "JS-017-135",
+    "JS-017-138",
+    "JS-017-141",
+    "JS-017-143",
+    "JS-017-146",
+    "JS-017-150",
+    "JS-017-159",
+    "JS-017-162",
+    "JS-017-165",
+    "JS-017-313",
+    "JS-017-314",
+    "JS-017-315",
+    "JS-017-316",
+    "JS-017-317",
+    "JS-017-318",
+    "JS-017-319",
+    "JS-017-320",
+    "JS-017-321",
+    "JS-017-322",
+    "JS-017-323",
+    "JS-017-324",
+    "JS-017-325",
+    "JS-017-326",
+    "JS-017-327",
+    "JS-017-328",
+    "JS-017-329",
+    "JS-017-330",
+    "JS-017-331",
+    "JS-017-332",
+    "JS-017-333",
+    "JS-017-334",
+    "JS-017-335",
+    "JS-017-336",
+    "JS-019-015",
+    "JS-019-016",
+    "JS-019-035",
+    "JS-019-046",
+    "JS-019-053",
+    "JS-019-105",
+    "JS-019-141",
+    "JS-019-148",
+    "JS-019-183",
+    "JS-022-001",
+    "JS-022-009",
+    "JS-022-015",
+    "JS-022-019",
+    "JS-022-045",
+    "JS-022-047",
+    "JS-022-097",
+    "JS-022-099",
+    "JS-022-133",
+    "JS-022-139",
+    "JS-022-140",
+    "JS-025-001",
+    "JS-025-002",
+    "JS-025-006",
+    "JS-025-008",
+    "JS-025-009",
+    "JS-025-021",
+    "JS-025-024",
+    "JS-026-001",
+    "JS-026-003",
+    "JS-026-005",
+    "JS-026-009",
+    "JS-026-015",
+    "JS-026-017",
+    "JS-027-003"
   ]
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][findReceiveTable] {
@@ -543,15 +829,13 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][findReceiveTable] {
     }
   ]
 }
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-table-snapshot] {
-  "tableIndex": 4,
-  "rows": 17,
-  "skuRows": 0,
-  "inputRows": 8,
-  "pairedRows": 0,
-  "hasShelfMarker": true,
-  "score": 100817,
-  "virtual": {
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-virtual-check] {
+  "isVirtual": {
+    "tagName": "DIV",
+    "id": "",
+    "className": "bs_newtable-body bs_newhorizontal-scroll-container"
+  },
+  "virtualInfo": {
     "tableRect": {
       "top": 166,
       "bottom": 1369,
@@ -655,1076 +939,2266 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-table-snapshot
         }
       }
     ]
-  },
-  "rowSnapshots": [
-    {
-      "rowIndex": 0,
-      "dataRowIndex": "0",
-      "className": "bs_newtable-row first even card_row_groupHeader card_row_group_start",
-      "connected": true,
-      "rect": {
-        "top": 166,
-        "bottom": 224,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 58,
-        "visibleInViewport": true
-      },
-      "explicitSku": "",
-      "textHitTargets": [],
-      "selectedInput": null,
-      "allInputs": [],
-      "rowText": "采购单号 PO12ZF0258353 运单号 260702 供应商 无供应商 接收仓库 Fen"
-    },
-    {
-      "rowIndex": 1,
-      "dataRowIndex": "1",
-      "className": "bs_newtable-row odd card_row_item",
-      "connected": true,
-      "rect": {
-        "top": 224,
-        "bottom": 302,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
-      },
-      "explicitSku": "",
-      "textHitTargets": [
-        "JS-016-01"
-      ],
-      "selectedInput": {
-        "selector": "fallback-input",
-        "type": "text",
-        "value": "40",
-        "disabled": false,
-        "connected": true,
-        "className": "bs-micro-input css-cxjvdk",
-        "rect": {
-          "top": 241,
-          "bottom": 263,
-          "left": 1176,
-          "right": 1324,
-          "width": 148,
-          "height": 22,
-          "visibleInViewport": true
-        }
-      },
-      "allInputs": [
-        {
-          "type": "text",
-          "value": "40",
-          "disabled": false,
-          "connected": true,
-          "className": "bs-micro-input css-cxjvdk",
-          "rect": {
-            "top": 241,
-            "bottom": 263,
-            "left": 1176,
-            "right": 1324,
-            "width": 148,
-            "height": 22,
-            "visibleInViewport": true
-          }
-        }
-      ],
-      "rowText": "JS-016-01 暗无天日李魔术;灰色;70*100 40 0 40 P ZP-12-03"
-    },
-    {
-      "rowIndex": 2,
-      "dataRowIndex": "2",
-      "className": "bs_newtable-row even card_row_item",
-      "connected": true,
-      "rect": {
-        "top": 302,
-        "bottom": 367,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 65,
-        "visibleInViewport": true
-      },
-      "explicitSku": "",
-      "textHitTargets
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 0,
-  "dataRowIndex": "0",
-  "className": "bs_newtable-row first even card_row_groupHeader card_row_group_start",
-  "connected": true,
-  "rect": {
-    "top": 166,
-    "bottom": 224,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 58,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "采购单号 PO12ZF0258353 运单号 260702 供应商 无供应商 接收仓库 Fen",
-  "resolvedSku": ""
+  }
 }
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 1,
-  "dataRowIndex": "1",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 224,
-    "bottom": 302,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-01"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "40",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 241,
-      "bottom": 263,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": true
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "40",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 241,
-        "bottom": 263,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": true
-      }
-    }
-  ],
-  "rowText": "JS-016-01 暗无天日李魔术;灰色;70*100 40 0 40 P ZP-12-03",
-  "resolvedSku": "JS-016-01"
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-container] {
+  "found": true,
+  "tagName": "DIV",
+  "className": "bs-micro-modal-body",
+  "scrollHeight": 16585,
+  "clientHeight": 960,
+  "scrollTop": 0
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 1,
+  "filled": 0,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 1,
+  "visibleRows": 17
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-01",
   "rowIndex": 1,
   "beforeValue": "40",
-  "requestedValue": "40",
-  "afterValue": "40",
-  "inputConnected": true,
-  "rowConnected": true
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 2,
-  "dataRowIndex": "2",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 302,
-    "bottom": 367,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 3,
-  "dataRowIndex": "3",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 367,
-    "bottom": 445,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-104"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "20",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 385,
-      "bottom": 407,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": true
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "20",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 385,
-        "bottom": 407,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": true
-      }
-    }
-  ],
-  "rowText": "JS-016-104 暗无天日李魔术;灰色;120*250 20 0 20 P ZA-03-03",
-  "resolvedSku": "JS-016-104"
+  "requestedValue": "JS-016-01",
+  "afterValue": "01601",
+  "scrollAttempt": 1
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-104",
   "rowIndex": 3,
   "beforeValue": "20",
-  "requestedValue": "20",
-  "afterValue": "20",
-  "inputConnected": true,
-  "rowConnected": true
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 4,
-  "dataRowIndex": "4",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 445,
-    "bottom": 511,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 5,
-  "dataRowIndex": "5",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 511,
-    "bottom": 588,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-07"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "190",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 528,
-      "bottom": 550,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": true
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "190",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 528,
-        "bottom": 550,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": true
-      }
-    }
-  ],
-  "rowText": "JS-016-07 暗无天日李魔术;灰色;150*150 190 0 190 P ZO-12-03",
-  "resolvedSku": "JS-016-07"
+  "requestedValue": "JS-016-104",
+  "afterValue": "016104",
+  "scrollAttempt": 1
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-07",
   "rowIndex": 5,
   "beforeValue": "190",
-  "requestedValue": "190",
-  "afterValue": "190",
-  "inputConnected": true,
-  "rowConnected": true
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 6,
-  "dataRowIndex": "6",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 588,
-    "bottom": 654,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 7,
-  "dataRowIndex": "7",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 654,
-    "bottom": 731,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-13"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "70",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 671,
-      "bottom": 693,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": true
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "70",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 671,
-        "bottom": 693,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": true
-      }
-    }
-  ],
-  "rowText": "JS-016-13 暗无天日李魔术;灰色;200*200 70 0 70 P ZK-12-03",
-  "resolvedSku": "JS-016-13"
+  "requestedValue": "JS-016-07",
+  "afterValue": "01607",
+  "scrollAttempt": 1
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-13",
   "rowIndex": 7,
   "beforeValue": "70",
-  "requestedValue": "40",
-  "afterValue": "40",
-  "inputConnected": true,
-  "rowConnected": true
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 8,
-  "dataRowIndex": "8",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 731,
-    "bottom": 797,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 9,
-  "dataRowIndex": "9",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 797,
-    "bottom": 874,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-14"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "230",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 814,
-      "bottom": 836,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": true
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "230",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 814,
-        "bottom": 836,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": true
-      }
-    }
-  ],
-  "rowText": "JS-016-14 暗无天日李魔术;灰色;200*250 230 0 230 P ZM-12-03",
-  "resolvedSku": "JS-016-14"
+  "requestedValue": "JS-016-13",
+  "afterValue": "01613",
+  "scrollAttempt": 1
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-14",
   "rowIndex": 9,
   "beforeValue": "230",
-  "requestedValue": "205",
-  "afterValue": "205",
-  "inputConnected": true,
-  "rowConnected": true
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 10,
-  "dataRowIndex": "10",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 874,
-    "bottom": 940,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 11,
-  "dataRowIndex": "11",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 940,
-    "bottom": 1018,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-15"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "210",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 957,
-      "bottom": 979,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": true
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "210",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 957,
-        "bottom": 979,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": true
-      }
-    }
-  ],
-  "rowText": "JS-016-15 暗无天日李魔术;米白;70*100 210 0 210 P ZP-06-03",
-  "resolvedSku": "JS-016-15"
+  "requestedValue": "JS-016-14",
+  "afterValue": "01614",
+  "scrollAttempt": 1
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-15",
   "rowIndex": 11,
   "beforeValue": "210",
-  "requestedValue": "100",
-  "afterValue": "100",
-  "inputConnected": true,
-  "rowConnected": true
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 12,
-  "dataRowIndex": "12",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 1018,
-    "bottom": 1083,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 13,
-  "dataRowIndex": "13",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 1083,
-    "bottom": 1161,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": false
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-17"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "30",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 1100,
-      "bottom": 1122,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": false
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "30",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 1100,
-        "bottom": 1122,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": false
-      }
-    }
-  ],
-  "rowText": "JS-016-17 暗无天日李魔术;米白;100*150 30 0 30 P ZJ-18-02",
-  "resolvedSku": "JS-016-17"
+  "requestedValue": "JS-016-15",
+  "afterValue": "01615",
+  "scrollAttempt": 1
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-17",
   "rowIndex": 13,
   "beforeValue": "30",
-  "requestedValue": "20",
-  "afterValue": "20",
-  "inputConnected": true,
-  "rowConnected": true
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 14,
-  "dataRowIndex": "14",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 594,
-    "bottom": 659,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
-}
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 15,
-  "dataRowIndex": "15",
-  "className": "bs_newtable-row odd card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 659,
-    "bottom": 737,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 78,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [
-    "JS-016-19"
-  ],
-  "selectedInput": {
-    "selector": "fallback-input",
-    "type": "text",
-    "value": "60",
-    "disabled": false,
-    "connected": true,
-    "className": "bs-micro-input css-cxjvdk",
-    "rect": {
-      "top": 676,
-      "bottom": 698,
-      "left": 1176,
-      "right": 1324,
-      "width": 148,
-      "height": 22,
-      "visibleInViewport": true
-    }
-  },
-  "allInputs": [
-    {
-      "type": "text",
-      "value": "60",
-      "disabled": false,
-      "connected": true,
-      "className": "bs-micro-input css-cxjvdk",
-      "rect": {
-        "top": 676,
-        "bottom": 698,
-        "left": 1176,
-        "right": 1324,
-        "width": 148,
-        "height": 22,
-        "visibleInViewport": true
-      }
-    }
-  ],
-  "rowText": "JS-016-19 暗无天日李魔术;米白;100*200 60 0 60 P ZG-06-03",
-  "resolvedSku": "JS-016-19"
+  "requestedValue": "JS-016-17",
+  "afterValue": "01617",
+  "scrollAttempt": 1
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
   "sku": "JS-016-19",
   "rowIndex": 15,
   "beforeValue": "60",
-  "requestedValue": "50",
-  "afterValue": "50",
-  "inputConnected": true,
-  "rowConnected": true
+  "requestedValue": "JS-016-19",
+  "afterValue": "01619",
+  "scrollAttempt": 1
 }
-chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-scan] {
-  "rowIndex": 16,
-  "dataRowIndex": "16",
-  "className": "bs_newtable-row even card_row_item",
-  "connected": true,
-  "rect": {
-    "top": 737,
-    "bottom": 802,
-    "left": 40,
-    "right": 1560,
-    "width": 1520,
-    "height": 65,
-    "visibleInViewport": true
-  },
-  "explicitSku": "",
-  "textHitTargets": [],
-  "selectedInput": null,
-  "allInputs": [],
-  "rowText": "添加货架",
-  "resolvedSku": ""
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 1,
+  "filledThisRound": 8,
+  "totalFilled": 8,
+  "remaining": 278
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 2,
+  "filled": 8,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 2,
+  "visibleRows": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 2,
+  "filledThisRound": 0,
+  "totalFilled": 8,
+  "remaining": 278
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 2,
+  "beforeScrollTop": 566.6666870117188,
+  "afterScrollTop": 1066.666748046875,
+  "scrollDelta": 500.00006103515625,
+  "scrollHeight": 16903,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 3,
+  "filled": 8,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 3,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-114",
+  "rowIndex": 5,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-114",
+  "afterValue": "016114",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-23",
+  "rowIndex": 7,
+  "beforeValue": "70",
+  "requestedValue": "JS-016-23",
+  "afterValue": "01623",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-24",
+  "rowIndex": 9,
+  "beforeValue": "60",
+  "requestedValue": "JS-016-24",
+  "afterValue": "01624",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-118",
+  "rowIndex": 11,
+  "beforeValue": "70",
+  "requestedValue": "JS-016-118",
+  "afterValue": "016118",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-29",
+  "rowIndex": 13,
+  "beforeValue": "150",
+  "requestedValue": "JS-016-29",
+  "afterValue": "01629",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-119",
+  "rowIndex": 15,
+  "beforeValue": "130",
+  "requestedValue": "JS-016-119",
+  "afterValue": "016119",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-30",
+  "rowIndex": 17,
+  "beforeValue": "220",
+  "requestedValue": "JS-016-30",
+  "afterValue": "01630",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-31",
+  "rowIndex": 19,
+  "beforeValue": "190",
+  "requestedValue": "JS-016-31",
+  "afterValue": "01631",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-32",
+  "rowIndex": 21,
+  "beforeValue": "40",
+  "requestedValue": "JS-016-32",
+  "afterValue": "01632",
+  "scrollAttempt": 3
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 3,
+  "filledThisRound": 9,
+  "totalFilled": 17,
+  "remaining": 269
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 4,
+  "filled": 17,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 4,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 4,
+  "filledThisRound": 0,
+  "totalFilled": 17,
+  "remaining": 269
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 4,
+  "beforeScrollTop": 1693.3333740234375,
+  "afterScrollTop": 2193.33349609375,
+  "scrollDelta": 500.0001220703125,
+  "scrollHeight": 17103,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 5,
+  "filled": 17,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 5,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-33",
+  "rowIndex": 7,
+  "beforeValue": "40",
+  "requestedValue": "JS-016-33",
+  "afterValue": "01633",
+  "scrollAttempt": 5
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-123",
+  "rowIndex": 9,
+  "beforeValue": "140",
+  "requestedValue": "JS-016-123",
+  "afterValue": "016123",
+  "scrollAttempt": 5
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-35",
+  "rowIndex": 11,
+  "beforeValue": "450",
+  "requestedValue": "JS-016-35",
+  "afterValue": "01635",
+  "scrollAttempt": 5
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-36",
+  "rowIndex": 13,
+  "beforeValue": "100",
+  "requestedValue": "JS-016-36",
+  "afterValue": "01636",
+  "scrollAttempt": 5
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-37",
+  "rowIndex": 15,
+  "beforeValue": "50",
+  "requestedValue": "JS-016-37",
+  "afterValue": "01637",
+  "scrollAttempt": 5
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-125",
+  "rowIndex": 17,
+  "beforeValue": "20",
+  "requestedValue": "JS-016-125",
+  "afterValue": "016125",
+  "scrollAttempt": 5
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-38",
+  "rowIndex": 19,
+  "beforeValue": "90",
+  "requestedValue": "JS-016-38",
+  "afterValue": "01638",
+  "scrollAttempt": 5
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 5,
+  "filledThisRound": 7,
+  "totalFilled": 24,
+  "remaining": 262
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 6,
+  "filled": 24,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 6,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 6,
+  "filledThisRound": 0,
+  "totalFilled": 24,
+  "remaining": 262
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 6,
+  "beforeScrollTop": 2820,
+  "afterScrollTop": 3320,
+  "scrollDelta": 500,
+  "scrollHeight": 17278,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 7,
+  "filled": 24,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 7,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-39",
+  "rowIndex": 5,
+  "beforeValue": "40",
+  "requestedValue": "JS-016-39",
+  "afterValue": "01639",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-40",
+  "rowIndex": 7,
+  "beforeValue": "30",
+  "requestedValue": "JS-016-40",
+  "afterValue": "01640",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-128",
+  "rowIndex": 9,
+  "beforeValue": "110",
+  "requestedValue": "JS-016-128",
+  "afterValue": "016128",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-41",
+  "rowIndex": 11,
+  "beforeValue": "190",
+  "requestedValue": "JS-016-41",
+  "afterValue": "01641",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-44",
+  "rowIndex": 13,
+  "beforeValue": "90",
+  "requestedValue": "JS-016-44",
+  "afterValue": "01644",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-49",
+  "rowIndex": 15,
+  "beforeValue": "60",
+  "requestedValue": "JS-016-49",
+  "afterValue": "01649",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-57",
+  "rowIndex": 17,
+  "beforeValue": "140",
+  "requestedValue": "JS-016-57",
+  "afterValue": "01657",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-140",
+  "rowIndex": 19,
+  "beforeValue": "30",
+  "requestedValue": "JS-016-140",
+  "afterValue": "016140",
+  "scrollAttempt": 7
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 7,
+  "filledThisRound": 8,
+  "totalFilled": 32,
+  "remaining": 254
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 8,
+  "filled": 32,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 8,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 8,
+  "filledThisRound": 0,
+  "totalFilled": 32,
+  "remaining": 254
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 8,
+  "beforeScrollTop": 3947.77783203125,
+  "afterScrollTop": 4447.77783203125,
+  "scrollDelta": 500,
+  "scrollHeight": 17596,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 9,
+  "filled": 32,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 9,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-65",
+  "rowIndex": 5,
+  "beforeValue": "30",
+  "requestedValue": "JS-016-65",
+  "afterValue": "01665",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-66",
+  "rowIndex": 7,
+  "beforeValue": "40",
+  "requestedValue": "JS-016-66",
+  "afterValue": "01666",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-68",
+  "rowIndex": 9,
+  "beforeValue": "20",
+  "requestedValue": "JS-016-68",
+  "afterValue": "01668",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-148",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-148",
+  "afterValue": "016148",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-69",
+  "rowIndex": 13,
+  "beforeValue": "20",
+  "requestedValue": "JS-016-69",
+  "afterValue": "01669",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-149",
+  "rowIndex": 15,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-149",
+  "afterValue": "016149",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-72",
+  "rowIndex": 17,
+  "beforeValue": "40",
+  "requestedValue": "JS-016-72",
+  "afterValue": "01672",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-76",
+  "rowIndex": 19,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-76",
+  "afterValue": "01676",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-77",
+  "rowIndex": 21,
+  "beforeValue": "60",
+  "requestedValue": "JS-016-77",
+  "afterValue": "01677",
+  "scrollAttempt": 9
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 9,
+  "filledThisRound": 9,
+  "totalFilled": 41,
+  "remaining": 245
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 10,
+  "filled": 41,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 10,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 10,
+  "filledThisRound": 0,
+  "totalFilled": 41,
+  "remaining": 245
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 10,
+  "beforeScrollTop": 5074.4443359375,
+  "afterScrollTop": 5574.44482421875,
+  "scrollDelta": 500.00048828125,
+  "scrollHeight": 17796,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 11,
+  "filled": 41,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 11,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-78",
+  "rowIndex": 7,
+  "beforeValue": "20",
+  "requestedValue": "JS-016-78",
+  "afterValue": "01678",
+  "scrollAttempt": 11
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-157",
+  "rowIndex": 9,
+  "beforeValue": "20",
+  "requestedValue": "JS-016-157",
+  "afterValue": "016157",
+  "scrollAttempt": 11
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-160",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-160",
+  "afterValue": "016160",
+  "scrollAttempt": 11
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-86",
+  "rowIndex": 13,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-86",
+  "afterValue": "01686",
+  "scrollAttempt": 11
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-171",
+  "rowIndex": 15,
+  "beforeValue": "20",
+  "requestedValue": "JS-016-171",
+  "afterValue": "016171",
+  "scrollAttempt": 11
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-172",
+  "rowIndex": 17,
+  "beforeValue": "20",
+  "requestedValue": "JS-016-172",
+  "afterValue": "016172",
+  "scrollAttempt": 11
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-182",
+  "rowIndex": 19,
+  "beforeValue": "30",
+  "requestedValue": "JS-016-182",
+  "afterValue": "016182",
+  "scrollAttempt": 11
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 11,
+  "filledThisRound": 7,
+  "totalFilled": 48,
+  "remaining": 238
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 12,
+  "filled": 48,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 12,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 12,
+  "filledThisRound": 0,
+  "totalFilled": 48,
+  "remaining": 238
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 12,
+  "beforeScrollTop": 6201.111328125,
+  "afterScrollTop": 6701.111328125,
+  "scrollDelta": 500,
+  "scrollHeight": 17971,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 13,
+  "filled": 48,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 13,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-183",
+  "rowIndex": 5,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-183",
+  "afterValue": "016183",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-184",
+  "rowIndex": 7,
+  "beforeValue": "10",
+  "requestedValue": "JS-016-184",
+  "afterValue": "016184",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-016-191",
+  "rowIndex": 9,
+  "beforeValue": "70",
+  "requestedValue": "JS-016-191",
+  "afterValue": "016191",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-015",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-015",
+  "afterValue": "019015",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-016",
+  "rowIndex": 13,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-016",
+  "afterValue": "019016",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-035",
+  "rowIndex": 15,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-035",
+  "afterValue": "019035",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-046",
+  "rowIndex": 17,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-046",
+  "afterValue": "019046",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-053",
+  "rowIndex": 19,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-053",
+  "afterValue": "019053",
+  "scrollAttempt": 13
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 13,
+  "filledThisRound": 8,
+  "totalFilled": 56,
+  "remaining": 230
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 14,
+  "filled": 56,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 14,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 14,
+  "filledThisRound": 0,
+  "totalFilled": 56,
+  "remaining": 230
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 14,
+  "beforeScrollTop": 7328.88916015625,
+  "afterScrollTop": 7828.88916015625,
+  "scrollDelta": 500,
+  "scrollHeight": 18289,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 15,
+  "filled": 56,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 15,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-105",
+  "rowIndex": 5,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-105",
+  "afterValue": "019105",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-141",
+  "rowIndex": 7,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-141",
+  "afterValue": "019141",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-148",
+  "rowIndex": 9,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-148",
+  "afterValue": "019148",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-019-183",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "JS-019-183",
+  "afterValue": "019183",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-025-001",
+  "rowIndex": 13,
+  "beforeValue": "10",
+  "requestedValue": "JS-025-001",
+  "afterValue": "025001",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-025-002",
+  "rowIndex": 15,
+  "beforeValue": "10",
+  "requestedValue": "JS-025-002",
+  "afterValue": "025002",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-025-006",
+  "rowIndex": 17,
+  "beforeValue": "20",
+  "requestedValue": "JS-025-006",
+  "afterValue": "025006",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-025-008",
+  "rowIndex": 19,
+  "beforeValue": "10",
+  "requestedValue": "JS-025-008",
+  "afterValue": "025008",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-025-009",
+  "rowIndex": 21,
+  "beforeValue": "10",
+  "requestedValue": "JS-025-009",
+  "afterValue": "025009",
+  "scrollAttempt": 15
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 15,
+  "filledThisRound": 9,
+  "totalFilled": 65,
+  "remaining": 221
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 16,
+  "filled": 65,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 16,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 16,
+  "filledThisRound": 0,
+  "totalFilled": 65,
+  "remaining": 221
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 16,
+  "beforeScrollTop": 8455.5556640625,
+  "afterScrollTop": 8955.5556640625,
+  "scrollDelta": 500,
+  "scrollHeight": 18489,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 17,
+  "filled": 65,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 17,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-025-021",
+  "rowIndex": 7,
+  "beforeValue": "30",
+  "requestedValue": "JS-025-021",
+  "afterValue": "025021",
+  "scrollAttempt": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-025-024",
+  "rowIndex": 9,
+  "beforeValue": "20",
+  "requestedValue": "JS-025-024",
+  "afterValue": "025024",
+  "scrollAttempt": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-026-001",
+  "rowIndex": 11,
+  "beforeValue": "20",
+  "requestedValue": "JS-026-001",
+  "afterValue": "026001",
+  "scrollAttempt": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-026-003",
+  "rowIndex": 13,
+  "beforeValue": "30",
+  "requestedValue": "JS-026-003",
+  "afterValue": "026003",
+  "scrollAttempt": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-026-005",
+  "rowIndex": 15,
+  "beforeValue": "30",
+  "requestedValue": "JS-026-005",
+  "afterValue": "026005",
+  "scrollAttempt": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-026-009",
+  "rowIndex": 17,
+  "beforeValue": "10",
+  "requestedValue": "JS-026-009",
+  "afterValue": "026009",
+  "scrollAttempt": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-026-015",
+  "rowIndex": 19,
+  "beforeValue": "10",
+  "requestedValue": "JS-026-015",
+  "afterValue": "026015",
+  "scrollAttempt": 17
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 17,
+  "filledThisRound": 7,
+  "totalFilled": 72,
+  "remaining": 214
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 18,
+  "filled": 72,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 18,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 18,
+  "filledThisRound": 0,
+  "totalFilled": 72,
+  "remaining": 214
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 18,
+  "beforeScrollTop": 9582.22265625,
+  "afterScrollTop": 10082.22265625,
+  "scrollDelta": 500,
+  "scrollHeight": 18664,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 19,
+  "filled": 72,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 19,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-026-017",
+  "rowIndex": 5,
+  "beforeValue": "10",
+  "requestedValue": "JS-026-017",
+  "afterValue": "026017",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-027-003",
+  "rowIndex": 7,
+  "beforeValue": "10",
+  "requestedValue": "JS-027-003",
+  "afterValue": "027003",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-001",
+  "rowIndex": 9,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-001",
+  "afterValue": "022001",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-009",
+  "rowIndex": 11,
+  "beforeValue": "20",
+  "requestedValue": "JS-022-009",
+  "afterValue": "022009",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-015",
+  "rowIndex": 13,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-015",
+  "afterValue": "022015",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-019",
+  "rowIndex": 15,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-019",
+  "afterValue": "022019",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-045",
+  "rowIndex": 17,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-045",
+  "afterValue": "022045",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-047",
+  "rowIndex": 19,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-047",
+  "afterValue": "022047",
+  "scrollAttempt": 19
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 19,
+  "filledThisRound": 8,
+  "totalFilled": 80,
+  "remaining": 206
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 20,
+  "filled": 80,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 20,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 20,
+  "filledThisRound": 0,
+  "totalFilled": 80,
+  "remaining": 206
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 20,
+  "beforeScrollTop": 10710,
+  "afterScrollTop": 11210,
+  "scrollDelta": 500,
+  "scrollHeight": 18982,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 21,
+  "filled": 80,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 21,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-097",
+  "rowIndex": 5,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-097",
+  "afterValue": "022097",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-099",
+  "rowIndex": 7,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-099",
+  "afterValue": "022099",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-133",
+  "rowIndex": 9,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-133",
+  "afterValue": "022133",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-139",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-139",
+  "afterValue": "022139",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-022-140",
+  "rowIndex": 13,
+  "beforeValue": "10",
+  "requestedValue": "JS-022-140",
+  "afterValue": "022140",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-001",
+  "rowIndex": 15,
+  "beforeValue": "180",
+  "requestedValue": "JS-017-001",
+  "afterValue": "017001",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-005",
+  "rowIndex": 17,
+  "beforeValue": "20",
+  "requestedValue": "JS-017-005",
+  "afterValue": "017005",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-007",
+  "rowIndex": 19,
+  "beforeValue": "20",
+  "requestedValue": "JS-017-007",
+  "afterValue": "017007",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-013",
+  "rowIndex": 21,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-013",
+  "afterValue": "017013",
+  "scrollAttempt": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 21,
+  "filledThisRound": 9,
+  "totalFilled": 89,
+  "remaining": 197
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 22,
+  "filled": 89,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 22,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 22,
+  "filledThisRound": 0,
+  "totalFilled": 89,
+  "remaining": 197
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 22,
+  "beforeScrollTop": 11836.6669921875,
+  "afterScrollTop": 12336.6669921875,
+  "scrollDelta": 500,
+  "scrollHeight": 19182,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 23,
+  "filled": 89,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 23,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-019",
+  "rowIndex": 7,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-019",
+  "afterValue": "017019",
+  "scrollAttempt": 23
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-024",
+  "rowIndex": 9,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-024",
+  "afterValue": "017024",
+  "scrollAttempt": 23
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-033",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-033",
+  "afterValue": "017033",
+  "scrollAttempt": 23
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-037",
+  "rowIndex": 13,
+  "beforeValue": "20",
+  "requestedValue": "JS-017-037",
+  "afterValue": "017037",
+  "scrollAttempt": 23
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-038",
+  "rowIndex": 15,
+  "beforeValue": "70",
+  "requestedValue": "JS-017-038",
+  "afterValue": "017038",
+  "scrollAttempt": 23
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-047",
+  "rowIndex": 17,
+  "beforeValue": "20",
+  "requestedValue": "JS-017-047",
+  "afterValue": "017047",
+  "scrollAttempt": 23
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-048",
+  "rowIndex": 19,
+  "beforeValue": "20",
+  "requestedValue": "JS-017-048",
+  "afterValue": "017048",
+  "scrollAttempt": 23
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 23,
+  "filledThisRound": 7,
+  "totalFilled": 96,
+  "remaining": 190
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 24,
+  "filled": 96,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 24,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 24,
+  "filledThisRound": 0,
+  "totalFilled": 96,
+  "remaining": 190
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 24,
+  "beforeScrollTop": 12963.333984375,
+  "afterScrollTop": 13463.333984375,
+  "scrollDelta": 500,
+  "scrollHeight": 19357,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 25,
+  "filled": 96,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 25,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-098",
+  "rowIndex": 5,
+  "beforeValue": "90",
+  "requestedValue": "JS-017-098",
+  "afterValue": "017098",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-102",
+  "rowIndex": 7,
+  "beforeValue": "20",
+  "requestedValue": "JS-017-102",
+  "afterValue": "017102",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-104",
+  "rowIndex": 9,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-104",
+  "afterValue": "017104",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "170",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "170",
+  "afterValue": "170",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-109",
+  "rowIndex": 13,
+  "beforeValue": "260",
+  "requestedValue": "JS-017-109",
+  "afterValue": "017109",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-110",
+  "rowIndex": 15,
+  "beforeValue": "110",
+  "requestedValue": "JS-017-110",
+  "afterValue": "017110",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-113",
+  "rowIndex": 17,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-113",
+  "afterValue": "017113",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-117",
+  "rowIndex": 19,
+  "beforeValue": "50",
+  "requestedValue": "JS-017-117",
+  "afterValue": "017117",
+  "scrollAttempt": 25
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 25,
+  "filledThisRound": 8,
+  "totalFilled": 104,
+  "remaining": 182
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 26,
+  "filled": 104,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 26,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 26,
+  "filledThisRound": 0,
+  "totalFilled": 104,
+  "remaining": 182
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 26,
+  "beforeScrollTop": 14090,
+  "afterScrollTop": 14590,
+  "scrollDelta": 500,
+  "scrollHeight": 19675,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 27,
+  "filled": 104,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 27,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-119",
+  "rowIndex": 5,
+  "beforeValue": "160",
+  "requestedValue": "JS-017-119",
+  "afterValue": "017119",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-120",
+  "rowIndex": 7,
+  "beforeValue": "70",
+  "requestedValue": "JS-017-120",
+  "afterValue": "017120",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-125",
+  "rowIndex": 9,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-125",
+  "afterValue": "017125",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-126",
+  "rowIndex": 11,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-126",
+  "afterValue": "017126",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-127",
+  "rowIndex": 13,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-127",
+  "afterValue": "017127",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-130",
+  "rowIndex": 15,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-130",
+  "afterValue": "017130",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-133",
+  "rowIndex": 17,
+  "beforeValue": "70",
+  "requestedValue": "JS-017-133",
+  "afterValue": "017133",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-135",
+  "rowIndex": 19,
+  "beforeValue": "60",
+  "requestedValue": "JS-017-135",
+  "afterValue": "017135",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-138",
+  "rowIndex": 21,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-138",
+  "afterValue": "017138",
+  "scrollAttempt": 27
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 27,
+  "filledThisRound": 9,
+  "totalFilled": 113,
+  "remaining": 173
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 28,
+  "filled": 113,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 28,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 28,
+  "filledThisRound": 0,
+  "totalFilled": 113,
+  "remaining": 173
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 28,
+  "beforeScrollTop": 15217.7783203125,
+  "afterScrollTop": 15717.7783203125,
+  "scrollDelta": 500,
+  "scrollHeight": 19875,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 29,
+  "filled": 113,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 29,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-141",
+  "rowIndex": 7,
+  "beforeValue": "50",
+  "requestedValue": "JS-017-141",
+  "afterValue": "017141",
+  "scrollAttempt": 29
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-143",
+  "rowIndex": 9,
+  "beforeValue": "60",
+  "requestedValue": "JS-017-143",
+  "afterValue": "017143",
+  "scrollAttempt": 29
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-146",
+  "rowIndex": 11,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-146",
+  "afterValue": "017146",
+  "scrollAttempt": 29
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-150",
+  "rowIndex": 13,
+  "beforeValue": "70",
+  "requestedValue": "JS-017-150",
+  "afterValue": "017150",
+  "scrollAttempt": 29
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-159",
+  "rowIndex": 15,
+  "beforeValue": "20",
+  "requestedValue": "JS-017-159",
+  "afterValue": "017159",
+  "scrollAttempt": 29
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-162",
+  "rowIndex": 17,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-162",
+  "afterValue": "017162",
+  "scrollAttempt": 29
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-165",
+  "rowIndex": 19,
+  "beforeValue": "30",
+  "requestedValue": "JS-017-165",
+  "afterValue": "017165",
+  "scrollAttempt": 29
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 29,
+  "filledThisRound": 7,
+  "totalFilled": 120,
+  "remaining": 166
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 30,
+  "filled": 120,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 30,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 30,
+  "filledThisRound": 0,
+  "totalFilled": 120,
+  "remaining": 166
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 30,
+  "beforeScrollTop": 16344.4453125,
+  "afterScrollTop": 16844.4453125,
+  "scrollDelta": 500,
+  "scrollHeight": 20050,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 31,
+  "filled": 120,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 31,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-313",
+  "rowIndex": 5,
+  "beforeValue": "10",
+  "requestedValue": "JS-017-313",
+  "afterValue": "017313",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-314",
+  "rowIndex": 7,
+  "beforeValue": "160",
+  "requestedValue": "JS-017-314",
+  "afterValue": "017314",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-315",
+  "rowIndex": 9,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-315",
+  "afterValue": "017315",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-316",
+  "rowIndex": 11,
+  "beforeValue": "80",
+  "requestedValue": "JS-017-316",
+  "afterValue": "017316",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-317",
+  "rowIndex": 13,
+  "beforeValue": "680",
+  "requestedValue": "JS-017-317",
+  "afterValue": "017317",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-318",
+  "rowIndex": 15,
+  "beforeValue": "380",
+  "requestedValue": "JS-017-318",
+  "afterValue": "017318",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-319",
+  "rowIndex": 17,
+  "beforeValue": "120",
+  "requestedValue": "JS-017-319",
+  "afterValue": "017319",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-320",
+  "rowIndex": 19,
+  "beforeValue": "130",
+  "requestedValue": "JS-017-320",
+  "afterValue": "017320",
+  "scrollAttempt": 31
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 31,
+  "filledThisRound": 8,
+  "totalFilled": 128,
+  "remaining": 158
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 32,
+  "filled": 128,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 32,
+  "visibleRows": 21
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 32,
+  "filledThisRound": 0,
+  "totalFilled": 128,
+  "remaining": 158
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 32,
+  "beforeScrollTop": 17471.111328125,
+  "afterScrollTop": 17971.111328125,
+  "scrollDelta": 500,
+  "scrollHeight": 20368,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 33,
+  "filled": 128,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 33,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-321",
+  "rowIndex": 5,
+  "beforeValue": "730",
+  "requestedValue": "JS-017-321",
+  "afterValue": "017321",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-322",
+  "rowIndex": 7,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-322",
+  "afterValue": "017322",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-323",
+  "rowIndex": 9,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-323",
+  "afterValue": "017323",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-324",
+  "rowIndex": 11,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-324",
+  "afterValue": "017324",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-325",
+  "rowIndex": 13,
+  "beforeValue": "970",
+  "requestedValue": "JS-017-325",
+  "afterValue": "017325",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-326",
+  "rowIndex": 15,
+  "beforeValue": "240",
+  "requestedValue": "JS-017-326",
+  "afterValue": "017326",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-327",
+  "rowIndex": 17,
+  "beforeValue": "220",
+  "requestedValue": "JS-017-327",
+  "afterValue": "017327",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-328",
+  "rowIndex": 19,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-328",
+  "afterValue": "017328",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-329",
+  "rowIndex": 21,
+  "beforeValue": "200",
+  "requestedValue": "JS-017-329",
+  "afterValue": "017329",
+  "scrollAttempt": 33
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 33,
+  "filledThisRound": 9,
+  "totalFilled": 137,
+  "remaining": 149
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 34,
+  "filled": 137,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 34,
+  "visibleRows": 22
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 34,
+  "filledThisRound": 0,
+  "totalFilled": 137,
+  "remaining": 149
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 34,
+  "beforeScrollTop": 18598.888671875,
+  "afterScrollTop": 19098.888671875,
+  "scrollDelta": 500,
+  "scrollHeight": 20568,
+  "clientHeight": 960,
+  "reachedBottom": false
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 35,
+  "filled": 137,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 35,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-330",
+  "rowIndex": 7,
+  "beforeValue": "80",
+  "requestedValue": "JS-017-330",
+  "afterValue": "017330",
+  "scrollAttempt": 35
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-331",
+  "rowIndex": 9,
+  "beforeValue": "130",
+  "requestedValue": "JS-017-331",
+  "afterValue": "017331",
+  "scrollAttempt": 35
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-332",
+  "rowIndex": 11,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-332",
+  "afterValue": "017332",
+  "scrollAttempt": 35
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-333",
+  "rowIndex": 13,
+  "beforeValue": "200",
+  "requestedValue": "JS-017-333",
+  "afterValue": "017333",
+  "scrollAttempt": 35
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-334",
+  "rowIndex": 15,
+  "beforeValue": "40",
+  "requestedValue": "JS-017-334",
+  "afterValue": "017334",
+  "scrollAttempt": 35
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-335",
+  "rowIndex": 17,
+  "beforeValue": "200",
+  "requestedValue": "JS-017-335",
+  "afterValue": "017335",
+  "scrollAttempt": 35
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-row-written] {
+  "sku": "JS-017-336",
+  "rowIndex": 19,
+  "beforeValue": "120",
+  "requestedValue": "JS-017-336",
+  "afterValue": "017336",
+  "scrollAttempt": 35
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 35,
+  "filledThisRound": 7,
+  "totalFilled": 144,
+  "remaining": 142
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 36,
+  "filled": 144,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 36,
+  "visibleRows": 20
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 36,
+  "filledThisRound": 0,
+  "totalFilled": 144,
+  "remaining": 142
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 36,
+  "beforeScrollTop": 19607.77734375,
+  "afterScrollTop": 19551.111328125,
+  "scrollDelta": -56.666015625,
+  "scrollHeight": 20512,
+  "clientHeight": 960,
+  "reachedBottom": true
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-attempt] {
+  "attempt": 37,
+  "filled": 144,
+  "target": 286
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-scan] {
+  "attempt": 37,
+  "visibleRows": 14
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-round-result] {
+  "attempt": 37,
+  "filledThisRound": 0,
+  "totalFilled": 144,
+  "remaining": 142
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-action] {
+  "attempt": 37,
+  "beforeScrollTop": 19551.111328125,
+  "afterScrollTop": 19551.111328125,
+  "scrollDelta": 0,
+  "scrollHeight": 20512,
+  "clientHeight": 960,
+  "reachedBottom": true
+}
+chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-scroll-stuck] {
+  "message": "滚动到底，最后确认一轮"
 }
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-summary] {
-  "requestedCount": 143,
-  "success": 8,
+  "requestedCount": 286,
+  "success": 144,
+  "scrollAttempts": 37,
   "missingTargets": [
-    "JS-016-114",
-    "JS-016-118",
-    "JS-016-119",
-    "JS-016-123",
-    "JS-016-125",
-    "JS-016-128",
-    "JS-016-140",
-    "JS-016-148",
-    "JS-016-149",
-    "JS-016-157",
-    "JS-016-160",
-    "JS-016-171",
-    "JS-016-172",
-    "JS-016-182",
-    "JS-016-183",
-    "JS-016-184",
-    "JS-016-191",
-    "JS-016-23",
-    "JS-016-24",
-    "JS-016-29",
-    "JS-016-30",
-    "JS-016-31",
-    "JS-016-32",
-    "JS-016-33",
-    "JS-016-35",
-    "JS-016-36",
-    "JS-016-37",
-    "JS-016-38",
-    "JS-016-39",
-    "JS-016-40",
-    "JS-016-41",
-    "JS-016-44",
-    "JS-016-49",
-    "JS-016-57",
-    "JS-016-65",
-    "JS-016-66",
-    "JS-016-68",
-    "JS-016-69",
-    "JS-016-72",
-    "JS-016-76",
-    "JS-016-77",
-    "JS-016-78",
-    "JS-016-86",
-    "JS-017-001",
-    "JS-017-005",
-    "JS-017-007",
-    "JS-017-013",
-    "JS-017-019",
-    "JS-017-024",
-    "JS-017-033",
-    "JS-017-037",
-    "JS-017-038",
-    "JS-017-047",
-    "JS-017-048",
-    "JS-017-098",
-    "JS-017-102",
-    "JS-017-104",
-    "JS-017-109",
-    "JS-017-110",
-    "JS-017-113",
-    "JS-017-117",
-    "JS-017-119",
-    "JS-017-120",
-    "JS-017-125",
-    "JS-017-126",
-    "JS-017-127",
-    "JS-017-130",
-    "JS-017-133",
-    "JS-017-135",
-    "JS-017-138",
-    "JS-017-141",
-    "JS-017-143",
-    "JS-017-146",
-    "JS-017-150",
-    "JS-017-159",
-    "JS-017-162",
-    "JS-017-165",
-    "JS-017-313",
-    "JS-017-314",
-    "JS-017-315",
-    "JS-017-316",
-    "JS-017-317",
-    "JS-017-318",
-    "JS-017-319",
-    "JS-017-320",
-    "JS-017-321",
-    "JS-017-322",
-    "JS-017-323",
-    "JS-017-324",
-    "JS-017-325",
-    "JS-017-326",
-    "JS-017-327",
-    "JS-017-328",
-    "JS-017-329",
-    "JS-017-330",
-    "JS-017-331",
-    "JS-017-332",
-    "JS-017-333",
-    "JS-017-334",
-    "JS-017-335",
-    "JS-017-336",
-    "JS-019-015",
-    "JS-019-016",
-    "JS-019-035",
-    "JS-019-046",
-    "JS-019-053",
-    "JS-019-105",
-    "JS-019-141",
-    "JS-019-148",
-    "JS-019-183",
-    "JS-022-001",
-    "JS-022-009",
-    "JS-022-015",
-    "JS-022-019",
-    "JS-022-045",
-    "JS-022-047",
-    "JS-022-097",
-    "JS-022-099",
-    "JS-022-133",
-    "JS-022-139",
-    "JS-022-140",
-    "JS-025-001",
-    "JS-025-002",
-    "JS-025-006",
-    "JS-025-008",
-    "JS-025-009",
-    "JS-025-021",
-    "JS-025-024",
-    "JS-026-001",
-    "JS-026-003",
-    "JS-026-005",
-    "JS-026-009",
-    "JS-026-015",
-    "JS-026-017",
-    "JS-027-003"
+    "40",
+    "190",
+    "20",
+    "10",
+    "60",
+    "130",
+    "100",
+    "20",
+    "110",
+    "40",
+    "205",
+    "15",
+    "10",
+    "10",
+    "100",
+    "20",
+    "10",
+    "20",
+    "20",
+    "20",
+    "30",
+    "10",
+    "10",
+    "50",
+    "50",
+    "50",
+    "60",
+    "150",
+    "180",
+    "40",
+    "30",
+    "360",
+    "90",
+    "40",
+    "70",
+    "30",
+    "30",
+    "150",
+    "70",
+    "40",
+    "100",
+    "30",
+    "40",
+    "10",
+    "20",
+    "30",
+    "10",
+    "60",
+    "20",
+    "10",
+    "160",
+    "20",
+    "0",
+    "10",
+    "10",
+    "45",
+    "10",
+    "20",
+    "50",
+    "20",
+    "20",
+    "60",
+    "10",
+    "10",
+    "250",
+    "110",
+    "0",
+    "20",
+    "110",
+    "75",
+    "10",
+    "40",
+    "10",
+    "10",
+    "70",
+    "50",
+    "10",
+    "50",
+    "50",
+    "10",
+    "70",
+    "20",
+    "10",
+    "30",
+    "10",
+    "140",
+    "40",
+    "60",
+    "685",
+    "370",
+    "100",
+    "90",
+    "630",
+    "40",
+    "40",
+    "40",
+    "760",
+    "140",
+    "180",
+    "40",
+    "190",
+    "70",
+    "110",
+    "40",
+    "190",
+    "40",
+    "140",
+    "105",
+    "0",
+    "0",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "0",
+    "20",
+    "10",
+    "10",
+    "0",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "10",
+    "0",
+    "20",
+    "10",
+    "10",
+    "25",
+    "20",
+    "20",
+    "30",
+    "30",
+    "10",
+    "10",
+    "10",
+    "0"
   ],
   "matchedWithoutWrite": [],
   "targetResults": [
     {
-      "sku": "JS-016-01",
+      "sku": "40",
       "qty": "40",
-      "matchedRows": [
-        {
-          "rowIndex": 1,
-          "dataRowIndex": "1",
-          "explicitSku": "",
-          "textHitTargets": [
-            "JS-016-01"
-          ],
-          "inputFound": true,
-          "rowText": "JS-016-01 暗无天日李魔术;灰色;70*100 40 0 40 P ZP-12-03"
-        }
-      ],
-      "writes": [
-        {
-          "rowIndex": 1,
-          "beforeValue": "40",
-          "requestedValue": "40",
-          "afterValue": "40",
-          "inputConnected": true,
-          "rowConnected": true
-        }
-      ]
+      "matchedRows": [],
+      "writes": []
     },
     {
-      "sku": "JS-016-07",
+      "sku": "190",
       "qty": "190",
-      "matchedRows": [
-        {
-          "rowIndex": 5,
-          "dataRowIndex": "5",
-          "explicitSku": "",
-          "textHitTargets": [
-            "JS-016-07"
-          ],
-          "inputFound": true,
-          "rowText": "JS-016-07 暗无天日李魔术;灰色;150*150 190 0 190 P ZO-12-03"
-        }
-      ],
-      "writes": [
-        {
-          "rowIndex": 5,
-          "beforeValue": "190",
-          "requestedValue": "190",
-          "afterValue": "190",
-          "inputConnected": true,
-          "rowConnected": true
-        }
-      ]
+      "matchedRows": [],
+      "writes": []
     },
     {
-      "sku": "JS-016-104",
+      "sku": "20",
       "qty": "20",
-      "matchedRows": [
-        {
-          "rowIndex": 3,
-          "dataRowIndex": "3",
-          "explicitSku": "",
-          "textHitTargets": [
-            "JS-016-104"
-          ],
-          "inputFound": true,
-          "rowText": "JS-016-104 暗无天日李魔术;灰色;120*250 20 0 20 P ZA-03-03"
-        }
-      ],
-      "writes": [
-        {
-          "rowIndex": 3,
-          "beforeValue": "20",
-          "requestedValue": "20",
-          "afterValue": "20",
-          "inputConnected": true,
-          "rowConnected": true
-        }
-      ]
+      "matchedRows": [],
+      "writes": []
     },
     {
-      "sku": "JS-016-114",
+      "sku": "10",
       "qty": "10",
       "matchedRows": [],
       "writes": []
     },
     {
-      "sku": "JS-016-118",
+      "sku": "60",
       "qty": "60",
       "matchedRows": [],
       "writes": []
     },
     {
-      "sku": "JS-016-119",
+      "sku": "130",
       "qty": "130",
       "matchedRows": [],
       "writes": []
     },
     {
-      "sku": "JS-016-123",
+      "sku": "100",
       "qty": "100",
       "matchedRows": [],
       "writes": []
     },
     {
-      "sku": "JS-016-125",
+      "sku": "20",
       "qty": "20",
       "matchedRows": [],
       "writes": []
     },
     {
-      "sku": "JS-016-128",
+      "sku": "110",
       "qty": "110",
       "matchedRows": [],
       "writes": []
     },
     {
-      "sku": "JS-016-13",
+      "sku": "40",
       "qty": "40",
-      "matchedR
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "205",
+      "qty": "205",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "15",
+      "qty": "15",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "10",
+      "qty": "10",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "10",
+      "qty": "10",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "100",
+      "qty": "100",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "20",
+      "qty": "20",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "10",
+      "qty": "10",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "20",
+      "qty": "20",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "20",
+      "qty": "20",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "20",
+      "qty": "20",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "30",
+      "qty": "30",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "10",
+      "qty": "10",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "10",
+      "qty": "10",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "50",
+      "qty": "50",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "50",
+      "qty": "50",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "50",
+      "qty": "50",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "60",
+      "qty": "60",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "150",
+      "qty": "150",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "170",
+      "qty": "170",
+      "matchedRows": [],
+      "writes": [
+        {
+          "rowIndex": 11,
+          "beforeValue": "10",
+          "requestedValue": "170",
+          "afterValue": "170",
+          "inputConnected": true,
+          "rowConnected": true
+        }
+      ]
+    },
+    {
+      "sku": "180",
+      "qty": "180",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "40",
+      "qty": "40",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "30",
+      "qty": "30",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "360",
+      "qty": "360",
+      "matchedRows": [],
+      "writes": []
+    },
+    {
+      "sku": "90",
+      "qty": "90",
+ 
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-after-100ms] {
-  "success": 8,
+  "success": 144,
   "written": [
     {
       "sku": "JS-016-01",
       "rowIndex": 1,
-      "requestedValue": "40",
-      "actualValue": "40",
+      "requestedValue": "JS-016-01",
+      "actualValue": "01601",
       "inputConnected": false,
       "rowConnected": false,
       "rowRect": {
@@ -1740,8 +3214,8 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-after-100ms] {
     {
       "sku": "JS-016-104",
       "rowIndex": 3,
-      "requestedValue": "20",
-      "actualValue": "20",
+      "requestedValue": "JS-016-104",
+      "actualValue": "016104",
       "inputConnected": false,
       "rowConnected": false,
       "rowRect": {
@@ -1757,211 +3231,205 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-after-100ms] {
     {
       "sku": "JS-016-07",
       "rowIndex": 5,
-      "requestedValue": "190",
-      "actualValue": "190",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-07",
+      "actualValue": "01607",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": -56,
-        "bottom": 21,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-13",
       "rowIndex": 7,
-      "requestedValue": "40",
-      "actualValue": "40",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-13",
+      "actualValue": "01613",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 87,
-        "bottom": 164,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-14",
       "rowIndex": 9,
-      "requestedValue": "205",
-      "actualValue": "205",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-14",
+      "actualValue": "01614",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 230,
-        "bottom": 307,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-15",
       "rowIndex": 11,
-      "requestedValue": "100",
-      "actualValue": "100",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-15",
+      "actualValue": "01615",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 373,
-        "bottom": 451,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-17",
       "rowIndex": 13,
-      "requestedValue": "20",
-      "actualValue": "20",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-17",
+      "actualValue": "01617",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 516,
-        "bottom": 594,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-19",
       "rowIndex": 15,
-      "requestedValue": "50",
-      "actualValue": "50",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-19",
+      "actualValue": "01619",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 659,
-        "bottom": 737,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
-    }
-  ],
-  "currentRows": [
-    {
-      "rowIndex": 0,
-      "dataRowIndex": "5",
-      "connected": true,
-      "targetHits": [
-        "JS-016-07"
-      ],
-      "rect": {
-        "top": -56,
-        "bottom": 21,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
-      },
-      "rowText": "JS-016-07 暗无天日李魔术;灰色;150*150 190 0 190 P ZO-12-03"
     },
     {
-      "rowIndex": 1,
-      "dataRowIndex": "6",
-      "connected": true,
-      "targetHits": [],
-      "rect": {
-        "top": 21,
-        "bottom": 87,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 65,
-        "visibleInViewport": true
-      },
-      "rowText": "添加货架"
-    },
-    {
-      "rowIndex": 2,
-      "dataRowIndex": "7",
-      "connected": true,
-      "targetHits": [
-        "JS-016-13"
-      ],
-      "rect": {
-        "top": 87,
-        "bottom": 164,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
-      },
-      "rowText": "JS-016-13 暗无天日李魔术;灰色;200*200 70 0 70 P ZK-12-03"
-    },
-    {
-      "rowIndex": 3,
-      "dataRowIndex": "8",
-      "connected": true,
-      "targetHits": [],
-      "rect": {
-        "top": 164,
-        "bottom": 230,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 65,
-        "visibleInViewport": true
-      },
-      "rowText": "添加货架"
-    },
-    {
-      "rowIndex": 4,
-      "dataRowIndex": "9",
-      "connected": true,
-      "targetHits": [
-        "JS-016-14"
-      ],
-      "rect": {
-        "top": 230,
-        "bottom": 307,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
-      },
-      "rowText": "JS-016-14 暗无天日李魔术;灰色;200*250 230 0 230 P ZM-12-03"
-    },
-    {
+      "sku": "JS-016-114",
       "rowIndex": 5,
-      "dataRowIndex": "10",
-      "connected": true,
-      "targetHits": [],
-      "rect": {
-        "top": 307,
-        "bottom": 373,
-        "left": 40,
-     
+      "requestedValue": "JS-016-114",
+      "actualValue": "016114",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-23",
+      "rowIndex": 7,
+      "requestedValue": "JS-016-23",
+      "actualValue": "01623",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-24",
+      "rowIndex": 9,
+      "requestedValue": "JS-016-24",
+      "actualValue": "01624",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-118",
+      "rowIndex": 11,
+      "requestedValue": "JS-016-118",
+      "actualValue": "016118",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-29",
+      "rowIndex": 13,
+      "requestedValue": "JS-016-29",
+      "actualValue": "01629",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-119",
+      "rowIndex": 15,
+      "requestedValue": "JS-016-119",
+      "actualValue": "016119",
+      "inputConnected": false,
+      "rowCo
 chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-after-1000ms] {
-  "success": 8,
+  "success": 144,
   "written": [
     {
       "sku": "JS-016-01",
       "rowIndex": 1,
-      "requestedValue": "40",
-      "actualValue": "40",
+      "requestedValue": "JS-016-01",
+      "actualValue": "01601",
       "inputConnected": false,
       "rowConnected": false,
       "rowRect": {
@@ -1977,8 +3445,8 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-after-1000ms] 
     {
       "sku": "JS-016-104",
       "rowIndex": 3,
-      "requestedValue": "20",
-      "actualValue": "20",
+      "requestedValue": "JS-016-104",
+      "actualValue": "016104",
       "inputConnected": false,
       "rowConnected": false,
       "rowRect": {
@@ -1994,200 +3462,194 @@ chunk-sentry-9499de1a.bundle.951d32.js:1 [debug][2026-08-12][fill-after-1000ms] 
     {
       "sku": "JS-016-07",
       "rowIndex": 5,
-      "requestedValue": "190",
-      "actualValue": "190",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-07",
+      "actualValue": "01607",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": -56,
-        "bottom": 21,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-13",
       "rowIndex": 7,
-      "requestedValue": "40",
-      "actualValue": "40",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-13",
+      "actualValue": "01613",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 87,
-        "bottom": 164,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-14",
       "rowIndex": 9,
-      "requestedValue": "205",
-      "actualValue": "205",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-14",
+      "actualValue": "01614",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 230,
-        "bottom": 307,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-15",
       "rowIndex": 11,
-      "requestedValue": "100",
-      "actualValue": "100",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-15",
+      "actualValue": "01615",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 373,
-        "bottom": 451,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-17",
       "rowIndex": 13,
-      "requestedValue": "20",
-      "actualValue": "20",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-17",
+      "actualValue": "01617",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 516,
-        "bottom": 594,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
     },
     {
       "sku": "JS-016-19",
       "rowIndex": 15,
-      "requestedValue": "50",
-      "actualValue": "50",
-      "inputConnected": true,
-      "rowConnected": true,
+      "requestedValue": "JS-016-19",
+      "actualValue": "01619",
+      "inputConnected": false,
+      "rowConnected": false,
       "rowRect": {
-        "top": 659,
-        "bottom": 737,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
       }
-    }
-  ],
-  "currentRows": [
-    {
-      "rowIndex": 0,
-      "dataRowIndex": "5",
-      "connected": true,
-      "targetHits": [
-        "JS-016-07"
-      ],
-      "rect": {
-        "top": -56,
-        "bottom": 21,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
-      },
-      "rowText": "JS-016-07 暗无天日李魔术;灰色;150*150 190 0 190 P ZO-12-03"
     },
     {
-      "rowIndex": 1,
-      "dataRowIndex": "6",
-      "connected": true,
-      "targetHits": [],
-      "rect": {
-        "top": 21,
-        "bottom": 87,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 65,
-        "visibleInViewport": true
-      },
-      "rowText": "添加货架"
-    },
-    {
-      "rowIndex": 2,
-      "dataRowIndex": "7",
-      "connected": true,
-      "targetHits": [
-        "JS-016-13"
-      ],
-      "rect": {
-        "top": 87,
-        "bottom": 164,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
-      },
-      "rowText": "JS-016-13 暗无天日李魔术;灰色;200*200 70 0 70 P ZK-12-03"
-    },
-    {
-      "rowIndex": 3,
-      "dataRowIndex": "8",
-      "connected": true,
-      "targetHits": [],
-      "rect": {
-        "top": 164,
-        "bottom": 230,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 65,
-        "visibleInViewport": true
-      },
-      "rowText": "添加货架"
-    },
-    {
-      "rowIndex": 4,
-      "dataRowIndex": "9",
-      "connected": true,
-      "targetHits": [
-        "JS-016-14"
-      ],
-      "rect": {
-        "top": 230,
-        "bottom": 307,
-        "left": 40,
-        "right": 1560,
-        "width": 1520,
-        "height": 78,
-        "visibleInViewport": true
-      },
-      "rowText": "JS-016-14 暗无天日李魔术;灰色;200*250 230 0 230 P ZM-12-03"
-    },
-    {
+      "sku": "JS-016-114",
       "rowIndex": 5,
-      "dataRowIndex": "10",
-      "connected": true,
-      "targetHits": [],
-      "rect": {
-        "top": 307,
-        "bottom": 373,
-        "left": 40,
-     
+      "requestedValue": "JS-016-114",
+      "actualValue": "016114",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-23",
+      "rowIndex": 7,
+      "requestedValue": "JS-016-23",
+      "actualValue": "01623",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-24",
+      "rowIndex": 9,
+      "requestedValue": "JS-016-24",
+      "actualValue": "01624",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-118",
+      "rowIndex": 11,
+      "requestedValue": "JS-016-118",
+      "actualValue": "016118",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-29",
+      "rowIndex": 13,
+      "requestedValue": "JS-016-29",
+      "actualValue": "01629",
+      "inputConnected": false,
+      "rowConnected": false,
+      "rowRect": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0,
+        "width": 0,
+        "height": 0,
+        "visibleInViewport": false
+      }
+    },
+    {
+      "sku": "JS-016-119",
+      "rowIndex": 15,
+      "requestedValue": "JS-016-119",
+      "actualValue": "016119",
+      "inputConnected": false,
+      "rowCo
