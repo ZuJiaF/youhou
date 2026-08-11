@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         c仓助手
 // @namespace    http://tampermonkey.net/
-// @version      1.10.1
+// @version      1.10.2
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -523,6 +523,135 @@
         '.ant-input-number input'
     ];
 
+    const RECEIVE_DEBUG_DATE = '2026-08-12';
+
+    function receiveDebug(label, payload) {
+        const serialized = JSON.stringify(payload, null, 2);
+        window.__cWarehouseDebug ||= [];
+        window.__cWarehouseDebug.push({
+            time: new Date().toISOString(),
+            label,
+            payload: JSON.parse(serialized)
+        });
+
+        console.log(
+            `[debug][${RECEIVE_DEBUG_DATE}][${label}]`,
+            serialized
+        );
+    }
+
+    window.downloadCWarehouseDebug = () => {
+        const data = JSON.stringify(
+            window.__cWarehouseDebug || [], null, 2
+        );
+        const url = URL.createObjectURL(new Blob(
+            [data], { type: 'application/json' }
+        ));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download =
+            `c仓助手-debug-${RECEIVE_DEBUG_DATE}-${Date.now()}.temp.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    function getReceiveRectInfo(element) {
+        if (!element) return null;
+
+        const rect = element.getBoundingClientRect();
+        return {
+            top: Math.round(rect.top),
+            bottom: Math.round(rect.bottom),
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            visibleInViewport:
+                rect.width > 0 &&
+                rect.height > 0 &&
+                rect.bottom > 0 &&
+                rect.top < window.innerHeight
+        };
+    }
+
+    function getReceiveVirtualInfo(table) {
+        const containers = [];
+        let current = table && table.parentElement;
+
+        while (current && current !== document.body) {
+            const style = window.getComputedStyle(current);
+            const hasScrollableOverflow =
+                current.scrollHeight > current.clientHeight + 2 ||
+                current.scrollWidth > current.clientWidth + 2 ||
+                /(auto|scroll|overlay)/.test(
+                    `${style.overflow} ${style.overflowY} ${style.overflowX}`
+                );
+
+            if (hasScrollableOverflow) {
+                containers.push({
+                    tagName: current.tagName,
+                    id: current.id || '',
+                    className: String(current.className || '')
+                        .slice(0, 180),
+                    overflow: style.overflow,
+                    overflowY: style.overflowY,
+                    scrollTop: current.scrollTop,
+                    scrollLeft: current.scrollLeft,
+                    clientHeight: current.clientHeight,
+                    scrollHeight: current.scrollHeight,
+                    clientWidth: current.clientWidth,
+                    scrollWidth: current.scrollWidth,
+                    childCount: current.children.length,
+                    rect: getReceiveRectInfo(current)
+                });
+            }
+
+            current = current.parentElement;
+        }
+
+        let virtualRoot = table && table.parentElement;
+        let virtualMarkers = [];
+
+        while (virtualRoot && virtualRoot !== document.body) {
+            const found = Array.from(
+                virtualRoot.querySelectorAll(
+                    '.bs_newvirtual-blank, ' +
+                    '[class*="virtual-list"], ' +
+                    '[class*="virtual-scroll"]'
+                )
+            );
+
+            if (found.length > 0) {
+                virtualMarkers = found.slice(0, 20).map(marker => ({
+                    tagName: marker.tagName,
+                    className: String(marker.className || '')
+                        .slice(0, 180),
+                    style: marker.getAttribute('style') || '',
+                    clientHeight: marker.clientHeight,
+                    scrollHeight: marker.scrollHeight,
+                    rect: getReceiveRectInfo(marker)
+                }));
+                break;
+            }
+
+            virtualRoot = virtualRoot.parentElement;
+        }
+
+        return {
+            tableRect: getReceiveRectInfo(table),
+            containers,
+            virtualRoot: virtualRoot ? {
+                tagName: virtualRoot.tagName,
+                id: virtualRoot.id || '',
+                className: String(virtualRoot.className || '')
+                    .slice(0, 180)
+            } : null,
+            virtualMarkers
+        };
+    }
+
     function queryFirst(root, selectors) {
         for (const selector of selectors) {
             const element = root.querySelector(selector);
@@ -662,10 +791,75 @@
 
         // [debug-done][2026-08-11] 排查：新版收货明细表无 class，旧选择器未命中。
         // console.log('[debug][2026-08-11][findReceiveTable] 候选表格:', ranked);
+        receiveDebug('findReceiveTable', {
+            candidateCount: candidates.length,
+            ranked: ranked.map(info => ({
+                tableIndex: Array.from(
+                    document.querySelectorAll('table')
+                ).indexOf(info.table),
+                rows: info.rows.length,
+                skuRows: info.skuRows,
+                inputRows: info.inputRows,
+                pairedRows: info.pairedRows,
+                hasShelfMarker: info.hasShelfMarker,
+                score: info.score,
+                className: String(info.table.className || ''),
+                virtual: getReceiveVirtualInfo(info.table)
+            }))
+        });
         return ranked[0] || null;
     }
 
+    function getReceiveRowDebug(row, rowIndex, skuArr, input) {
+        const rowText = (
+            row.innerText || row.textContent || ''
+        ).replace(/\s+/g, ' ').trim();
+        const skuElement = findRowSkuElement(row);
+        const explicitSku = normalizeSku(
+            skuElement && skuElement.innerText
+        );
+        const inputSelector = input
+            ? RECEIVE_INPUT_SELECTORS.find(
+                selector => row.querySelector(selector) === input
+            ) || 'fallback-input'
+            : '';
+
+        return {
+            rowIndex,
+            dataRowIndex: row.getAttribute('data-rowindex') || '',
+            className: String(row.className || ''),
+            connected: row.isConnected,
+            rect: getReceiveRectInfo(row),
+            explicitSku,
+            textHitTargets: skuArr.filter(
+                sku => rowTextContainsSku(rowText, sku)
+            ),
+            selectedInput: input ? {
+                selector: inputSelector,
+                type: input.type,
+                value: input.value,
+                disabled: input.disabled,
+                connected: input.isConnected,
+                className: String(input.className || ''),
+                rect: getReceiveRectInfo(input)
+            } : null,
+            allInputs: Array.from(
+                row.querySelectorAll('input')
+            ).map(item => ({
+                type: item.type,
+                value: item.value,
+                disabled: item.disabled,
+                connected: item.isConnected,
+                className: String(item.className || ''),
+                rect: getReceiveRectInfo(item)
+            })),
+            rowText: rowText.slice(0, 320)
+        };
+    }
+
     document.getElementById('fillBtn').onclick = () => {
+
+        window.__cWarehouseDebug = [];
 
         const skuArr = document
             .getElementById('skuList')
@@ -681,7 +875,24 @@
             .map(v => v.trim())
             .filter(Boolean);
 
+        receiveDebug('fill-start', {
+            url: location.href,
+            orderNumbers: Array.from(new Set(
+                (document.body.innerText || '')
+                    .match(/\bPO[0-9A-Z-]+\b/g) || []
+            )).slice(0, 20),
+            skuCount: skuArr.length,
+            qtyCount: qtyArr.length,
+            skuArr,
+            qtyArr
+        });
+
         if (skuArr.length !== qtyArr.length) {
+
+            receiveDebug('fill-count-mismatch', {
+                skuCount: skuArr.length,
+                qtyCount: qtyArr.length
+            });
 
             alert(
                 `SKU数量(${skuArr.length}) 与 数量行数(${qtyArr.length}) 不一致`
@@ -700,6 +911,10 @@
 
         if (!tableInfo) {
 
+            receiveDebug('fill-table-missing', {
+                totalTables: document.querySelectorAll('table').length
+            });
+
             alert("未找到表格");
 
             return;
@@ -708,21 +923,75 @@
         let success = 0;
 
         const rows = tableInfo.rows;
+        const targetResults = skuArr.map((sku, index) => ({
+            sku,
+            qty: qtyArr[index],
+            matchedRows: [],
+            writes: []
+        }));
+        const writtenRefs = [];
 
-        rows.forEach(row => {
+        receiveDebug('fill-table-snapshot', {
+            tableIndex: Array.from(
+                document.querySelectorAll('table')
+            ).indexOf(tableInfo.table),
+            rows: tableInfo.rows.length,
+            skuRows: tableInfo.skuRows,
+            inputRows: tableInfo.inputRows,
+            pairedRows: tableInfo.pairedRows,
+            hasShelfMarker: tableInfo.hasShelfMarker,
+            score: tableInfo.score,
+            virtual: getReceiveVirtualInfo(tableInfo.table),
+            rowSnapshots: rows.map((row, rowIndex) => {
+                const input = findRowReceiveInput(row);
+                return getReceiveRowDebug(
+                    row, rowIndex, skuArr, input
+                );
+            })
+        });
+
+        rows.forEach((row, rowIndex) => {
 
             const sku = getRowSku(row, skuMap);
+            const input = findRowReceiveInput(row);
+            const rowDebug = getReceiveRowDebug(
+                row, rowIndex, skuArr, input
+            );
+
+            receiveDebug('fill-row-scan', {
+                ...rowDebug,
+                resolvedSku: sku
+            });
 
             if (!(sku in skuMap))
                 return;
 
-            const input = findRowReceiveInput(row);
+            const targetResult = targetResults.find(
+                result => result.sku === sku
+            );
 
-            if (!input)
+            if (targetResult) {
+                targetResult.matchedRows.push({
+                    rowIndex,
+                    dataRowIndex: rowDebug.dataRowIndex,
+                    explicitSku: rowDebug.explicitSku,
+                    textHitTargets: rowDebug.textHitTargets,
+                    inputFound: Boolean(input),
+                    rowText: rowDebug.rowText
+                });
+            }
+
+            if (!input) {
+                receiveDebug('fill-row-input-missing', {
+                    sku,
+                    row: rowDebug
+                });
                 return;
+            }
 
             const value =
                 skuMap[sku];
+            const beforeValue = input.value;
 
             input.focus();
 
@@ -760,10 +1029,98 @@
 
             input.blur();
 
+            const afterValue = input.value;
+
             row.style.background =
                 'rgba(0,255,0,.15)';
 
+            if (targetResult) {
+                targetResult.writes.push({
+                    rowIndex,
+                    beforeValue,
+                    requestedValue: value,
+                    afterValue,
+                    inputConnected: input.isConnected,
+                    rowConnected: row.isConnected
+                });
+            }
+
+            writtenRefs.push({
+                sku,
+                rowIndex,
+                requestedValue: value,
+                input,
+                row
+            });
+
+            receiveDebug('fill-row-written', {
+                sku,
+                rowIndex,
+                beforeValue,
+                requestedValue: value,
+                afterValue,
+                inputConnected: input.isConnected,
+                rowConnected: row.isConnected
+            });
+
             success++;
+        });
+
+        receiveDebug('fill-summary', {
+            requestedCount: skuArr.length,
+            success,
+            missingTargets: targetResults
+                .filter(result => result.matchedRows.length === 0)
+                .map(result => result.sku),
+            matchedWithoutWrite: targetResults
+                .filter(result =>
+                    result.matchedRows.length > 0 &&
+                    result.writes.length === 0
+                )
+                .map(result => result.sku),
+            targetResults,
+            virtual: getReceiveVirtualInfo(tableInfo.table)
+        });
+
+        [100, 1000].forEach(delay => {
+            setTimeout(() => {
+                const currentRows = Array.from(
+                    tableInfo.table.querySelectorAll('tbody > tr')
+                );
+
+                receiveDebug(`fill-after-${delay}ms`, {
+                    success,
+                    written: writtenRefs.map(item => ({
+                        sku: item.sku,
+                        rowIndex: item.rowIndex,
+                        requestedValue: item.requestedValue,
+                        actualValue: item.input.value,
+                        inputConnected: item.input.isConnected,
+                        rowConnected: item.row.isConnected,
+                        rowRect: getReceiveRectInfo(item.row)
+                    })),
+                    currentRows: currentRows.map((row, rowIndex) => {
+                        const rowText = (
+                            row.innerText || row.textContent || ''
+                        ).replace(/\s+/g, ' ').trim();
+
+                        return {
+                            rowIndex,
+                            dataRowIndex:
+                                row.getAttribute('data-rowindex') || '',
+                            connected: row.isConnected,
+                            targetHits: skuArr.filter(
+                                sku => rowTextContainsSku(rowText, sku)
+                            ),
+                            rect: getReceiveRectInfo(row),
+                            rowText: rowText.slice(0, 180)
+                        };
+                    }),
+                    virtual: getReceiveVirtualInfo(
+                        tableInfo.table
+                    )
+                });
+            }, delay);
         });
 
         document.getElementById('msg')
