@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         c仓助手
 // @namespace    http://tampermonkey.net/
-// @version      1.10.0
+// @version      1.10.1
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -496,6 +496,175 @@
     // 批量填写
     // ==========================
 
+    const RECEIVE_TABLE_SELECTORS = [
+        ".ant-modal-wrap.full_screen .ant-modal-body table.fixed_table",
+        ".ant-modal-wrap.full_screen .ant-modal-body table",
+        "#app > div.__root > div.page_body.page_body_Nav > section.rt > div:nth-child(2) > div:nth-child(1) > div:nth-child(4) > div > div:nth-child(2) > table",
+        "#app .ant-table-wrapper table",
+        ".ant-table table",
+        "table.ant-table-fixed"
+    ];
+
+    const RECEIVE_SKU_SELECTORS = [
+        '.receive_sku_row .receive_sku_no',
+        '.receive_sku_row span',
+        '.copy_txt_box span',
+        'td.dt_el .receive_sku_row span',
+        'td .sku-text',
+        'td[class*="sku"] span'
+    ];
+
+    const RECEIVE_INPUT_SELECTORS = [
+        'td.receive_qty_el input.ant-input',
+        'td.receive_qty_el input',
+        '.ant-input-group input',
+        'input.ant-input',
+        'input.ant-input-number-input',
+        '.ant-input-number input'
+    ];
+
+    function queryFirst(root, selectors) {
+        for (const selector of selectors) {
+            const element = root.querySelector(selector);
+            if (element) return element;
+        }
+        return null;
+    }
+
+    function findRowSkuElement(row) {
+        return queryFirst(row, RECEIVE_SKU_SELECTORS);
+    }
+
+    function findRowReceiveInput(row) {
+        const preferredInput = queryFirst(
+            row, RECEIVE_INPUT_SELECTORS
+        );
+        if (preferredInput) return preferredInput;
+
+        return Array.from(row.querySelectorAll('input'))
+            .find(input => ![
+                'button', 'checkbox', 'hidden',
+                'radio', 'reset', 'submit'
+            ].includes(input.type) && !input.disabled) || null;
+    }
+
+    function normalizeSku(text) {
+        return String(text || '')
+            .trim()
+            .replace(/^SKU:\s*/i, '');
+    }
+
+    function rowTextContainsSku(rowText, sku) {
+        let startIndex = 0;
+
+        while (startIndex < rowText.length) {
+            const index = rowText.indexOf(sku, startIndex);
+            if (index === -1) return false;
+
+            const before = rowText[index - 1] || '';
+            const after = rowText[index + sku.length] || '';
+            const isSkuChar = char =>
+                /[a-zA-Z0-9._-]/.test(char);
+
+            if (!isSkuChar(before) && !isSkuChar(after)) {
+                return true;
+            }
+
+            startIndex = index + sku.length;
+        }
+
+        return false;
+    }
+
+    function getRowSku(row, skuMap) {
+        const skuElement = findRowSkuElement(row);
+        const explicitSku = normalizeSku(
+            skuElement && skuElement.innerText
+        );
+
+        if (explicitSku && explicitSku in skuMap) {
+            return explicitSku;
+        }
+
+        const rowText = row.innerText || row.textContent || '';
+        return Object.keys(skuMap)
+            .sort((a, b) => b.length - a.length)
+            .find(sku => rowTextContainsSku(rowText, sku)) || '';
+    }
+
+    function inspectReceiveTable(table) {
+        const rows = Array.from(
+            table.querySelectorAll('tbody > tr')
+        );
+        let skuRows = 0;
+        let inputRows = 0;
+        let pairedRows = 0;
+
+        rows.forEach(row => {
+            const hasSku = Boolean(findRowSkuElement(row));
+            const hasInput = Boolean(findRowReceiveInput(row));
+            if (hasSku) skuRows++;
+            if (hasInput) inputRows++;
+            if (hasSku && hasInput) pairedRows++;
+        });
+
+        const tableText =
+            table.innerText || table.textContent || '';
+        const hasShelfMarker = tableText.includes('添加货架');
+        const score =
+            (hasShelfMarker ? 100000 : 0) +
+            pairedRows * 10000 +
+            skuRows * 1000 +
+            inputRows * 100 +
+            rows.length;
+
+        return {
+            table,
+            rows,
+            skuRows,
+            inputRows,
+            pairedRows,
+            hasShelfMarker,
+            score
+        };
+    }
+
+    function findReceiveTable() {
+        const candidates = [];
+        const seen = new Set();
+        const addCandidate = table => {
+            if (!seen.has(table)) {
+                seen.add(table);
+                candidates.push(table);
+            }
+        };
+
+        RECEIVE_TABLE_SELECTORS.forEach(selector => {
+            document.querySelectorAll(selector)
+                .forEach(addCandidate);
+        });
+
+        // BigSeller 新版采购收货页的明细 table 不再带 class。
+        document.querySelectorAll('table').forEach(addCandidate);
+
+        const ranked = candidates
+            .map(inspectReceiveTable)
+            .filter(info =>
+                info.rows.length > 0 &&
+                info.inputRows > 0 &&
+                (
+                    info.hasShelfMarker ||
+                    info.pairedRows > 0 ||
+                    info.skuRows > 0
+                )
+            )
+            .sort((a, b) => b.score - a.score);
+
+        // [debug-done][2026-08-11] 排查：新版收货明细表无 class，旧选择器未命中。
+        // console.log('[debug][2026-08-11][findReceiveTable] 候选表格:', ranked);
+        return ranked[0] || null;
+    }
+
     document.getElementById('fillBtn').onclick = () => {
 
         const skuArr = document
@@ -527,27 +696,9 @@
             skuMap[sku] = qtyArr[index];
         });
 
-        // 尝试多种表格选择器以兼容不同页面
-        const tableSelectors = [
-            // 采购收货页面（全屏modal内的表格）
-            ".ant-modal-wrap.full_screen .ant-modal-body table.fixed_table",
-            ".ant-modal-wrap.full_screen .ant-modal-body table",
-            // 扫描收货页面
-            "#app > div.__root > div.page_body.page_body_Nav > section.rt > div:nth-child(2) > div:nth-child(1) > div:nth-child(4) > div > div:nth-child(2) > table",
-            // 通用
-            "#app .ant-table-wrapper table",
-            ".ant-table table",
-            "table.ant-table-fixed"
-        ];
+        const tableInfo = findReceiveTable();
 
-        let table = null;
-
-        for (const sel of tableSelectors) {
-            table = document.querySelector(sel);
-            if (table) break;
-        }
-
-        if (!table) {
+        if (!tableInfo) {
 
             alert("未找到表格");
 
@@ -556,61 +707,16 @@
 
         let success = 0;
 
-        const rows =
-            table.querySelectorAll('tbody > tr');
+        const rows = tableInfo.rows;
 
         rows.forEach(row => {
 
-            // 尝试多种SKU选择器
-            const skuSpan =
-                row.querySelector(
-                    '.receive_sku_row .receive_sku_no'
-                ) ||
-                row.querySelector(
-                    '.receive_sku_row span'
-                ) ||
-                row.querySelector(
-                    '.copy_txt_box span'
-                ) ||
-                row.querySelector(
-                    'td.dt_el .receive_sku_row span'
-                ) ||
-                row.querySelector(
-                    'td .sku-text'
-                ) ||
-                row.querySelector(
-                    'td[class*="sku"] span'
-                );
-
-            if (!skuSpan) return;
-
-            // SKU文本可能带前缀如 "SKU: xxx"，需要去掉
-            let sku = skuSpan.innerText.trim();
-            sku = sku.replace(/^SKU:\s*/i, '');
+            const sku = getRowSku(row, skuMap);
 
             if (!(sku in skuMap))
                 return;
 
-            // 尝试多种输入框选择器
-            const input =
-                row.querySelector(
-                    'td.receive_qty_el input.ant-input'
-                ) ||
-                row.querySelector(
-                    'td.receive_qty_el input'
-                ) ||
-                row.querySelector(
-                    '.ant-input-group input'
-                ) ||
-                row.querySelector(
-                    'input.ant-input'
-                ) ||
-                row.querySelector(
-                    'input.ant-input-number-input'
-                ) ||
-                row.querySelector(
-                    '.ant-input-number input'
-                );
+            const input = findRowReceiveInput(row);
 
             if (!input)
                 return;
@@ -669,32 +775,15 @@
     // 手动识别表格
     // ==========================
 
-    const tableSelectors = [
-        ".ant-modal-wrap.full_screen .ant-modal-body table.fixed_table",
-        ".ant-modal-wrap.full_screen .ant-modal-body table",
-        "#app > div.__root > div.page_body.page_body_Nav > section.rt > div:nth-child(2) > div:nth-child(1) > div:nth-child(4) > div > div:nth-child(2) > table",
-        "#app .ant-table-wrapper table",
-        ".ant-table table",
-        "table.ant-table-fixed"
-    ];
-
     document.getElementById('detectBtn').onclick = () => {
         const resultEl =
             document.getElementById('detectResult');
 
-        let found = null;
-        for (const sel of tableSelectors) {
-            const t = document.querySelector(sel);
-            if (t) {
-                found = t;
-                break;
-            }
-        }
+        const found = findReceiveTable();
 
         if (found) {
-            const rows = found.querySelectorAll('tbody > tr');
             resultEl.innerHTML =
-                `<span style="color:#52c41a;">&#9679;</span> 已识别（${rows.length} 行）`;
+                `<span style="color:#52c41a;">&#9679;</span> 已识别（${found.rows.length} 行）`;
         } else {
             resultEl.innerHTML =
                 `<span style="color:#ff4d4f;">&#9679;</span> 未识别到表格`;
