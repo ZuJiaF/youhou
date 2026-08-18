@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.1
+// @version      2.6.2
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -44,7 +44,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     // ERP 系统地址
     const ERP_URL = 'http://localhost:5173';
-    const API_BASE = 'https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/competitor';
+    const API_BASE = 'https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/api/competitor';
 
     // 拦截到的价格数据（TikTok SSR 响应）
     let interceptedPriceData = null;
