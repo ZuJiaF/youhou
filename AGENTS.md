@@ -21,10 +21,11 @@
 - 云函数目录：`uniCloud-alipay/cloudfunctions/`
 - 数据库 Schema 目录：`uniCloud-alipay/database/`
 - Bigseller 换货相关：
-  - 云函数：`uniCloud-alipay/cloudfunctions/bigsellerSwap/index.obj.js`
+  - 云对象：`uniCloud-alipay/cloudfunctions/bigsellerSwap/index.obj.js`（旧地址兼容）
+  - HTTP 兼容代理：`uniCloud-alipay/cloudfunctions/bigsellerSwap-api/index.obj.js`（新地址转发）
   - 数据库集合：`bigseller-swap-record`
   - Schema：`uniCloud-alipay/database/bigseller-swap-record.schema.json`
-  - 接口基础 URL：`https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/bigsellerSwap`
+  - 接口基础 URL：`https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/api/bigsellerSwap`
   - 唯一键：`orderNo + rootSku`（`rootSku` 是平台原始 `varSku`，不随换货变化）
 
 ## 部署提醒
