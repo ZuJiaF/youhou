@@ -1,4 +1,4 @@
-//v0.6.0-beta.5
+//v0.6.0-beta.6
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
@@ -568,7 +568,12 @@ async function main() {
 
   await caigouSheetFuncPart2_2()//处理数量为0的行
 
+  // [debug][2026-08-25][main] 这里原本没有 await：huoWuQingDanFunc 是 async，
+  // 抛错会变成无人接管的 Promise rejection，被 AirScript 攒到最后报成 CrashError，
+  // 所以错误总是出现在"主函数执行完成"之后、且看不出行号。埋点期间先接住它。
+  console.log('[debug][2026-08-25][main] 即将调用 huoWuQingDanFunc')
   huoWuQingDanFunc()//货物清单专属线程 #货物清单分支 #生成货物清单生成 #huoWuQingDanFuncy
+  console.log('[debug][2026-08-25][main] huoWuQingDanFunc 调用返回（注意：未 await，内部错误可能还没浮出来）')
 
   await caigouSheetFuncPart2_3()//处理公式
 
@@ -640,18 +645,30 @@ function beforeRunCheck() {
 
 //货物清单专属线程 #货物清单f #货物清单函数 #huoWuQingDanFuncf #货物清单线程 #货物清单进程 #货物清单流程
 async function huoWuQingDanFunc() {
-  huoWuQingDanData = JSON.parse(JSON.stringify(caigoubiaoData)) //把采购表数据给一份给货物清单 #复制一份 #货物清单数据转移
+  // [debug][2026-08-25][huoWuQingDanFunc] 整条线程套 try/catch：
+  // 本函数在 main() 里没有 await，内部又没有真正的 await，抛错会变成无人接管的
+  // Promise rejection，AirScript 只在最后报一句 CrashError，看不出错在哪一行。
+  try {
+    console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段0 进入，caigoubiaoData列数:', caigoubiaoData ? caigoubiaoData.length : caigoubiaoData)
+    huoWuQingDanData = JSON.parse(JSON.stringify(caigoubiaoData)) //把采购表数据给一份给货物清单 #复制一份 #货物清单数据转移
+    console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段1 复制完成，各列[0][0]:', JSON.stringify(huoWuQingDanData.map(col => col && col[0] && col[0][0])))
 
-  huoWuQingDanFuncPart0_1()//清洗出货物清单需要的数据
+    huoWuQingDanFuncPart0_1()//清洗出货物清单需要的数据
+    console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段2 清洗完成，列数:', huoWuQingDanData.length, '各列[0][0]:', JSON.stringify(huoWuQingDanData.map(col => col && col[0] && col[0][0])))
 
-  //如果要求了隔品同行则执行
-  if (huoWuQingDanVer == "隔品隔行") {
-    const kuanShiItem = arrayObj.find(item => item.Name === "款式编码");
-    const kuanShiCodeColId = kuanShiItem ? kuanShiItem.ID : null;
-    huoWuQingDanNewVer(kuanShiCodeColId)//货物清单隔品空行处理
-  }
+    //如果要求了隔品同行则执行
+    if (huoWuQingDanVer == "隔品隔行") {
+      const kuanShiItem = arrayObj.find(item => item.Name === "款式编码");
+      const kuanShiCodeColId = kuanShiItem ? kuanShiItem.ID : null;
+      console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段3 隔品隔行分支，款式编码列ID:', kuanShiCodeColId)
+      huoWuQingDanNewVer(kuanShiCodeColId)//货物清单隔品空行处理
+      console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段4 隔行处理完成，行数:', huoWuQingDanData[0] ? huoWuQingDanData[0].length : null)
+    } else {
+      console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段3 跳过隔行处理，huoWuQingDanVer =', huoWuQingDanVer)
+    }
 
-  delHuoQingDanDuoYuLie()//删除货物清单多余列 #删除多余列
+    delHuoQingDanDuoYuLie()//删除货物清单多余列 #删除多余列
+    console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段5 删多余列完成，列数:', huoWuQingDanData.length)
 
   //把货物清单数据发送到后端云对象生成PDF
   let respGeneratePdf = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/wps/generatePdf', {
@@ -698,6 +715,18 @@ async function huoWuQingDanFunc() {
   } else {
     console.log("【调试-无数量版】后端未返回result！完整响应:", JSON.stringify(generatePdfEmptyResult))
   }
+    console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段6 全部完成')
+  } catch (err) {
+    // [debug][2026-08-25] 把原本丢失的报错原样打出来，附带出错时的数据形状
+    console.log('[debug][2026-08-25][huoWuQingDanFunc] ❌ 抛错:', err && err.message ? err.message : String(err))
+    console.log('[debug][2026-08-25][huoWuQingDanFunc] ❌ 堆栈:', err && err.stack ? err.stack : '（无堆栈）')
+    try {
+      console.log('[debug][2026-08-25][huoWuQingDanFunc] ❌ 出错时列数:', huoWuQingDanData ? huoWuQingDanData.length : huoWuQingDanData)
+      console.log('[debug][2026-08-25][huoWuQingDanFunc] ❌ 出错时各列[0][0]:', JSON.stringify(huoWuQingDanData ? huoWuQingDanData.map(col => col && col[0] && col[0][0]) : null))
+    } catch (e2) {
+      console.log('[debug][2026-08-25][huoWuQingDanFunc] ❌ 连数据形状都读不出来:', String(e2))
+    }
+  }
 }
 
 //删除货物清单多余列 #货物清单删除多余列
@@ -736,6 +765,12 @@ function huoWuQingDanNewVer(kuanShiCodeColId1) {
   const foundX = huoWuQingDanData.findIndex(item =>
     item?.[0]?.[0] === kuanShiCodeColId1 // 使用可选链防止报错
   );
+
+  // [debug][2026-08-25][huoWuQingDanNewVer] foundX 为 -1 时下一行必炸（读 undefined 的 [2]）
+  console.log('[debug][2026-08-25][huoWuQingDanNewVer] 要找的列ID:', kuanShiCodeColId1, ' foundX:', foundX)
+  if (foundX === -1) {
+    console.log('[debug][2026-08-25][huoWuQingDanNewVer] ❌ 没找到款式编码列，现有各列[0][0]:', JSON.stringify(huoWuQingDanData.map(col => col && col[0] && col[0][0])))
+  }
 
   //console.log("635", foundX)
   //console.log("540", huoWuQingDanData)
@@ -780,6 +815,10 @@ function huoWuQingDanFuncPart0_1() {
     let targetID = e.ID
     const index = huoWuQingDanData.findIndex((x) => x[0][0] === targetID);
 
+    // [debug][2026-08-25][huoWuQingDanFuncPart0_1] 下面用的是 if (index)，判断有误：
+    // findIndex 找不到时返回 -1（真值 → 会进 if 并读 huoWuQingDanData[-1] 而抛错）；
+    // 命中第 0 列时返回 0（假值 → 反被当成"未找到"）。先埋点确认实际取到了什么。
+    console.log('[debug][2026-08-25][huoWuQingDanFuncPart0_1] targetID:', targetID, ' index:', index, ' 进if:', !!index)
 
     if (index) {
       //货物清单表头和合计 #货物清单标题 #货物清单格式
