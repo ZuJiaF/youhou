@@ -13,6 +13,10 @@
 // ==/UserScript==
 ```
 
+⚠️ **例外：`生成货物清单/` 不是油猴脚本**，它跑在 WPS AirScript 里，没有 UserScript 元数据。
+版本号写在 `生成货物清单.js` **第一行的注释**里，格式 `//vX.Y.Z` 或 `//vX.Y.Z-beta.N`。
+改它的版本号不要去找 `@version`，见下方「生成货物清单子项目」。
+
 ## 云端后端
 
 - **项目路径**：`C:\Users\Administrator\Desktop\聚树erp项目\聚树erp-支付宝云后端`
@@ -60,6 +64,28 @@ node encrypt.js "<脚本文件路径>"
 - 发行前先确认源码 `@version` 已更新为本次新版本，否则产物带的是旧版号，油猴不会提示更新
 - 产物体积 400KB+ 且不可读，**不要 cat 整个文件**，只校验头部版本号和 `node --check`
 - 本项目习惯把 `正式版-*` 一起提交入库（见 git 历史）
+
+## 生成货物清单子项目（WPS AirScript，不是油猴脚本）
+
+2026-08-25 用 `git subtree` 从独立仓库 `wpsJs`（`https://github.com/ZuJiaF/wpsJs.git`）并入，
+源仓库的提交历史已一并保留在本仓库里。
+
+- **目录**：`生成货物清单/`
+- **运行环境**：WPS AirScript 2.0（金山表格里的脚本环境），提供 `Application`、`ActiveWorkbook`、
+  `HTTP`、`KSDrive`、`xlCenter`、`RGB()` 等全局对象 —— **不是 Node.js，也不是浏览器**，
+  所以既不能用 `require`，也没有 `document` / `window` / `GM_*`
+- **主脚本**：`生成货物清单/生成货物清单.js`，从「功能表」读数据，生成「采购表」并写入远端目标工作簿
+- **版本号**：文件第一行 `//vX.Y.Z`，进 beta 用 `//vX.Y.Z-beta.N`（当前 `v0.6.0-beta.7`）
+- **不参与加密发行**：`node encrypt.js` 只针对油猴脚本，AirScript 是贴进 WPS 网页里跑的，不要混淆它
+- **详细约定**（数据结构 `huoWuQingDanData` 的列式布局、`arrayObj` 等关键变量、列 ID 查找方式）
+  见 `生成货物清单/CLAUDE.md`
+
+货物清单 PDF **不是脚本自己画的**，是把数据 POST 给云端云对象生成：
+
+- 云对象：`聚树erp-支付宝云后端/uniCloud-alipay/cloudfunctions/wps/index.obj.js`
+- 接口地址：`https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/api/wps/generatePdf`
+  （2026-08-25 已从旧地址 `/wps/generatePdf` 切到 `/api` 前缀，修 CrashError）
+- 后端用 `pdfkit` + 思源黑体排版，传云存储后返回临时下载链接
 
 ## 接口文档维护配置
 
