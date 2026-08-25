@@ -1,4 +1,4 @@
-//v0.6.0-beta.6
+//v0.6.0-beta.7
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
 /********************************动之前记得备份********************************/
@@ -571,9 +571,7 @@ async function main() {
   // [debug][2026-08-25][main] 这里原本没有 await：huoWuQingDanFunc 是 async，
   // 抛错会变成无人接管的 Promise rejection，被 AirScript 攒到最后报成 CrashError，
   // 所以错误总是出现在"主函数执行完成"之后、且看不出行号。埋点期间先接住它。
-  console.log('[debug][2026-08-25][main] 即将调用 huoWuQingDanFunc')
-  huoWuQingDanFunc()//货物清单专属线程 #货物清单分支 #生成货物清单生成 #huoWuQingDanFuncy
-  console.log('[debug][2026-08-25][main] huoWuQingDanFunc 调用返回（注意：未 await，内部错误可能还没浮出来）')
+  await huoWuQingDanFunc()//货物清单专属线程 #货物清单分支 #生成货物清单生成 #huoWuQingDanFuncy
 
   await caigouSheetFuncPart2_3()//处理公式
 
@@ -671,13 +669,15 @@ async function huoWuQingDanFunc() {
     console.log('[debug][2026-08-25][huoWuQingDanFunc] 阶段5 删多余列完成，列数:', huoWuQingDanData.length)
 
   //把货物清单数据发送到后端云对象生成PDF
-  let respGeneratePdf = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/wps/generatePdf', {
+  // 2026-08-25：后端 wps 云对象的 HTTP 访问路径已改为 /api/wps，
+  // 老地址 /wps 没有路由，网关回 HTML 404 页，.json() 会抛 Unexpected token '<'
+  let respGeneratePdf = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/api/wps/generatePdf', {
     "huoWuQingDanData": huoWuQingDanData,
     "qiShu": qiShu21,
     "guoJia": guoJia,
     "postMothod": postMothod26
   })
-  let generatePdfResult = respGeneratePdf.json()
+  let generatePdfResult = safeJson(respGeneratePdf, '正常版')
   console.log("后端generatePdf返回:", JSON.stringify(generatePdfResult))
   if (generatePdfResult.result) {
     pdfLink = generatePdfResult.result
@@ -699,13 +699,13 @@ async function huoWuQingDanFunc() {
   } else {
     console.log("【调试-无数量版】未找到ID007列！")
   }
-  let respGeneratePdfEmpty = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/wps/generatePdf', {
+  let respGeneratePdfEmpty = HTTP.post('https://env-00jy671a213o.dev-hz.cloudbasefunction.cn/api/wps/generatePdf', {
     "huoWuQingDanData": huoWuQingDanDataEmpty,
     "qiShu": qiShu21 + "(无数量)",
     "guoJia": guoJia,
     "postMothod": postMothod26
   })
-  let generatePdfEmptyResult = respGeneratePdfEmpty.json()
+  let generatePdfEmptyResult = safeJson(respGeneratePdfEmpty, '无数量版')
   console.log("后端generatePdf(无数量版)返回:", JSON.stringify(generatePdfEmptyResult))
   if (generatePdfEmptyResult.result) {
     pdfLinkEmpty = generatePdfEmptyResult.result
@@ -726,6 +726,25 @@ async function huoWuQingDanFunc() {
     } catch (e2) {
       console.log('[debug][2026-08-25][huoWuQingDanFunc] ❌ 连数据形状都读不出来:', String(e2))
     }
+  }
+}
+
+//安全解析后端返回 #safeJson #兜底解析
+//后端地址改动、网关 404、服务报错时返回的都是 HTML 页面，直接 .json() 会抛
+//"Unexpected token '<'"，看不出是地址错还是数据错。这里把它翻译成看得懂的提示。
+function safeJson(resp, biaoQian) {
+  try {
+    return resp.json()
+  } catch (err) {
+    let yuanWen = ''
+    try {
+      yuanWen = String(resp.text ? resp.text() : '').slice(0, 300)
+    } catch (e) {
+      yuanWen = '（连原文都读不出来）'
+    }
+    console.log(`❌ ${biaoQian}：后端没返回JSON，大概率是接口地址不对或服务报错了。`)
+    console.log(`❌ ${biaoQian}：返回内容开头 →`, yuanWen)
+    throw new Error(`${biaoQian} 接口返回的不是JSON（检查地址是否为 /api/wps/generatePdf）`)
   }
 }
 
@@ -818,9 +837,11 @@ function huoWuQingDanFuncPart0_1() {
     // [debug][2026-08-25][huoWuQingDanFuncPart0_1] 下面用的是 if (index)，判断有误：
     // findIndex 找不到时返回 -1（真值 → 会进 if 并读 huoWuQingDanData[-1] 而抛错）；
     // 命中第 0 列时返回 0（假值 → 反被当成"未找到"）。先埋点确认实际取到了什么。
-    console.log('[debug][2026-08-25][huoWuQingDanFuncPart0_1] targetID:', targetID, ' index:', index, ' 进if:', !!index)
+    console.log('[debug][2026-08-25][huoWuQingDanFuncPart0_1] targetID:', targetID, ' index:', index)
 
-    if (index) {
+    // 2026-08-25 修：原本写的是 if (index)，findIndex 命中第 0 列时返回 0（假值）
+    // 会被误判成"未找到"而丢掉该列；找不到时返回 -1（真值）反而会进来读 [-1] 抛错。
+    if (index !== -1) {
       //货物清单表头和合计 #货物清单标题 #货物清单格式
       if (targetID == "ID002") {
         //console.log("huoWuQingDanData[index][0][0]", huoWuQingDanData[index][0][0])
