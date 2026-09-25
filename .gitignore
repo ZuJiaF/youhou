@@ -1,2 +1,11 @@
 # Dependencies are restored from package-lock.json.
 node_modules/
+
+# Codex / bridge 本机运行状态与日志
+.bridge-*
+.directory-bridge.*
+.gpt-bridge.lock
+.gpt-desktop-archive-state.json
+bridge.log
+directory-bridge.log
+gpt-bridge.log

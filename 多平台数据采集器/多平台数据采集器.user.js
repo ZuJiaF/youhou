@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.2
+// @version      2.6.3
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -168,9 +168,81 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     }
 
     // 从 SSR JSON 中递归查找价格字段
+    // 兼容旧版 promotion_product_price 和新版 product_info.price / skus[*].price
     // 真实卖家定价 = origin_price_format - seller_subtotal_deduction
     function findPriceInSSR(obj) {
         if (!obj || typeof obj !== 'object') return null;
+
+        // TikTok 新版响应把商品价格放在 product_info.price，SKU 价格放在 skus[*].price。
+        // 优先使用汇总字段，拿不到汇总时再从 SKU 价格中计算区间。
+        if (obj.price && typeof obj.price === 'object') {
+            const priceNode = obj.price;
+            const summaryPrices = [
+                priceNode.min_sku_price,
+                priceNode.max_sku_price
+            ].map(value => parseFloat(String(value || '').replace(/[^0-9.-]/g, '')))
+                .filter(value => !isNaN(value));
+
+            if (summaryPrices.length > 0 || priceNode.real_price) {
+                const prices = summaryPrices.length > 0
+                    ? summaryPrices
+                    : [parseFloat(String(priceNode.real_price).replace(/[^0-9.-]/g, ''))];
+                const validPrices = prices.filter(value => !isNaN(value));
+                if (validPrices.length > 0) {
+                    const minReal = Math.min(...validPrices);
+                    const maxReal = Math.max(...validPrices);
+                    _debug('命中新版 product_info.price，字段: ' + Object.keys(priceNode).join(', '));
+                    _debug('新版价格区间: ' + minReal.toFixed(2) + ' - ' + maxReal.toFixed(2));
+                    return {
+                        rangePrice: minReal === maxReal
+                            ? minReal.toFixed(2)
+                            : minReal.toFixed(2) + ' - ' + maxReal.toFixed(2),
+                        originRangePrice: priceNode.original_price || null,
+                        minRealPrice: minReal,
+                        maxRealPrice: maxReal
+                    };
+                }
+            }
+
+            const salePrice = parseFloat(String(
+                priceNode.sale_price_format || priceNode.sale_price_decimal || ''
+            ).replace(/[^0-9.-]/g, ''));
+            if (!isNaN(salePrice)) {
+                _debug('命中新版 SKU price，售价: ' + salePrice.toFixed(2));
+                return {
+                    rangePrice: salePrice.toFixed(2),
+                    originRangePrice: priceNode.origin_price_format || null,
+                    minRealPrice: salePrice,
+                    maxRealPrice: salePrice
+                };
+            }
+        }
+
+        // 新版响应没有价格汇总时，从同一 product_info 节点下的 SKU 价格计算区间。
+        if (Array.isArray(obj.skus) && obj.skus.length > 0) {
+            const skuPrices = obj.skus.map(sku => {
+                const priceNode = sku && sku.price;
+                if (!priceNode || typeof priceNode !== 'object') return NaN;
+                return parseFloat(String(
+                    priceNode.sale_price_format || priceNode.sale_price_decimal || ''
+                ).replace(/[^0-9.-]/g, ''));
+            }).filter(value => !isNaN(value));
+
+            if (skuPrices.length > 0) {
+                const minReal = Math.min(...skuPrices);
+                const maxReal = Math.max(...skuPrices);
+                _debug('命中新版 skus[*].price，SKU数量: ' + skuPrices.length);
+                _debug('SKU价格区间: ' + minReal.toFixed(2) + ' - ' + maxReal.toFixed(2));
+                return {
+                    rangePrice: minReal === maxReal
+                        ? minReal.toFixed(2)
+                        : minReal.toFixed(2) + ' - ' + maxReal.toFixed(2),
+                    originRangePrice: null,
+                    minRealPrice: minReal,
+                    maxRealPrice: maxReal
+                };
+            }
+        }
 
         // 查找 promotion_product_price 节点
         if (obj.promotion_product_price) {

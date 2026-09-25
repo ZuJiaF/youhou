@@ -50,7 +50,45 @@ Referer: https://www.tiktok.com/shop/{region}/pdp/{product_id}?region={REGION}
 
 ### 价格相关字段路径
 
-价格数据位于：`route_info` > ... > `promotion_model` > `promotion_product_price`
+当前响应同时存在两种结构：
+
+- 新版：`page_config.components_map[3].component_data.product_info.price`，SKU 明细在同一节点的 `skus[*].price`
+- 旧版：`route_info` > ... > `promotion_model` > `promotion_product_price`
+
+采集器需要优先读取新版结构，并保留旧版兼容逻辑。
+
+#### 新版商品价格汇总结构
+
+```json
+{
+  "is_interval_price": true,
+  "real_price": "฿31.42",
+  "original_price": "฿33.00",
+  "currency": "THB",
+  "currency_symbol": "฿",
+  "min_sku_price": "31.42",
+  "max_sku_price": "170.48",
+  "min_sku_original_price": "33.00"
+}
+```
+
+其中 `min_sku_price` 和 `max_sku_price` 是商品全部 SKU 的售价区间；当前采集器将它们作为价格区间写入每日数据。
+
+#### 新版 SKU 价格结构
+
+```json
+{
+  "sale_price_format": "31.42",
+  "origin_price_format": "33.00",
+  "discount_format": "5%",
+  "currency_symbol": "฿",
+  "sale_price_decimal": "31.42",
+  "origin_price_decimal": "33",
+  "currency_name": "THB"
+}
+```
+
+当新版汇总字段缺失时，采集器遍历 `skus[*].price.sale_price_format` 计算最低价和最高价。
 
 #### promotion_product_price 结构
 
