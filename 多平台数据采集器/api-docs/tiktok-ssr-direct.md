@@ -74,6 +74,22 @@ Referer: https://www.tiktok.com/shop/{region}/pdp/{product_id}?region={REGION}
 
 其中 `min_sku_price` 和 `max_sku_price` 是商品全部 SKU 的售价区间；当前采集器将它们作为价格区间写入每日数据。
 
+#### 真实样本：商品 `1731362511717304603`
+
+本次提供的泰国站响应中，商品价格节点为：
+
+```json
+{
+  "real_price": "฿39.00",
+  "min_sku_price": "39.00",
+  "max_sku_price": "247.00",
+  "original_price": "฿262.97",
+  "discount": "最多可省 86% 元"
+}
+```
+
+该响应中未出现 `44.36`、`280.94`，也没有统一的优惠券扣减金额字段；SKU 的 `discount_format` 会按规格变化，不能用一个固定金额代替。若把 `39.00–247.00` 与 ERP 中的 `44.36–280.94` 对照，两端都约为原值乘以 `1.1374`，因此这组差异更像采集链路之外的统一加价/换算，而不是响应中的优惠券扣减。
+
 #### 新版 SKU 价格结构
 
 ```json
