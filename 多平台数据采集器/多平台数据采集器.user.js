@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.3
+// @version      2.6.4
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -27,6 +27,20 @@ function _debug(msg) {
         const el = document.getElementById('tiktok-debug-area');
         if (el) el.textContent = _debugLogs.slice(-5).join('\n');
     } catch(e) {}
+}
+
+// [debug][2026-09-26] 记录价格链路关键节点，只输出价格字段和商品编号，不输出完整响应、Cookie 或令牌
+function _debugPricePoint(stage, data) {
+    try {
+        _debug('[debug][2026-09-26][' + stage + '] ' + JSON.stringify(data));
+    } catch (e) {
+        _debug('[debug][2026-09-26][' + stage + '] 结构化日志序列化失败: ' + e.message);
+    }
+}
+
+function _getCurrentTikTokProductId() {
+    const match = window.location.pathname.match(/\/pdp\/(\d+)/);
+    return match ? match[1] : '';
 }
 
 _debug('脚本开始执行, URL: ' + window.location.href);
@@ -79,6 +93,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                                 }
                                 _debug('顶层key: ' + Object.keys(json).slice(0, 5).join(','));
                                 const priceInfo = findPriceInSSR(json);
+                                _debugPricePoint('SSR响应解析完成', {
+                                    product_id: _getCurrentTikTokProductId(),
+                                    parsed_price: priceInfo ? priceInfo.rangePrice : null,
+                                    parser_source: priceInfo ? priceInfo.source : null
+                                });
                                 _debug('价格结果: ' + JSON.stringify(priceInfo));
                                 if (priceInfo) {
                                     interceptedPriceData = priceInfo;
@@ -119,6 +138,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                             json = JSON.parse(decoded);
                         }
                         const priceInfo = findPriceInSSR(json);
+                        _debugPricePoint('XHR响应解析完成', {
+                            product_id: _getCurrentTikTokProductId(),
+                            parsed_price: priceInfo ? priceInfo.rangePrice : null,
+                            parser_source: priceInfo ? priceInfo.source : null
+                        });
                         _debug('XHR 价格结果: ' + JSON.stringify(priceInfo));
                         if (priceInfo) {
                             interceptedPriceData = priceInfo;
@@ -153,6 +177,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                         json = JSON.parse(atob(cleaned));
                     }
                     const priceInfo = findPriceInSSR(json);
+                    _debugPricePoint('主动SSR响应解析完成', {
+                        product_id: _getCurrentTikTokProductId(),
+                        parsed_price: priceInfo ? priceInfo.rangePrice : null,
+                        parser_source: priceInfo ? priceInfo.source : null
+                    });
                     _debug('主动请求价格结果: ' + JSON.stringify(priceInfo));
                     if (priceInfo) {
                         interceptedPriceData = priceInfo;
@@ -191,6 +220,17 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 if (validPrices.length > 0) {
                     const minReal = Math.min(...validPrices);
                     const maxReal = Math.max(...validPrices);
+                    _debugPricePoint('命中商品价格汇总', {
+                        product_id: _getCurrentTikTokProductId(),
+                        real_price: priceNode.real_price || null,
+                        min_sku_price: priceNode.min_sku_price || null,
+                        max_sku_price: priceNode.max_sku_price || null,
+                        original_price: priceNode.original_price || null,
+                        discount: priceNode.discount || null,
+                        calculated_range: minReal.toFixed(2) + ' - ' + maxReal.toFixed(2),
+                        has_skus: Array.isArray(obj.skus),
+                        sku_count: Array.isArray(obj.skus) ? obj.skus.length : 0
+                    });
                     _debug('命中新版 product_info.price，字段: ' + Object.keys(priceNode).join(', '));
                     _debug('新版价格区间: ' + minReal.toFixed(2) + ' - ' + maxReal.toFixed(2));
                     return {
@@ -199,7 +239,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                             : minReal.toFixed(2) + ' - ' + maxReal.toFixed(2),
                         originRangePrice: priceNode.original_price || null,
                         minRealPrice: minReal,
-                        maxRealPrice: maxReal
+                        maxRealPrice: maxReal,
+                        source: 'product_info.price.min_sku_price/max_sku_price'
                     };
                 }
             }
@@ -231,6 +272,14 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             if (skuPrices.length > 0) {
                 const minReal = Math.min(...skuPrices);
                 const maxReal = Math.max(...skuPrices);
+                _debugPricePoint('命中SKU价格区间', {
+                    product_id: _getCurrentTikTokProductId(),
+                    sku_count: skuPrices.length,
+                    min_sku_price: minReal,
+                    max_sku_price: maxReal,
+                    first_sku_price: skuPrices[0],
+                    last_sku_price: skuPrices[skuPrices.length - 1]
+                });
                 _debug('命中新版 skus[*].price，SKU数量: ' + skuPrices.length);
                 _debug('SKU价格区间: ' + minReal.toFixed(2) + ' - ' + maxReal.toFixed(2));
                 return {
@@ -239,7 +288,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                         : minReal.toFixed(2) + ' - ' + maxReal.toFixed(2),
                     originRangePrice: null,
                     minRealPrice: minReal,
-                    maxRealPrice: maxReal
+                    maxRealPrice: maxReal,
+                    source: 'product_info.skus[*].price.sale_price_format'
                 };
             }
         }
@@ -1364,6 +1414,14 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 _debug('发送时 interceptedPriceData: ' + JSON.stringify(interceptedPriceData));
                 if (interceptedPriceData) {
                     dailyPayload.price_range = interceptedPriceData.rangePrice || '';
+                    _debugPricePoint('提交ERP前价格确认', {
+                        product_id: _getCurrentTikTokProductId(),
+                        parser_source: interceptedPriceData.source || null,
+                        parsed_min: interceptedPriceData.minRealPrice,
+                        parsed_max: interceptedPriceData.maxRealPrice,
+                        final_price_range: dailyPayload.price_range,
+                        api_method: 'addDailyData'
+                    });
                     _debug('添加 price_range: ' + dailyPayload.price_range);
                 } else {
                     _debug('⚠️ interceptedPriceData 为空，price_range 未添加');
