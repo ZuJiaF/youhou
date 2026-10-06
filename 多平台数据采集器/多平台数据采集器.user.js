@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.6
+// @version      2.6.7
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -1295,10 +1295,10 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 console.log('[debug][2026-10-06][extractShopeeData] MY统计探测: ' + JSON.stringify({
                     productRootFound: !!productRoot,
                     shopRootFound: !!shopRoot,
-                    review: reviewStat?.text || null,
-                    favorite: favoriteStat?.text || null,
-                    sold: soldStat?.text || null,
-                    shopRating: shopRatingStat?.text || null,
+                    review: reviewStat ? reviewStat.text : null,
+                    favorite: favoriteStat ? favoriteStat.text : null,
+                    sold: soldStat ? soldStat.text : null,
+                    shopRating: shopRatingStat ? shopRatingStat.text : null,
                     productCandidates: getShopeeStatSamples(productRoot),
                     shopCandidates: getShopeeStatSamples(shopRoot),
                     result: { soldCount, reviewCount, productRating, likes, shopReviewCount }
@@ -1323,7 +1323,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     function findShopeeLabeledStat(root, labelPattern) {
         if (!root) return null;
         // 先读可点击统计项，再读短文本元素；长容器容易把不同统计数字混在一起。
-        const candidates = [...root.querySelectorAll('button, a, [role="button"], span, div')]
+        const candidates = Array.from(root.querySelectorAll('button, a, [role="button"], span, div'))
             .map(element => ({ element, text: element.textContent.replace(/\s+/g, ' ').trim() }))
             .filter(item => item.text.length <= 60 && labelPattern.test(item.text));
         candidates.sort((a, b) => a.text.length - b.text.length);
@@ -1338,17 +1338,17 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     function getShopeeStatSamples(root) {
         if (!root) return [];
-        const texts = [...root.querySelectorAll('button, a, [role="button"], span, div')]
+        const texts = Array.from(root.querySelectorAll('button, a, [role="button"], span, div'))
             .map(element => element.textContent.replace(/\s+/g, ' ').trim())
             .filter(text => text.length <= 60 && /\b(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\b/i.test(text));
-        return [...new Set(texts)].slice(0, 12);
+        return Array.from(new Set(texts)).slice(0, 12);
     }
 
     function findShopeeRatingNear(reviewElement) {
         // 评分与「Ratings」通常同处商品标题下的一行，限定邻近范围以免混入下方评论。
         let container = reviewElement;
         for (let depth = 0; depth < 3 && container; depth++, container = container.parentElement) {
-            const scores = [...container.querySelectorAll('button, span, div')]
+            const scores = Array.from(container.querySelectorAll('button, span, div'))
                 .filter(element => element.children.length === 0)
                 .map(element => element.textContent.trim())
                 .filter(text => /^[0-5](?:\.\d{1,2})?$/.test(text))
