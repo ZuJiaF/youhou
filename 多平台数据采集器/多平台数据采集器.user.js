@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.10
+// @version      2.6.11
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -747,17 +747,21 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         if (debugEl && _debugLogs.length) debugEl.textContent = _debugLogs.slice(-5).join('\n');
 
         // 初始自动刷新预览（等页面渲染稳定后再采集）
-        setTimeout(refreshPreview, 1500);
         if (PLATFORM === 'sp' && window.location.hostname === 'shopee.com.my' && getProductInfo().productId) {
             const pageUrl = window.location.href;
-            startShopeeTimingProbe();
-            // 马来站商品统计会在首屏之后继续填充；静默重读，避免预览永久停在「No ratings yet」。
+            const previewReady = startShopeePreviewWatch();
+            setTimeout(() => {
+                if (window.location.href === pageUrl && !previewReady()) refreshPreview();
+            }, 1500);
+            // 数值变化时立即补读；固定时点只为不同页面结构兜底，五项齐全后跳过。
             [4500, 9000, 16000].forEach(delay => setTimeout(() => {
-                if (window.location.href !== pageUrl) return;
+                if (window.location.href !== pageUrl || previewReady()) return;
                 logShopeeTiming('定时补读触发', { scheduledDelayMs: delay });
                 const data = extractData();
                 renderPreview(data);
             }, delay));
+        } else {
+            setTimeout(refreshPreview, 1500);
         }
     }
 
@@ -1000,7 +1004,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         });
     }
 
-    // [debug][2026-10-06][ShopeeMYTiming] 对照网页填值和预览更新时间；仅观察，不触发采集或发送。
+    // [debug-done][2026-10-06] 日志确认：网页 3111ms 填齐，固定补读到 4922ms 才展示。
+    // [debug][2026-10-06][ShopeeMYTiming] 保留更新时间日志，核对新补读逻辑的实际等待。
     function logShopeeTiming(stage, data) {
         if (PLATFORM !== 'sp' || window.location.hostname !== 'shopee.com.my' || !getProductInfo().productId) return;
         console.log('[debug][2026-10-06][ShopeeMYTiming] ' + JSON.stringify({
@@ -1008,7 +1013,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         }));
     }
 
-    function startShopeeTimingProbe() {
+    function startShopeePreviewWatch() {
         const pageUrl = window.location.href;
         const probeStartedAt = Date.now();
         const paths = {
@@ -1019,8 +1024,10 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             shopReviewCount: '//*[@id="sll2-pdp-product-shop"]/section/div/div[2]/div[1]/span'
         };
         let previousSnapshot = '';
+        let complete = false;
         let timer;
         function sample() {
+            if (complete) return;
             if (window.location.href !== pageUrl || Date.now() - probeStartedAt >= 20000) {
                 clearInterval(timer);
                 logShopeeTiming('网页观察结束', { reason: window.location.href !== pageUrl ? '页面已切换' : '已观察20秒' });
@@ -1035,11 +1042,20 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             if (snapshot !== previousSnapshot) {
                 previousSnapshot = snapshot;
                 logShopeeTiming('网页原文变化', raw);
+                const data = extractData();
+                const values = [data.soldCount, data.productRating, data.reviewCount, data.likes, data.shopReviewCount];
+                if (values.some(value => value !== null && value !== undefined)) renderPreview(data);
+                if (values.every(value => value !== null && value !== undefined)) {
+                    complete = true;
+                    clearInterval(timer);
+                    logShopeeTiming('五项已齐，停止自动补读', {});
+                }
             }
         }
-        // 250 毫秒检查一次，只有文字变化才输出；20 秒后停止，避免商品视频导致持续刷日志。
+        // 250 毫秒检查一次，只在文字变化时采集；五项齐全或20秒后停止，不发送到 ERP。
         timer = setInterval(sample, 250);
         sample();
+        return () => complete;
     }
 
     // 显示错误
