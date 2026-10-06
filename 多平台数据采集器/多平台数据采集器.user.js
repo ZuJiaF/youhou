@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.8
+// @version      2.6.9
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -1298,8 +1298,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 }
                 if (favoriteStat) likes = favoriteStat.count;
                 if (soldStat) soldCount = soldStat.count;
-                // 店铺原 XPath 在马来站可能命中其他数字；只有确认标签后才使用该值。
-                shopReviewCount = shopRatingStat ? shopRatingStat.count : null;
+                // MY 实测：加载后原 XPath 已读到 94.9k，标签补读为空时应保留该结果。
+                // 刚加载时原位置曾返回临时 0；没有标签确认的 0 仍按未采集处理。
+                const shopReviewXPathCount = shopReviewCount;
+                shopReviewCount = shopRatingStat ? shopRatingStat.count :
+                                  (shopReviewXPathCount > 0 ? shopReviewXPathCount : null);
 
                 // [debug][2026-10-06][extractShopeeData] 序列化日志，复制控制台时不会丢失折叠对象的内容。
                 console.log('[debug][2026-10-06][extractShopeeData] MY统计探测: ' + JSON.stringify({
@@ -1309,6 +1312,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                     favorite: favoriteStat ? favoriteStat.text : null,
                     sold: soldStat ? soldStat.text : null,
                     shopRating: shopRatingStat ? shopRatingStat.text : null,
+                    shopReviewXPathText: shopReviewEl ? shopReviewEl.textContent.trim() : null,
+                    shopReviewXPathCount,
                     productCandidates: getShopeeStatSamples(productRoot),
                     shopCandidates: getShopeeStatSamples(shopRoot),
                     globalFavoriteCandidates: getShopeeStatSamples(document).filter(text => /\b(?:Favourites?|Favorites?|Likes?)\b/i.test(text)).slice(0, 8),
