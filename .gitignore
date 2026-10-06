@@ -6,6 +6,8 @@ node_modules/
 .directory-bridge.*
 .gpt-bridge.lock
 .gpt-desktop-archive-state.json
+.gpt-throttle.json
+.gpt-titled-sessions.json
 bridge.log
 directory-bridge.log
 gpt-bridge.log

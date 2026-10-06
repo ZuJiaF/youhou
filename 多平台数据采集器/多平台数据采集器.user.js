@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.4
+// @version      2.6.5
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -1012,8 +1012,9 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             const region = urlParams.get('region') || 'TH';
             return { productId, shopId: null, region };
         } else {
-            // Shopee: /product/{shop_id}/{product_id}
-            const match = url.match(/\/product\/(\d+)\/(\d+)/);
+            // Shopee 同时使用 /product/{shop_id}/{product_id} 和商品标题-i.{shop_id}.{product_id}
+            const match = url.match(/\/product\/(\d+)\/(\d+)/) ||
+                          url.match(/-i\.(\d+)\.(\d+)(?:[/?#]|$)/);
             const shopId = match ? match[1] : null;
             const productId = match ? match[2] : null;
             // 从域名判断国家
@@ -1271,6 +1272,37 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 console.warn('[Shopee采集器] ⚠️ 未找到店铺评价数元素');
             }
 
+            // 马来站商品头部与泰国站的 section 层级不同；按可见标签补读，避免 XPath 读到空位。
+            if (window.location.hostname === 'shopee.com.my') {
+                const productRoot = document.getElementById('sll2-normal-pdp-main');
+                const shopRoot = document.getElementById('sll2-pdp-product-shop');
+                const reviewStat = findShopeeLabeledStat(productRoot, /\b(?:Ratings?|Reviews?)\b/i);
+                const favoriteStat = findShopeeLabeledStat(productRoot, /\b(?:Favourites?|Favorites?|Likes?)\b/i);
+                const soldStat = findShopeeLabeledStat(productRoot, /\bSold\b/i);
+                const shopRatingStat = findShopeeLabeledStat(shopRoot, /\b(?:Ratings?|Reviews?)\b/i);
+
+                if (reviewStat) {
+                    reviewCount = reviewStat.count;
+                    const nearbyRating = findShopeeRatingNear(reviewStat.element);
+                    if (nearbyRating !== null) productRating = nearbyRating;
+                }
+                if (favoriteStat) likes = favoriteStat.count;
+                if (soldStat) soldCount = soldStat.count;
+                // 店铺原 XPath 在马来站可能命中其他数字；只有确认标签后才使用该值。
+                shopReviewCount = shopRatingStat ? shopRatingStat.count : null;
+
+                // [debug][2026-10-06][extractShopeeData] 只记录公开的统计文本和解析值，便于核对 MY 页面结构。
+                console.log('[debug][2026-10-06][extractShopeeData] MY统计探测:', {
+                    productRootFound: !!productRoot,
+                    shopRootFound: !!shopRoot,
+                    review: reviewStat?.text || null,
+                    favorite: favoriteStat?.text || null,
+                    sold: soldStat?.text || null,
+                    shopRating: shopRatingStat?.text || null,
+                    result: { soldCount, reviewCount, productRating, likes, shopReviewCount }
+                });
+            }
+
             console.log('[Shopee采集器] ========== 数据提取完成 ==========');
             console.log('[Shopee采集器] 最终结果:', {
                 soldCount,
@@ -1284,6 +1316,36 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         }
 
         return { soldCount, reviewCount, globalReviewCount: null, productRating, likes, shopReviewCount };
+    }
+
+    function findShopeeLabeledStat(root, labelPattern) {
+        if (!root) return null;
+        // 先读可点击统计项，再读短文本元素；长容器容易把不同统计数字混在一起。
+        const candidates = [...root.querySelectorAll('button, a, [role="button"], span, div')]
+            .map(element => ({ element, text: element.textContent.replace(/\s+/g, ' ').trim() }))
+            .filter(item => item.text.length <= 60 && labelPattern.test(item.text));
+        candidates.sort((a, b) => a.text.length - b.text.length);
+        for (const item of candidates) {
+            const match = item.text.match(/([\d,.]+\s*[KkMm]?)\s*\+?\s*(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\b/i) ||
+                          item.text.match(/(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\s*:?\s*\(?\s*([\d,.]+\s*[KkMm]?)/i);
+            const count = match ? parseNumber(match[1]) : null;
+            if (count !== null) return { element: item.element, text: item.text, count };
+        }
+        return null;
+    }
+
+    function findShopeeRatingNear(reviewElement) {
+        // 评分与「Ratings」通常同处商品标题下的一行，限定邻近范围以免混入下方评论。
+        let container = reviewElement;
+        for (let depth = 0; depth < 3 && container; depth++, container = container.parentElement) {
+            const scores = [...container.querySelectorAll('button, span, div')]
+                .filter(element => element.children.length === 0)
+                .map(element => element.textContent.trim())
+                .filter(text => /^[0-5](?:\.\d{1,2})?$/.test(text))
+                .map(Number);
+            if (scores.length) return scores[0];
+        }
+        return null;
     }
 
     // 根据平台提取数据
