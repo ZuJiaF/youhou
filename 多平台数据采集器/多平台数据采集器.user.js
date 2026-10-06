@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.5
+// @version      2.6.6
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -1291,16 +1291,18 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 // 店铺原 XPath 在马来站可能命中其他数字；只有确认标签后才使用该值。
                 shopReviewCount = shopRatingStat ? shopRatingStat.count : null;
 
-                // [debug][2026-10-06][extractShopeeData] 只记录公开的统计文本和解析值，便于核对 MY 页面结构。
-                console.log('[debug][2026-10-06][extractShopeeData] MY统计探测:', {
+                // [debug][2026-10-06][extractShopeeData] 序列化日志，复制控制台时不会丢失折叠对象的内容。
+                console.log('[debug][2026-10-06][extractShopeeData] MY统计探测: ' + JSON.stringify({
                     productRootFound: !!productRoot,
                     shopRootFound: !!shopRoot,
                     review: reviewStat?.text || null,
                     favorite: favoriteStat?.text || null,
                     sold: soldStat?.text || null,
                     shopRating: shopRatingStat?.text || null,
+                    productCandidates: getShopeeStatSamples(productRoot),
+                    shopCandidates: getShopeeStatSamples(shopRoot),
                     result: { soldCount, reviewCount, productRating, likes, shopReviewCount }
-                });
+                }));
             }
 
             console.log('[Shopee采集器] ========== 数据提取完成 ==========');
@@ -1332,6 +1334,14 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             if (count !== null) return { element: item.element, text: item.text, count };
         }
         return null;
+    }
+
+    function getShopeeStatSamples(root) {
+        if (!root) return [];
+        const texts = [...root.querySelectorAll('button, a, [role="button"], span, div')]
+            .map(element => element.textContent.replace(/\s+/g, ' ').trim())
+            .filter(text => text.length <= 60 && /\b(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\b/i.test(text));
+        return [...new Set(texts)].slice(0, 12);
     }
 
     function findShopeeRatingNear(reviewElement) {
