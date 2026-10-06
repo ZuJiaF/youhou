@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.9
+// @version      2.6.10
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -54,6 +54,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     // 平台检测
     const PLATFORM = window.location.href.includes('tiktok.com') ? 'tk' : 'sp';
+    const shopeeTimingStartedAt = Date.now();
     console.log('[数据采集器] 当前平台:', PLATFORM);
 
     // ERP 系统地址
@@ -749,9 +750,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         setTimeout(refreshPreview, 1500);
         if (PLATFORM === 'sp' && window.location.hostname === 'shopee.com.my' && getProductInfo().productId) {
             const pageUrl = window.location.href;
+            startShopeeTimingProbe();
             // 马来站商品统计会在首屏之后继续填充；静默重读，避免预览永久停在「No ratings yet」。
             [4500, 9000, 16000].forEach(delay => setTimeout(() => {
                 if (window.location.href !== pageUrl) return;
+                logShopeeTiming('定时补读触发', { scheduledDelayMs: delay });
                 const data = extractData();
                 renderPreview(data);
             }, delay));
@@ -991,6 +994,52 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 : '❌ 页面数据未能读取，请确认页面已加载完成';
             hint.style.color = hasAny ? '#faad14' : '#ff4d4f';
         }
+        logShopeeTiming('预览已更新', {
+            soldCount: data.soldCount, productRating: data.productRating,
+            reviewCount: data.reviewCount, likes: data.likes, shopReviewCount: data.shopReviewCount
+        });
+    }
+
+    // [debug][2026-10-06][ShopeeMYTiming] 对照网页填值和预览更新时间；仅观察，不触发采集或发送。
+    function logShopeeTiming(stage, data) {
+        if (PLATFORM !== 'sp' || window.location.hostname !== 'shopee.com.my' || !getProductInfo().productId) return;
+        console.log('[debug][2026-10-06][ShopeeMYTiming] ' + JSON.stringify({
+            stage, elapsedMs: Date.now() - shopeeTimingStartedAt, data
+        }));
+    }
+
+    function startShopeeTimingProbe() {
+        const pageUrl = window.location.href;
+        const probeStartedAt = Date.now();
+        const paths = {
+            soldCount: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[2]/div/div[2]/div/div/span',
+            productRating: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[2]/div/div[2]/button[1]/div[1]',
+            reviewCount: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[2]/div/div[2]/button[2]/div[1]',
+            likes: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[1]/div[2]/div[2]/button/div',
+            shopReviewCount: '//*[@id="sll2-pdp-product-shop"]/section/div/div[2]/div[1]/span'
+        };
+        let previousSnapshot = '';
+        let timer;
+        function sample() {
+            if (window.location.href !== pageUrl || Date.now() - probeStartedAt >= 20000) {
+                clearInterval(timer);
+                logShopeeTiming('网页观察结束', { reason: window.location.href !== pageUrl ? '页面已切换' : '已观察20秒' });
+                return;
+            }
+            const raw = {};
+            Object.keys(paths).forEach(field => {
+                const element = getElementByXPath(paths[field]);
+                raw[field] = element ? element.textContent.trim().slice(0, 80) : null;
+            });
+            const snapshot = JSON.stringify(raw);
+            if (snapshot !== previousSnapshot) {
+                previousSnapshot = snapshot;
+                logShopeeTiming('网页原文变化', raw);
+            }
+        }
+        // 250 毫秒检查一次，只有文字变化才输出；20 秒后停止，避免商品视频导致持续刷日志。
+        timer = setInterval(sample, 250);
+        sample();
     }
 
     // 显示错误
@@ -1306,6 +1355,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
                 // [debug][2026-10-06][extractShopeeData] 序列化日志，复制控制台时不会丢失折叠对象的内容。
                 console.log('[debug][2026-10-06][extractShopeeData] MY统计探测: ' + JSON.stringify({
+                    elapsedMs: Date.now() - shopeeTimingStartedAt,
                     productRootFound: !!productRoot,
                     shopRootFound: !!shopRoot,
                     review: reviewStat ? reviewStat.text : null,
