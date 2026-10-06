@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.7
+// @version      2.6.8
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -747,6 +747,15 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
         // 初始自动刷新预览（等页面渲染稳定后再采集）
         setTimeout(refreshPreview, 1500);
+        if (PLATFORM === 'sp' && window.location.hostname === 'shopee.com.my' && getProductInfo().productId) {
+            const pageUrl = window.location.href;
+            // 马来站商品统计会在首屏之后继续填充；静默重读，避免预览永久停在「No ratings yet」。
+            [4500, 9000, 16000].forEach(delay => setTimeout(() => {
+                if (window.location.href !== pageUrl) return;
+                const data = extractData();
+                renderPreview(data);
+            }, delay));
+        }
     }
 
     // 折叠/展开面板
@@ -1277,7 +1286,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 const productRoot = document.getElementById('sll2-normal-pdp-main');
                 const shopRoot = document.getElementById('sll2-pdp-product-shop');
                 const reviewStat = findShopeeLabeledStat(productRoot, /\b(?:Ratings?|Reviews?)\b/i);
-                const favoriteStat = findShopeeLabeledStat(productRoot, /\b(?:Favourites?|Favorites?|Likes?)\b/i);
+                const favoriteStat = findShopeeLabeledStat(productRoot, /\b(?:Favourites?|Favorites?|Likes?)\b/i) ||
+                                     findShopeeLabeledStat(document, /\b(?:Favourites?|Favorites?|Likes?)\b/i);
                 const soldStat = findShopeeLabeledStat(productRoot, /\bSold\b/i);
                 const shopRatingStat = findShopeeLabeledStat(shopRoot, /\b(?:Ratings?|Reviews?)\b/i);
 
@@ -1301,6 +1311,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                     shopRating: shopRatingStat ? shopRatingStat.text : null,
                     productCandidates: getShopeeStatSamples(productRoot),
                     shopCandidates: getShopeeStatSamples(shopRoot),
+                    globalFavoriteCandidates: getShopeeStatSamples(document).filter(text => /\b(?:Favourites?|Favorites?|Likes?)\b/i.test(text)).slice(0, 8),
                     result: { soldCount, reviewCount, productRating, likes, shopReviewCount }
                 }));
             }
