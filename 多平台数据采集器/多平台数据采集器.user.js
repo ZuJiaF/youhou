@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.11
+// @version      2.6.14
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -54,7 +54,6 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     // 平台检测
     const PLATFORM = window.location.href.includes('tiktok.com') ? 'tk' : 'sp';
-    const shopeeTimingStartedAt = Date.now();
     console.log('[数据采集器] 当前平台:', PLATFORM);
 
     // ERP 系统地址
@@ -195,6 +194,202 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 _debug('主动请求失败: ' + e.message);
             });
         }, 3000);
+    }
+
+    // MY 实测商品售价单位为 1/100000 MYR；监听商品详情和主商品优惠接口，按商品编号取区间。
+    if (PLATFORM === 'sp') installShopeePriceProbe();
+
+    function logShopeePrice(stage, data) {
+        _debug('[debug][2026-10-06][ShopeePrice] ' + JSON.stringify({ stage, data }));
+    }
+
+    function getShopeePriceProbeTarget(requestUrl) {
+        try {
+            const url = new URL(requestUrl, window.location.href);
+            const product = getProductInfo();
+            if (!product.productId || url.origin !== window.location.origin ||
+                !['/api/v4/pdp/get_pc', '/api/v2/add_on_deal/get_main_item_info'].includes(url.pathname)) return null;
+            return { endpoint: url.pathname, productId: product.productId, shopId: product.shopId };
+        } catch (e) { return null; }
+    }
+
+    function collectShopeePriceEvidence(json, productId) {
+        const candidates = [];
+        const stack = [{ node: json, path: '$', depth: 0, matched: false, priceContext: false }];
+        const seen = new Set();
+        let visited = 0;
+        while (stack.length && visited < 3000 && candidates.length < 24) {
+            const current = stack.pop();
+            const node = current.node;
+            if (!node || typeof node !== 'object' || seen.has(node)) continue;
+            seen.add(node);
+            visited++;
+            const itemId = node.itemid != null ? node.itemid :
+                           (node.item_id != null ? node.item_id :
+                           (node.product_id != null ? node.product_id : node.productid));
+            // 推荐商品或上一个商品的响应不可混入当前商品；无编号的候选明确标为待确认。
+            if (itemId != null && String(itemId) !== String(productId)) continue;
+            const matched = current.matched || (itemId != null && String(itemId) === String(productId));
+            if (!Array.isArray(node)) {
+                const models = Array.isArray(node.models) ? node.models :
+                               (Array.isArray(node.skus) ? node.skus : null);
+                const fields = {};
+                Object.keys(node).forEach(key => {
+                    const value = node[key];
+                    if (/currency/i.test(key) && typeof value === 'string' && /^(?:[A-Z]{2,4}|RM|฿|\$)$/.test(value)) {
+                        fields[key] = value;
+                    } else if ((/price|amount/i.test(key) || (current.priceContext && /^(?:min|max|minimum|maximum|value)$/.test(key))) &&
+                               ((typeof value === 'number' && Number.isFinite(value)) ||
+                                (typeof value === 'string' && /^(?:(?:RM|MYR|THB|฿|\$)\s*)?[\d,.]+$/.test(value)))) {
+                        fields[key] = value;
+                    }
+                });
+                if (Object.keys(fields).length || models) {
+                    const candidate = { path: current.path, itemMatch: matched, fields };
+                    if (itemId != null) candidate.itemId = String(itemId);
+                    if (models) {
+                        candidate.modelCount = models.length;
+                        const prices = models.slice(0, 1000).map(model => model && model.price)
+                            .filter(price => typeof price === 'number' && Number.isFinite(price));
+                        if (prices.length) candidate.modelRawPrices = {
+                            count: prices.length, min: Math.min.apply(null, prices), max: Math.max.apply(null, prices),
+                            samples: prices.slice(0, 5), partial: models.length > 1000
+                        };
+                    }
+                    candidates.push(candidate);
+                }
+            }
+            if (current.depth >= 12) continue;
+            const keys = Object.keys(node).slice(0, 1000);
+            for (let i = keys.length - 1; i >= 0; i--) {
+                const key = keys[i];
+                if (node[key] && typeof node[key] === 'object') stack.push({
+                    node: node[key], path: current.path + '.' + key, depth: current.depth + 1, matched,
+                    priceContext: current.priceContext || /price/i.test(key)
+                });
+            }
+        }
+        return { candidates, visited, truncated: stack.length > 0 };
+    }
+
+    function installShopeePriceProbe() {
+        const reported = new Set();
+        function inspect(json, target, transport, status) {
+            if (getProductInfo().productId !== target.productId) return;
+            const price = findShopeePriceRange(json, target);
+            // [debug-done][2026-10-06] 由这组探测确认 MY 币种、100000 倍单位和全部11个规格售价。
+            // const evidence = collectShopeePriceEvidence(json, target.productId);
+            // logShopeePrice('商品响应价格候选', { endpoint: target.endpoint, candidates: evidence.candidates });
+            const signature = target.endpoint + JSON.stringify(price);
+            if (reported.has(signature) || reported.size >= 30) return;
+            reported.add(signature);
+            if (price) {
+                interceptedPriceData = price;
+                updatePricePreview();
+            }
+            logShopeePrice(price ? '价格区间已读取' : '未找到匹配商品的有效价格', {
+                endpoint: target.endpoint, productId: target.productId, shopId: target.shopId,
+                transport, status, price
+            });
+        }
+        const originalFetch = unsafeWindow.fetch;
+        if (typeof originalFetch === 'function') {
+            unsafeWindow.fetch = function() {
+                const input = arguments[0];
+                const url = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
+                const target = getShopeePriceProbeTarget(url);
+                const request = originalFetch.apply(this, arguments);
+                if (target) request.then(response => {
+                    if (response.status < 200 || response.status >= 300) {
+                        logShopeePrice('商品响应状态', { endpoint: target.endpoint, status: response.status });
+                        return;
+                    }
+                    return response.clone().json().then(json => inspect(json, target, 'fetch', response.status));
+                }).catch(error => logShopeePrice('响应探测失败', { endpoint: target.endpoint, errorType: error.name }));
+                return request;
+            };
+        }
+        if (unsafeWindow.XMLHttpRequest) {
+            const urls = new WeakMap();
+            const prototype = unsafeWindow.XMLHttpRequest.prototype;
+            const originalOpen = prototype.open;
+            const originalSend = prototype.send;
+            prototype.open = function(method, url) {
+                urls.set(this, url);
+                return originalOpen.apply(this, arguments);
+            };
+            prototype.send = function() {
+                const target = getShopeePriceProbeTarget(urls.get(this));
+                if (target) this.addEventListener('load', function() {
+                    try {
+                        if (this.status < 200 || this.status >= 300) {
+                            logShopeePrice('商品响应状态', { endpoint: target.endpoint, status: this.status });
+                        } else if (this.responseType === 'json') {
+                            inspect(this.response, target, 'xhr', this.status);
+                        } else if (!this.responseType || this.responseType === 'text') {
+                            inspect(JSON.parse(this.responseText), target, 'xhr', this.status);
+                        }
+                    } catch (error) {
+                        logShopeePrice('响应探测失败', { endpoint: target.endpoint, errorType: error.name });
+                    }
+                }, { once: true });
+                return originalSend.apply(this, arguments);
+            };
+        }
+        logShopeePrice('价格采集已安装', { fetch: typeof originalFetch === 'function', xhr: !!unsafeWindow.XMLHttpRequest });
+        // [debug-done][2026-10-06] 页面 RM8.74 与接口 874000 已核对，保留原文比对方法供后续站点探测。
+        // const root = document.getElementById('sll2-normal-pdp-main');
+        // logShopeePrice('页面金额对照', { currencyTexts: root ? root.textContent.match(/(?:RM|฿)\s*[\d,]+(?:\.\d{1,2})?/g) : [] });
+    }
+
+    function findShopeePriceRange(json, target) {
+        // 只使用已实测的 MY 数据口径，其他币种待单独核对。
+        if (window.location.hostname !== 'shopee.com.my' || !json || !json.data) return null;
+        let items = [];
+        if (target.endpoint === '/api/v4/pdp/get_pc' && json.data.item) items = [json.data.item];
+        if (target.endpoint === '/api/v2/add_on_deal/get_main_item_info' && Array.isArray(json.data.item_details)) {
+            items = json.data.item_details;
+        }
+        const item = items.find(value => value && String(value.itemid) === String(target.productId) &&
+            (value.shopid == null || String(value.shopid) === String(target.shopId)));
+        if (!item || item.currency !== 'MYR') return null;
+        function rawPrice(value) {
+            if (typeof value !== 'number' && !(typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value))) return null;
+            const number = Number(value);
+            return Number.isFinite(number) && number >= 0 ? number : null;
+        }
+        let min = rawPrice(item.price_min);
+        let max = rawPrice(item.price_max);
+        let source = 'item.price_min/price_max';
+        if (min === null || max === null) {
+            // 汇总缺失时要求每个规格都提供有效售价，避免只取得部分规格就声称区间完整。
+            if (!Array.isArray(item.models) || !item.models.length || item.models.length > 1000) return null;
+            const prices = item.models.map(model => rawPrice(model && model.price));
+            if (prices.some(price => price === null)) return null;
+            min = Math.min.apply(null, prices);
+            max = Math.max.apply(null, prices);
+            source = 'item.models[*].price';
+        }
+        if (min > max) return null;
+        const minRealPrice = min / 100000;
+        const maxRealPrice = max / 100000;
+        return {
+            productId: String(item.itemid), shopId: String(target.shopId), currency: item.currency,
+            rangePrice: min === max ? minRealPrice.toFixed(2) : minRealPrice.toFixed(2) + ' - ' + maxRealPrice.toFixed(2),
+            minRealPrice, maxRealPrice, source, modelCount: Array.isArray(item.models) ? item.models.length : null
+        };
+    }
+
+    function getCurrentPriceData() {
+        if (PLATFORM === 'tk') return interceptedPriceData;
+        const product = getProductInfo();
+        return interceptedPriceData && interceptedPriceData.productId === product.productId &&
+            interceptedPriceData.shopId === product.shopId ? interceptedPriceData : null;
+    }
+
+    function getPricePreviewValue() {
+        const price = getCurrentPriceData();
+        return price ? (price.currency === 'MYR' ? 'RM ' : '') + price.rangePrice : null;
     }
 
     // 从 SSR JSON 中递归查找价格字段
@@ -395,8 +590,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     // 更新预览面板中的价格显示
     function updatePricePreview() {
         const el = document.getElementById('tiktok-price-range-value');
-        if (el && interceptedPriceData) {
-            const display = interceptedPriceData.rangePrice || '';
+        if (el && getCurrentPriceData()) {
+            const display = getPricePreviewValue() || '';
             el.textContent = display || '未获取';
             el.classList.remove('not-found');
         }
@@ -747,21 +942,15 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         if (debugEl && _debugLogs.length) debugEl.textContent = _debugLogs.slice(-5).join('\n');
 
         // 初始自动刷新预览（等页面渲染稳定后再采集）
+        setTimeout(refreshPreview, 1500);
         if (PLATFORM === 'sp' && window.location.hostname === 'shopee.com.my' && getProductInfo().productId) {
             const pageUrl = window.location.href;
-            const previewReady = startShopeePreviewWatch();
-            setTimeout(() => {
-                if (window.location.href === pageUrl && !previewReady()) refreshPreview();
-            }, 1500);
-            // 数值变化时立即补读；固定时点只为不同页面结构兜底，五项齐全后跳过。
+            // 马来站商品统计会在首屏之后继续填充；静默重读，避免预览永久停在「No ratings yet」。
             [4500, 9000, 16000].forEach(delay => setTimeout(() => {
-                if (window.location.href !== pageUrl || previewReady()) return;
-                logShopeeTiming('定时补读触发', { scheduledDelayMs: delay });
+                if (window.location.href !== pageUrl) return;
                 const data = extractData();
                 renderPreview(data);
             }, delay));
-        } else {
-            setTimeout(refreshPreview, 1500);
         }
     }
 
@@ -968,7 +1157,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 { label: '销量', value: data.soldCount },
                 { label: '评分', value: data.productRating },
                 { label: '本地评价数', value: data.reviewCount },
-                { label: '价格区间', value: interceptedPriceData ? interceptedPriceData.rangePrice : null, valueId: 'tiktok-price-range-value' },
+                { label: '价格区间', value: getPricePreviewValue(), valueId: 'tiktok-price-range-value' },
                 { label: '全球评价数', value: data.globalReviewCount, full: true },
             ]
             : [
@@ -976,6 +1165,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 { label: '评分', value: data.productRating },
                 { label: '评价数', value: data.reviewCount },
                 { label: '喜欢数', value: data.likes },
+                { label: '价格区间', value: getPricePreviewValue(), valueId: 'tiktok-price-range-value', full: true },
                 { label: '店铺评价数', value: data.shopReviewCount, full: true },
             ];
 
@@ -998,64 +1188,6 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 : '❌ 页面数据未能读取，请确认页面已加载完成';
             hint.style.color = hasAny ? '#faad14' : '#ff4d4f';
         }
-        logShopeeTiming('预览已更新', {
-            soldCount: data.soldCount, productRating: data.productRating,
-            reviewCount: data.reviewCount, likes: data.likes, shopReviewCount: data.shopReviewCount
-        });
-    }
-
-    // [debug-done][2026-10-06] 日志确认：网页 3111ms 填齐，固定补读到 4922ms 才展示。
-    // [debug][2026-10-06][ShopeeMYTiming] 保留更新时间日志，核对新补读逻辑的实际等待。
-    function logShopeeTiming(stage, data) {
-        if (PLATFORM !== 'sp' || window.location.hostname !== 'shopee.com.my' || !getProductInfo().productId) return;
-        console.log('[debug][2026-10-06][ShopeeMYTiming] ' + JSON.stringify({
-            stage, elapsedMs: Date.now() - shopeeTimingStartedAt, data
-        }));
-    }
-
-    function startShopeePreviewWatch() {
-        const pageUrl = window.location.href;
-        const probeStartedAt = Date.now();
-        const paths = {
-            soldCount: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[2]/div/div[2]/div/div/span',
-            productRating: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[2]/div/div[2]/button[1]/div[1]',
-            reviewCount: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[2]/div/div[2]/button[2]/div[1]',
-            likes: '//*[@id="sll2-normal-pdp-main"]/div/div/div/div[2]/section/section[1]/div[2]/div[2]/button/div',
-            shopReviewCount: '//*[@id="sll2-pdp-product-shop"]/section/div/div[2]/div[1]/span'
-        };
-        let previousSnapshot = '';
-        let complete = false;
-        let timer;
-        function sample() {
-            if (complete) return;
-            if (window.location.href !== pageUrl || Date.now() - probeStartedAt >= 20000) {
-                clearInterval(timer);
-                logShopeeTiming('网页观察结束', { reason: window.location.href !== pageUrl ? '页面已切换' : '已观察20秒' });
-                return;
-            }
-            const raw = {};
-            Object.keys(paths).forEach(field => {
-                const element = getElementByXPath(paths[field]);
-                raw[field] = element ? element.textContent.trim().slice(0, 80) : null;
-            });
-            const snapshot = JSON.stringify(raw);
-            if (snapshot !== previousSnapshot) {
-                previousSnapshot = snapshot;
-                logShopeeTiming('网页原文变化', raw);
-                const data = extractData();
-                const values = [data.soldCount, data.productRating, data.reviewCount, data.likes, data.shopReviewCount];
-                if (values.some(value => value !== null && value !== undefined)) renderPreview(data);
-                if (values.every(value => value !== null && value !== undefined)) {
-                    complete = true;
-                    clearInterval(timer);
-                    logShopeeTiming('五项已齐，停止自动补读', {});
-                }
-            }
-        }
-        // 250 毫秒检查一次，只在文字变化时采集；五项齐全或20秒后停止，不发送到 ERP。
-        timer = setInterval(sample, 250);
-        sample();
-        return () => complete;
     }
 
     // 显示错误
@@ -1164,7 +1296,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 const reviewElements = document.querySelectorAll('[class*="review"], [class*="Review"], [data-e2e*="review"]');
                 for (const el of reviewElements) {
                     const text = el.textContent.trim();
-                    const match = text.match(/([\d.]+[KkMm]?)\s*(?:review|Review)/i) || text.match(/\(([\d.]+[KkMm]?)\)/);
+                    const match = text.match(/([\d,.]+\s*[KkMm千万萬]?)\s*\+?\s*(?:review|Review)/i) || text.match(/\(\s*([\d,.]+\s*[KkMm千万萬]?)\s*\+?\s*\)/);
                     if (match) {
                         reviewCount = parseNumber(match[1]);
                         console.log('[TikTok采集器] Class选择器找到评价数:', reviewCount, '原文:', text);
@@ -1182,7 +1314,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 const text = globalReviewEl.textContent.trim();
                 console.log('[TikTok采集器] [全球评价] 原始文本:', JSON.stringify(text));
                 // 提取数字，兼容简体"13021 条全球评价"和繁体"310 全球評論"
-                const match = text.match(/([\d.]+[KkMm]?)\s*(?:条全球评价|全球評論|Global Reviews?)/i);
+                const match = text.match(/([\d,.]+\s*[KkMm千万萬]?)\s*\+?\s*(?:条全球评价|全球評論|Global Reviews?)/i);
                 console.log('[TikTok采集器] [全球评价] 正则匹配结果:', match);
                 if (match) {
                     globalReviewCount = parseNumber(match[1]);
@@ -1206,9 +1338,9 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             const soldEl = getElementByXPath(soldXPath);
             if (soldEl) {
                 const text = soldEl.textContent.trim();
-                // 提取数字，支持中文"已售"和英文"sold"，如 "已售 213.4K" 或 "1.2K sold"
-                const match = text.match(/([\d.]+[KkMm]?)\s*(?:sold|Sold|已售)/i) ||
-                             text.match(/(?:sold|Sold|已售)\s*([\d.]+[KkMm]?)/i);
+                // 提取数字并保留中英文数量单位，如 "已售 5千+" 或 "1.2K sold"。
+                const match = text.match(/([\d,.]+\s*[KkMm千万萬]?)\s*\+?\s*(?:sold|已售出?)/i) ||
+                             text.match(/(?:sold|已售出?)\s*([\d,.]+\s*[KkMm千万萬]?)/i);
                 if (match) {
                     soldCount = parseNumber(match[1]);
                     console.log('[TikTok采集器] XPath找到销量:', soldCount, '原文:', text);
@@ -1220,8 +1352,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 const soldElements = document.querySelectorAll('[class*="sold"], [class*="Sold"], [data-e2e*="sold"]');
                 for (const el of soldElements) {
                     const text = el.textContent.trim();
-                    const match = text.match(/([\d.]+[KkMm]?)\s*(?:sold|Sold|已售)/i) ||
-                                 text.match(/(?:sold|Sold|已售)\s*([\d.]+[KkMm]?)/i);
+                    const match = text.match(/([\d,.]+\s*[KkMm千万萬]?)\s*\+?\s*(?:sold|已售出?)/i) ||
+                                 text.match(/(?:sold|已售出?)\s*([\d,.]+\s*[KkMm千万萬]?)/i);
                     if (match) {
                         soldCount = parseNumber(match[1]);
                         console.log('[TikTok采集器] Class选择器找到销量:', soldCount, '原文:', text);
@@ -1371,7 +1503,6 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
                 // [debug][2026-10-06][extractShopeeData] 序列化日志，复制控制台时不会丢失折叠对象的内容。
                 console.log('[debug][2026-10-06][extractShopeeData] MY统计探测: ' + JSON.stringify({
-                    elapsedMs: Date.now() - shopeeTimingStartedAt,
                     productRootFound: !!productRoot,
                     shopRootFound: !!shopRoot,
                     review: reviewStat ? reviewStat.text : null,
@@ -1410,8 +1541,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             .filter(item => item.text.length <= 60 && labelPattern.test(item.text));
         candidates.sort((a, b) => a.text.length - b.text.length);
         for (const item of candidates) {
-            const match = item.text.match(/([\d,.]+\s*[KkMm]?)\s*\+?\s*(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\b/i) ||
-                          item.text.match(/(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\s*:?\s*\(?\s*([\d,.]+\s*[KkMm]?)/i);
+            const match = item.text.match(/([\d,.]+\s*[KkMm千万萬]?)\s*\+?\s*(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\b/i) ||
+                          item.text.match(/(?:Ratings?|Reviews?|Favourites?|Favorites?|Likes?|Sold)\s*:?\s*\(?\s*([\d,.]+\s*[KkMm千万萬]?)/i);
             const count = match ? parseNumber(match[1]) : null;
             if (count !== null) return { element: item.element, text: item.text, count };
         }
@@ -1449,15 +1580,15 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         }
     }
 
-    // 解析数字（支持 K, M 后缀，支持从文本中提取数字）
+    // 解析数量：支持 K/M、千/万/萬、单位间空格与末尾 +；+ 按展示的数量下限采集。
     function parseNumber(str) {
         if (!str) return null;
         str = str.toString().trim();
 
         // 尝试从文本中提取数字（支持括号内的数字，如 "Favorite (6.1k)" -> "6.1k"）
         const patterns = [
-            /\(([0-9,.]+[KkMm]?)\)/,  // 括号内的数字，如 (6.1k)
-            /([0-9,.]+[KkMm]?)/        // 任意位置的数字，如 6.1k 或 1,234
+            /\(\s*([0-9,.]+\s*[KkMm千万萬]?)\s*\+?\s*\)/,  // 括号内的数量，如 (1.2千+)
+            /([0-9,.]+\s*[KkMm千万萬]?)/                     // 任意位置的数量，如 已售出 1万+
         ];
 
         let numStr = null;
@@ -1471,13 +1602,16 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
         if (!numStr) return null;
 
-        // 移除逗号
-        numStr = numStr.replace(/,/g, '').toUpperCase();
+        // 移除千位分隔符和数量与单位之间的空格。
+        numStr = numStr.replace(/[,\s]/g, '').toUpperCase();
 
-        // 处理 K, M 后缀
+        // 中英文单位统一换算成完整数量。
         let multiplier = 1;
-        if (numStr.endsWith('K')) {
+        if (/[K千]$/.test(numStr)) {
             multiplier = 1000;
+            numStr = numStr.slice(0, -1);
+        } else if (/[万萬]$/.test(numStr)) {
+            multiplier = 10000;
             numStr = numStr.slice(0, -1);
         } else if (numStr.endsWith('M')) {
             multiplier = 1000000;
@@ -1524,7 +1658,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             console.log(`[${PLATFORM}采集器] 喜欢数 (likes):`, data.likes);
             console.log(`[${PLATFORM}采集器] 完整数据对象:`, JSON.stringify(data));
 
-            if (!data.soldCount && !data.reviewCount && !data.productRating && !data.likes) {
+            if (!data.soldCount && !data.reviewCount && !data.productRating && !data.likes && !getCurrentPriceData()) {
                 throw new Error('未能提取到任何数据，请检查页面是否完全加载');
             }
 
@@ -1584,6 +1718,13 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             } else {
                 dailyPayload.likes = data.likes;
                 dailyPayload.shop_review_count = data.shopReviewCount;
+                const price = getCurrentPriceData();
+                if (price) {
+                    dailyPayload.price_range = price.rangePrice;
+                    logShopeePrice('提交前价格确认', {
+                        productId, currency: price.currency, rangePrice: price.rangePrice, source: price.source
+                    });
+                }
                 console.log(`[${PLATFORM}采集器] Shopee平台，添加 likes:`, data.likes);
                 console.log(`[${PLATFORM}采集器] Shopee平台，添加 shop_review_count:`, data.shopReviewCount);
             }
