@@ -64,13 +64,48 @@ test('缺少汇总时按全部规格计算，单规格和零售价正确', () =>
     assert.equal(parse(f, item({ price_min: '874000', price_max: '2890000' })).rangePrice, '8.74 - 28.90');
 });
 
-test('错商品、错店铺、未实测币种与不完整规格不产生价格', () => {
+test('错商品、未实测币种与不完整规格不产生价格，优惠列表仍校验店铺', () => {
     const f = fixture();
-    for (const value of [item({ itemid: 1 }), item({ shopid: 1 }), item({ currency: 'THB' }),
+    assert.equal(parse(f, item({ shopid: 1 }), '/api/v2/add_on_deal/get_main_item_info'), null);
+    for (const value of [item({ itemid: 1 }), item({ currency: 'THB' }),
         item({ price_min: 2890000, price_max: 874000 }), item({ price_min: null, price_max: null, models: [] }),
         item({ price_min: null, price_max: null, models: [{ price: 874000 }, { price: null }] }),
         item({ price_min: null, price_max: null, models: [{ price: true }] }),
         item({ price_min: null, price_max: null, models: [{ price: -1 }] })]) assert.equal(parse(f, value), null);
+});
+
+test('详情中同商品售价不因未确认的店铺字段缺失或不同而被丢弃', () => {
+    const f = fixture();
+    // 店铺字段具体值未在用户日志中回传，以下是边界用例，不冒充实际响应值。
+    for (const responseShopId of [undefined, null, 0, '', 1, shopId]) {
+        assert.equal(parse(f, item({ shopid: responseShopId })).rangePrice, '8.74 - 28.90');
+        assert.equal(parse(f, item({ shopid: responseShopId, itemid: 1 })), null);
+    }
+});
+
+test('回传窗帘商品的售价进入预览和每日提交，划线价及VIP价不参与区间', async () => {
+    const f = fixture();
+    const target = { endpoint: detailPath, productId: '28487872335', shopId: '1549429165' };
+    f.changeProduct({ productId: target.productId, shopId: target.shopId, region: 'MY' });
+    f.context.notEnteredList[0].product_id = target.productId;
+    f.context.notEnteredList[0].shop_id = target.shopId;
+    // 用户回传的汇总字段；shopid 不同另由上面的边界用例覆盖。
+    const response = { data: { item: { itemid: 28487872335, currency: 'MYR', price: 920000,
+        price_min: 920000, price_max: 5580000, price_min_before_discount: 920000,
+        price_max_before_discount: 6420000 }, product_price: { vip_price: 460000 } } };
+    const promise = Promise.resolve({ status: 200, clone: () => ({ json: async () => response }) });
+    f.context.unsafeWindow.fetch = () => promise;
+    f.context.installShopeePriceProbe();
+    f.context.unsafeWindow.fetch(detailPath);
+    await new Promise(resolve => setImmediate(resolve));
+    f.context.renderPreview(f.context.extractData());
+    assert.match(f.elements['tiktok-preview-grid'].innerHTML, /RM 9\.20 - 55\.80/);
+    assert.equal(f.context.interceptedPriceData.source, 'item.price_min/price_max');
+    await f.context.collectAndSend();
+    const payload = JSON.parse(f.requests.find(request => request.url.endsWith('/addDailyData')).data);
+    assert.equal(payload.price_range, '9.20 - 55.80');
+    f.changeProduct({ productId: 'other', shopId: target.shopId, region: 'MY' });
+    assert.equal(f.context.getCurrentPriceData(), null);
 });
 
 test('缓存按商品和店铺隔离，预览显示币种，TK保持原格式', () => {

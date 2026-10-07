@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.15
+// @version      2.6.16
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -273,6 +273,9 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 if (Object.keys(fields).length || models) {
                     const candidate = { path: current.path, itemMatch: matched, fields };
                     if (itemId != null) candidate.itemId = String(itemId);
+                    if (typeof node.shopid === 'number' || (typeof node.shopid === 'string' && /^\d+$/.test(node.shopid))) {
+                        candidate.shopId = String(node.shopid);
+                    }
                     if (models) {
                         candidate.modelCount = models.length;
                         const prices = models.slice(0, 1000).map(model => model && model.price)
@@ -398,8 +401,13 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         if (target.endpoint === '/api/v2/add_on_deal/get_main_item_info' && Array.isArray(json.data.item_details)) {
             items = json.data.item_details;
         }
+        // [debug-done][2026-10-07] 回传确认当前商品编号、MYR 和 920000~5580000 均有效，
+        // 36 个规格的范围与页面一致，但原解析返回空；排除其他分支后落在店铺字段校验。
+        // 商品详情按已确认的 itemid 唯一匹配，不依赖尚未实测其含义的 shopid 字段。
+        // 多商品优惠列表仍保留已有的店铺校验，防止混用候选。
+        const isProductDetail = target.endpoint === '/api/v4/pdp/get_pc';
         const item = items.find(value => value && String(value.itemid) === String(target.productId) &&
-            (value.shopid == null || String(value.shopid) === String(target.shopId)));
+            (isProductDetail || value.shopid == null || String(value.shopid) === String(target.shopId)));
         if (!item || item.currency !== 'MYR') return null;
         function rawPrice(value) {
             if (typeof value !== 'number' && !(typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value))) return null;
@@ -1236,7 +1244,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 : '❌ 页面数据未能读取，请确认页面已加载完成';
             hint.style.color = hasAny ? '#faad14' : '#ff4d4f';
         }
-        logShopeePriceSnapshot();
+        // [debug-done][2026-10-07] 已确认请求及响应均被捕获，价格字段齐全；保留现场探测供复用。
+        // logShopeePriceSnapshot();
     }
 
     // 显示错误
