@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.14
+// @version      2.6.15
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -200,7 +200,33 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     if (PLATFORM === 'sp') installShopeePriceProbe();
 
     function logShopeePrice(stage, data) {
-        _debug('[debug][2026-10-06][ShopeePrice] ' + JSON.stringify({ stage, data }));
+        _debug('[debug][2026-10-07][ShopeePrice] ' + JSON.stringify({ stage, data }));
+    }
+
+    // [debug][2026-10-07] 排查：页面有 RM9.20 - RM55.80，预览却没有价格。
+    // 仅观察主商品金额和请求路径；不记录完整页面、查询参数、Cookie 或令牌。
+    function logShopeePriceSnapshot() {
+        if (PLATFORM !== 'sp' || window.location.hostname !== 'shopee.com.my' || getCurrentPriceData()) return;
+        const diagnostics = installShopeePriceProbe.diagnostics;
+        if (!diagnostics || diagnostics.snapshots >= 8) return;
+        const root = document.getElementById('sll2-normal-pdp-main');
+        const currencyTexts = root ? (root.textContent || '').match(/RM\s*[\d,]+(?:\.\d{1,2})?/g) : [];
+        let requestPaths = [];
+        try {
+            requestPaths = Array.from(new Set(unsafeWindow.performance.getEntriesByType('resource')
+                .map(entry => new URL(entry.name, window.location.href))
+                .filter(url => url.origin === window.location.origin && /^\/api\/(?:v\d+\/)?(?:pdp|item|add_on_deal)\//.test(url.pathname))
+                .map(url => url.pathname))).slice(0, 20);
+        } catch (e) {}
+        diagnostics.snapshots++;
+        logShopeePrice('预览缺价现场', {
+            ...getProductInfo(), elapsedMs: Date.now() - diagnostics.startedAt,
+            requestsSeen: diagnostics.requests, responsesSeen: diagnostics.responses,
+            fetchHookIntact: unsafeWindow.fetch === diagnostics.fetchHook,
+            xhrHookIntact: !!unsafeWindow.XMLHttpRequest && unsafeWindow.XMLHttpRequest.prototype.send === diagnostics.xhrHook,
+            pageRootFound: !!root, currencyTexts: (currencyTexts || []).slice(0, 30), requestPaths,
+            cachedProductId: interceptedPriceData ? interceptedPriceData.productId : null
+        });
     }
 
     function getShopeePriceProbeTarget(requestUrl) {
@@ -274,13 +300,19 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     function installShopeePriceProbe() {
         const reported = new Set();
+        const diagnostics = { startedAt: Date.now(), requests: 0, responses: 0, snapshots: 0 };
+        installShopeePriceProbe.diagnostics = diagnostics;
         function inspect(json, target, transport, status) {
-            if (getProductInfo().productId !== target.productId) return;
+            diagnostics.responses++;
+            if (getProductInfo().productId !== target.productId) {
+                logShopeePrice('已跳过旧商品响应', { responseProductId: target.productId, currentProductId: getProductInfo().productId });
+                return;
+            }
             const price = findShopeePriceRange(json, target);
             // [debug-done][2026-10-06] 由这组探测确认 MY 币种、100000 倍单位和全部11个规格售价。
-            // const evidence = collectShopeePriceEvidence(json, target.productId);
-            // logShopeePrice('商品响应价格候选', { endpoint: target.endpoint, candidates: evidence.candidates });
-            const signature = target.endpoint + JSON.stringify(price);
+            // [debug][2026-10-07] 新商品缺价时复用历史探测，区分响应结构、商品匹配和金额字段问题。
+            const evidence = price ? null : collectShopeePriceEvidence(json, target.productId);
+            const signature = target.endpoint + JSON.stringify(price || evidence);
             if (reported.has(signature) || reported.size >= 30) return;
             reported.add(signature);
             if (price) {
@@ -291,6 +323,12 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 endpoint: target.endpoint, productId: target.productId, shopId: target.shopId,
                 transport, status, price
             });
+            if (!price) logShopeePrice('商品响应价格候选', {
+                endpoint: target.endpoint,
+                responseKeys: json && typeof json === 'object' ? Object.keys(json).slice(0, 20) : [],
+                dataKeys: json && json.data && typeof json.data === 'object' ? Object.keys(json.data).slice(0, 20) : [],
+                ...evidence
+            });
         }
         const originalFetch = unsafeWindow.fetch;
         if (typeof originalFetch === 'function') {
@@ -298,6 +336,10 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 const input = arguments[0];
                 const url = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
                 const target = getShopeePriceProbeTarget(url);
+                if (target) {
+                    diagnostics.requests++;
+                    logShopeePrice('捕获商品请求', { ...target, transport: 'fetch' });
+                }
                 const request = originalFetch.apply(this, arguments);
                 if (target) request.then(response => {
                     if (response.status < 200 || response.status >= 300) {
@@ -320,6 +362,10 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             };
             prototype.send = function() {
                 const target = getShopeePriceProbeTarget(urls.get(this));
+                if (target) {
+                    diagnostics.requests++;
+                    logShopeePrice('捕获商品请求', { ...target, transport: 'xhr' });
+                }
                 if (target) this.addEventListener('load', function() {
                     try {
                         if (this.status < 200 || this.status >= 300) {
@@ -336,6 +382,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 return originalSend.apply(this, arguments);
             };
         }
+        diagnostics.fetchHook = unsafeWindow.fetch;
+        diagnostics.xhrHook = unsafeWindow.XMLHttpRequest && unsafeWindow.XMLHttpRequest.prototype.send;
         logShopeePrice('价格采集已安装', { fetch: typeof originalFetch === 'function', xhr: !!unsafeWindow.XMLHttpRequest });
         // [debug-done][2026-10-06] 页面 RM8.74 与接口 874000 已核对，保留原文比对方法供后续站点探测。
         // const root = document.getElementById('sll2-normal-pdp-main');
@@ -1188,6 +1236,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 : '❌ 页面数据未能读取，请确认页面已加载完成';
             hint.style.color = hasAny ? '#faad14' : '#ff4d4f';
         }
+        logShopeePriceSnapshot();
     }
 
     // 显示错误
