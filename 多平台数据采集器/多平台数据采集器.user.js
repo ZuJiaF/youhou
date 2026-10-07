@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.16
+// @version      2.6.17
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -50,7 +50,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     _debug('IIFE 进入');
 
-    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.2';
+    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.6.17';
 
     // 平台检测
     const PLATFORM = window.location.href.includes('tiktok.com') ? 'tk' : 'sp';
@@ -200,7 +200,30 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     if (PLATFORM === 'sp') installShopeePriceProbe();
 
     function logShopeePrice(stage, data) {
-        _debug('[debug][2026-10-07][ShopeePrice] ' + JSON.stringify({ stage, data }));
+        _debug('[debug][2026-10-07][ShopeePrice] ' + JSON.stringify({
+            build: 'price-identity-v2', scriptVersion: typeof SCRIPT_VERSION === 'undefined' ? null : SCRIPT_VERSION,
+            stage, data
+        }));
+    }
+
+    // 探测与正式采集共用编号读取；原探测会把 item_id 映射成 itemId，日志看不出原字段名。
+    function readShopeeIdentity(node) {
+        function read(keys) {
+            const fields = {};
+            const values = [];
+            for (const key of keys) {
+                if (!node || node[key] == null) continue;
+                const raw = node[key];
+                const text = typeof raw === 'number' && Number.isSafeInteger(raw) ? String(raw) :
+                    (typeof raw === 'string' && /^\d+$/.test(raw.trim()) ? raw.trim() : null);
+                fields[key] = text === null ? { type: typeof raw } : text;
+                if (text !== null && /^\d+$/.test(text) && !/^0+$/.test(text)) values.push({ key, value: text.replace(/^0+(?=\d)/, '') });
+            }
+            const conflict = new Set(values.map(entry => entry.value)).size > 1;
+            return { value: !conflict && values.length ? values[0].value : null,
+                field: values.length ? values[0].key : null, fields, conflict };
+        }
+        return { product: read(['itemid', 'item_id', 'product_id', 'productid']), shop: read(['shopid', 'shop_id']) };
     }
 
     // [debug][2026-10-07] 排查：页面有 RM9.20 - RM55.80，预览却没有价格。
@@ -250,11 +273,10 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             if (!node || typeof node !== 'object' || seen.has(node)) continue;
             seen.add(node);
             visited++;
-            const itemId = node.itemid != null ? node.itemid :
-                           (node.item_id != null ? node.item_id :
-                           (node.product_id != null ? node.product_id : node.productid));
+            const identity = readShopeeIdentity(node);
+            const itemId = identity.product.value;
             // 推荐商品或上一个商品的响应不可混入当前商品；无编号的候选明确标为待确认。
-            if (itemId != null && String(itemId) !== String(productId)) continue;
+            if (identity.product.conflict || (itemId != null && String(itemId) !== String(productId))) continue;
             const matched = current.matched || (itemId != null && String(itemId) === String(productId));
             if (!Array.isArray(node)) {
                 const models = Array.isArray(node.models) ? node.models :
@@ -273,9 +295,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 if (Object.keys(fields).length || models) {
                     const candidate = { path: current.path, itemMatch: matched, fields };
                     if (itemId != null) candidate.itemId = String(itemId);
-                    if (typeof node.shopid === 'number' || (typeof node.shopid === 'string' && /^\d+$/.test(node.shopid))) {
-                        candidate.shopId = String(node.shopid);
-                    }
+                    candidate.identity = identity;
                     if (models) {
                         candidate.modelCount = models.length;
                         const prices = models.slice(0, 1000).map(model => model && model.price)
@@ -394,21 +414,28 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     }
 
     function findShopeePriceRange(json, target) {
-        // 只使用已实测的 MY 数据口径，其他币种待单独核对。
-        if (window.location.hostname !== 'shopee.com.my' || !json || !json.data) return null;
+        function reject(reason, details = {}) {
+            logShopeePrice('价格解析拒绝', { reason, ...target, hostname: window.location.hostname, ...details });
+            return null;
+        }
+        const expectedCurrency = { 'shopee.com.my': 'MYR', 'shopee.co.th': 'THB' }[window.location.hostname];
+        if (!expectedCurrency) return reject('站点未支持');
+        if (!json || !json.data) return reject('响应缺少商品数据');
         let items = [];
         if (target.endpoint === '/api/v4/pdp/get_pc' && json.data.item) items = [json.data.item];
         if (target.endpoint === '/api/v2/add_on_deal/get_main_item_info' && Array.isArray(json.data.item_details)) {
             items = json.data.item_details;
         }
-        // [debug-done][2026-10-07] 回传确认当前商品编号、MYR 和 920000~5580000 均有效，
-        // 36 个规格的范围与页面一致，但原解析返回空；排除其他分支后落在店铺字段校验。
-        // 商品详情按已确认的 itemid 唯一匹配，不依赖尚未实测其含义的 shopid 字段。
-        // 多商品优惠列表仍保留已有的店铺校验，防止混用候选。
+        const identified = items.filter(value => value && typeof value === 'object')
+            .map(value => ({ value, identity: readShopeeIdentity(value) }));
         const isProductDetail = target.endpoint === '/api/v4/pdp/get_pc';
-        const item = items.find(value => value && String(value.itemid) === String(target.productId) &&
-            (isProductDetail || value.shopid == null || String(value.shopid) === String(target.shopId)));
-        if (!item || item.currency !== 'MYR') return null;
+        const matched = identified.find(entry => entry.identity.product.value === String(target.productId));
+        if (!matched) return reject('商品编号未匹配', { identities: identified.slice(0, 5).map(entry => entry.identity) });
+        const { value: item, identity } = matched;
+        // 详情使用唯一商品编号；优惠列表仍核对两种店铺编号字段，防止混用候选。
+        if (!isProductDetail && (identity.shop.conflict || (Object.keys(identity.shop.fields).length &&
+            identity.shop.value !== String(target.shopId)))) return reject('优惠商品店铺未匹配', { identity });
+        if (item.currency !== expectedCurrency) return reject('币种未匹配', { currency: item.currency, expectedCurrency, identity });
         function rawPrice(value) {
             if (typeof value !== 'number' && !(typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value))) return null;
             const number = Number(value);
@@ -419,33 +446,79 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         let source = 'item.price_min/price_max';
         if (min === null || max === null) {
             // 汇总缺失时要求每个规格都提供有效售价，避免只取得部分规格就声称区间完整。
-            if (!Array.isArray(item.models) || !item.models.length || item.models.length > 1000) return null;
+            if (!Array.isArray(item.models) || !item.models.length || item.models.length > 1000) return reject('售价汇总缺失且规格列表无效', { identity });
             const prices = item.models.map(model => rawPrice(model && model.price));
-            if (prices.some(price => price === null)) return null;
+            if (prices.some(price => price === null)) return reject('规格售价不完整', { identity, modelCount: prices.length });
             min = Math.min.apply(null, prices);
             max = Math.max.apply(null, prices);
             source = 'item.models[*].price';
         }
-        if (min > max) return null;
+        if (min > max) return reject('售价上下限倒置', { min, max, identity });
         const minRealPrice = min / 100000;
         const maxRealPrice = max / 100000;
         return {
-            productId: String(item.itemid), shopId: String(target.shopId), currency: item.currency,
+            productId: identity.product.value, productIdField: identity.product.field,
+            shopId: String(target.shopId), currency: item.currency,
             rangePrice: min === max ? minRealPrice.toFixed(2) : minRealPrice.toFixed(2) + ' - ' + maxRealPrice.toFixed(2),
-            minRealPrice, maxRealPrice, source, modelCount: Array.isArray(item.models) ? item.models.length : null
+            minRealPrice, maxRealPrice, source, modelCount: Array.isArray(item.models) ? item.models.length : null,
+            // 保留另一对话已准备的泰国站行为：倍率未经响应实测，必须先核对页面售价。
+            requiresPageCheck: expectedCurrency === 'THB', pageVerified: false
         };
+    }
+
+    function getShopeeVisiblePriceRanges(currency) {
+        const root = document.getElementById('sll2-normal-pdp-main');
+        if (!root || typeof root.querySelectorAll !== 'function') return [];
+        const prefix = currency === 'THB' ? '(?:฿|THB)' : '(?:RM|MYR)';
+        const amount = '((?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d{1,2})?)';
+        const pattern = new RegExp('^' + prefix + '\\s*' + amount + '(?:\\s*[-–—~]\\s*(?:' + prefix + '\\s*)?' + amount + ')?$', 'i');
+        const ranges = new Map();
+        for (const node of Array.from(root.querySelectorAll('div, span')).slice(0, 1500)) {
+            const text = (node.textContent || '').replace(/\u00a0/g, ' ').trim();
+            if (text.length > 80) continue;
+            const match = text.match(pattern);
+            if (!match || (typeof node.closest === 'function' && node.closest('del, s, strike'))) continue;
+            let visible = true;
+            for (let ancestor = node, depth = 0; ancestor && depth < 8; ancestor = ancestor.parentElement, depth++) {
+                try {
+                    const style = window.getComputedStyle(ancestor);
+                    if (style.display === 'none' || /^(?:hidden|collapse)$/.test(style.visibility) ||
+                        style.opacity === '0' || /line-through/.test(style.textDecorationLine || style.textDecoration || '')) visible = false;
+                } catch (e) { visible = false; }
+                if (ancestor === root) break;
+            }
+            if (!visible) continue;
+            const min = Number(match[1].replace(/,/g, ''));
+            const max = match[2] ? Number(match[2].replace(/,/g, '')) : min;
+            if (min <= max) ranges.set(min + ':' + max, { min, max });
+        }
+        return Array.from(ranges.values());
     }
 
     function getCurrentPriceData() {
         if (PLATFORM === 'tk') return interceptedPriceData;
         const product = getProductInfo();
-        return interceptedPriceData && interceptedPriceData.productId === product.productId &&
-            interceptedPriceData.shopId === product.shopId ? interceptedPriceData : null;
+        const price = interceptedPriceData;
+        if (!price || price.productId !== product.productId || price.shopId !== product.shopId) return null;
+        if (price.requiresPageCheck && !price.pageVerified) {
+            const pageRanges = getShopeeVisiblePriceRanges(price.currency);
+            price.pageVerified = pageRanges.some(range => Math.round(range.min * 100) === Math.round(price.minRealPrice * 100) &&
+                Math.round(range.max * 100) === Math.round(price.maxRealPrice * 100));
+            const signature = JSON.stringify(pageRanges);
+            if (price.pageCheckSignature !== signature) {
+                price.pageCheckSignature = signature;
+                logShopeePrice(price.pageVerified ? '页面售价核对通过' : '价格候选等待页面核对', {
+                    productId: price.productId, rangePrice: price.rangePrice, pageRanges
+                });
+            }
+            if (!price.pageVerified) return null;
+        }
+        return price;
     }
 
     function getPricePreviewValue() {
         const price = getCurrentPriceData();
-        return price ? (price.currency === 'MYR' ? 'RM ' : '') + price.rangePrice : null;
+        return price ? (price.currency === 'MYR' ? 'RM ' : (price.currency === 'THB' ? '฿ ' : '')) + price.rangePrice : null;
     }
 
     // 从 SSR JSON 中递归查找价格字段
@@ -999,9 +1072,9 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
         // 初始自动刷新预览（等页面渲染稳定后再采集）
         setTimeout(refreshPreview, 1500);
-        if (PLATFORM === 'sp' && window.location.hostname === 'shopee.com.my' && getProductInfo().productId) {
+        if (PLATFORM === 'sp' && ['shopee.com.my', 'shopee.co.th'].includes(window.location.hostname) && getProductInfo().productId) {
             const pageUrl = window.location.href;
-            // 马来站商品统计会在首屏之后继续填充；静默重读，避免预览永久停在「No ratings yet」。
+            // 商品统计和售价会在首屏之后填充；两站补读，泰国候选也在页面填价后再次核对。
             [4500, 9000, 16000].forEach(delay => setTimeout(() => {
                 if (window.location.href !== pageUrl) return;
                 const data = extractData();
@@ -1244,8 +1317,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 : '❌ 页面数据未能读取，请确认页面已加载完成';
             hint.style.color = hasAny ? '#faad14' : '#ff4d4f';
         }
-        // [debug-done][2026-10-07] 已确认请求及响应均被捕获，价格字段齐全；保留现场探测供复用。
-        // logShopeePriceSnapshot();
+        logShopeePriceSnapshot();
     }
 
     // 显示错误
