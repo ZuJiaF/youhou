@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.18
+// @version      2.7.0
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -50,7 +50,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     _debug('IIFE 进入');
 
-    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.6.18';
+    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.7.0';
 
     // 平台检测
     const PLATFORM = window.location.href.includes('tiktok.com') ? 'tk' : 'sp';
@@ -895,6 +895,20 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             background: #999;
             cursor: not-allowed;
         }
+        #tiktok-continuous-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: #fafafa;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+        }
+        #tiktok-continuous-option small {
+            margin-left: auto;
+            color: #999;
+        }
         #tiktok-collector-status {
             padding: 10px 16px;
             background: white;
@@ -1055,7 +1069,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 </div>
                 <div id="tiktok-preview-hint"></div>
             </div>
-            <button id="tiktok-collector-btn">📊 发送到 ERP</button>
+            <label id="tiktok-continuous-option">
+                <input id="tiktok-continuous-checkbox" type="checkbox">
+                连续采集 <small>仅同平台、同国家</small>
+            </label>
+            <button id="tiktok-collector-btn">📊 采集</button>
             <pre id="tiktok-debug-area" style="font-size:10px;color:#999;padding:6px 10px;margin:0;max-height:80px;overflow-y:auto;background:#f9f9f9;border-top:1px solid #eee;white-space:pre-wrap;word-break:break-all;"></pre>
         `;
         document.body.appendChild(panel);
@@ -1131,8 +1149,23 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             refreshPendingList();
         };
 
-        // 点击发送按钮
-        document.getElementById('tiktok-collector-btn').onclick = collectAndSend;
+        // 勾选偏好按平台、国家保存在本机；运行进度只属于当前标签页。
+        const continuousCheckbox = document.getElementById('tiktok-continuous-checkbox');
+        continuousCheckbox.checked = readContinuousPreference();
+        continuousCheckbox.onchange = () => {
+            try {
+                localStorage.setItem(continuousPreferenceKey(), String(continuousCheckbox.checked));
+            } catch (error) {
+                continuousCheckbox.checked = false;
+                stopContinuousCollection('本地存储不可用，连续采集已停止', 'error');
+                return;
+            }
+            if (!continuousCheckbox.checked) stopContinuousCollection('连续采集已停止');
+        };
+        document.getElementById('tiktok-collector-btn').onclick = () => {
+            if (continuousCheckbox.checked) startContinuousCollection();
+            else collectAndSend();
+        };
 
         // 刷新预览按钮
         document.getElementById('tiktok-preview-refresh').onclick = function(e) {
@@ -1235,19 +1268,28 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                         console.log(`[${PLATFORM}采集器] 过滤后的链接详情:`, notEnteredList);
 
                         renderNotEnteredList();
+                        resumeContinuousCollection();
                     } else {
                         console.error(`[${PLATFORM}采集器] API返回错误:`, result.msg);
                         showError('加载失败: ' + result.msg);
+                        stopContinuousCollection('待采集列表加载失败，连续采集已停止', 'error');
                     }
                 } catch (e) {
                     console.error(`[${PLATFORM}采集器] 解析响应失败:`, e);
                     console.error(`[${PLATFORM}采集器] 原始响应:`, response.responseText);
                     showError('解析数据失败');
+                    stopContinuousCollection('待采集列表解析失败，连续采集已停止', 'error');
                 }
             },
             onerror: function(error) {
                 console.error(`[${PLATFORM}采集器] 请求失败:`, error);
                 showError('网络请求失败');
+                stopContinuousCollection('待采集列表请求失败，连续采集已停止', 'error');
+            },
+            timeout: 30000,
+            ontimeout: () => {
+                showError('待采集列表请求超时');
+                stopContinuousCollection('待采集列表请求超时，连续采集已停止', 'error');
             }
         });
     }
@@ -1277,7 +1319,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
             if (PLATFORM === 'tk') {
                 // TikTok链接
-                isCurrent = link.product_id === currentInfo.productId;
+                isCurrent = isCurrentCompetitor(link, currentInfo);
                 url = `https://www.tiktok.com/shop/${link.country?.toLowerCase() || 'th'}/pdp/${link.product_id}?region=${link.country || 'TH'}`;
                 console.log(`[${PLATFORM}采集器] TikTok链接${index + 1}:`, {
                     name: link.name,
@@ -1288,7 +1330,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 });
             } else {
                 // Shopee链接
-                isCurrent = link.shop_id === currentInfo.shopId && link.product_id === currentInfo.productId;
+                isCurrent = isCurrentCompetitor(link, currentInfo);
                 const domainMap = {
                     'TH': 'shopee.co.th',
                     'MY': 'shopee.com.my'
@@ -1326,9 +1368,208 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         content.querySelectorAll('.tiktok-link-item').forEach(item => {
             item.onclick = function() {
                 const url = this.getAttribute('data-url');
+                stopContinuousCollection();
                 window.location.href = url;
             };
         });
+    }
+
+    // 连续采集：本机保存偏好，标签页保存批次和下一页身份，避免重新打开页面误触发。
+    const CONTINUOUS_RUN_KEY = 'erp-collector:continuous-run:v1';
+    let continuousRun = null;
+    let continuousTimer = null;
+    let collectionInFlight = false;
+
+    function continuousPreferenceKey() {
+        return `erp-collector:continuous-enabled:${PLATFORM}:${getProductInfo().region}`;
+    }
+
+    function readContinuousPreference() {
+        try { return localStorage.getItem(continuousPreferenceKey()) === 'true'; }
+        catch (error) { return false; }
+    }
+
+    function continuousEnabled() {
+        return !!document.getElementById('tiktok-continuous-checkbox')?.checked;
+    }
+
+    function collectionIdentity(info = getProductInfo()) {
+        return `${PLATFORM}:${info.region}:${info.shopId || ''}:${info.productId || ''}`;
+    }
+
+    function isCurrentCompetitor(link, info = getProductInfo()) {
+        return link.platform === PLATFORM && String(link.country || '').toUpperCase() === info.region &&
+            String(link.product_id) === info.productId &&
+            (PLATFORM === 'tk' || String(link.shop_id) === info.shopId);
+    }
+
+    function continuousLinkUrl(link, run) {
+        const country = String(link.country || '').toUpperCase();
+        if (link.platform !== run.platform || country !== run.region || !/^\d+$/.test(String(link.product_id))) return null;
+        if (run.platform === 'tk') {
+            return `https://www.tiktok.com/shop/${country.toLowerCase()}/pdp/${link.product_id}?region=${country}`;
+        }
+        const domain = { TH: 'shopee.co.th', MY: 'shopee.com.my' }[country];
+        return domain && /^\d+$/.test(String(link.shop_id))
+            ? `https://${domain}/product/${link.shop_id}/${link.product_id}` : null;
+    }
+
+    function saveContinuousRun(run) {
+        // 写入失败则留在当前页，不能在跳转后丢失续采进度。
+        sessionStorage.setItem(CONTINUOUS_RUN_KEY, JSON.stringify(run));
+        continuousRun = run;
+    }
+
+    function stopContinuousCollection(message, type = 'success') {
+        if (continuousTimer !== null) clearTimeout(continuousTimer);
+        continuousTimer = null;
+        continuousRun = null;
+        try { sessionStorage.removeItem(CONTINUOUS_RUN_KEY); } catch (error) {}
+        if (!collectionInFlight) {
+            const btn = document.getElementById('tiktok-collector-btn');
+            if (btn) { btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '📊 采集'; }
+        }
+        if (message) showStatus(message, type);
+    }
+
+    function startContinuousCollection() {
+        if (collectionInFlight || continuousRun) return;
+        const info = getProductInfo();
+        if (!info.productId || !info.region || !notEnteredList.some(link => isCurrentCompetitor(link, info))) {
+            showStatus('当前商品不在本国家的待采集列表中，请刷新列表后再试', 'error');
+            return;
+        }
+        try {
+            saveContinuousRun({ platform: PLATFORM, region: info.region, expected: collectionIdentity(info),
+                completed: [], updatedAt: Date.now() });
+            waitForContinuousData();
+        } catch (error) {
+            stopContinuousCollection('本地进度保存失败，连续采集已停止', 'error');
+        }
+    }
+
+    function resumeContinuousCollection() {
+        if (continuousRun || collectionInFlight) return;
+        let run;
+        try { run = JSON.parse(sessionStorage.getItem(CONTINUOUS_RUN_KEY) || 'null'); }
+        catch (error) { stopContinuousCollection(); return; }
+        if (!run) return;
+        const info = getProductInfo();
+        if (!continuousEnabled() || run.platform !== PLATFORM || run.region !== info.region ||
+            run.expected !== collectionIdentity(info) || !Array.isArray(run.completed) ||
+            !Number.isFinite(run.updatedAt) || Date.now() - run.updatedAt > 30 * 60 * 1000) {
+            stopContinuousCollection('页面或国家已变化，连续采集已停止');
+            return;
+        }
+        if (!notEnteredList.some(link => isCurrentCompetitor(link, info))) {
+            stopContinuousCollection('当前商品已不在待采集列表中，连续采集已停止');
+            return;
+        }
+        continuousRun = run;
+        waitForContinuousData();
+    }
+
+    function missingCollectionFields(data, price) {
+        const fields = [['soldCount', '销量'], ['reviewCount', '评价数'], ['productRating', '评分']];
+        if (PLATFORM === 'tk') fields.push(['globalReviewCount', '全球评价数']);
+        else fields.push(['likes', '喜欢数'], ['shopReviewCount', '店铺评价数']);
+        const missing = fields.filter(([key]) => !Number.isFinite(data[key]) || data[key] < 0 ||
+            (key === 'productRating' && data[key] > 5)).map(([, label]) => label);
+        if (!price || typeof price.rangePrice !== 'string' || !price.rangePrice.trim()) missing.push('价格区间');
+        return missing;
+    }
+
+    function waitForContinuousData() {
+        const run = continuousRun;
+        const startedAt = Date.now();
+        let signature = null;
+        let stableSince = startedAt;
+        const btn = document.getElementById('tiktok-collector-btn');
+        btn.disabled = true;
+        btn.classList.add('loading');
+        btn.textContent = '⏳ 等待信息齐全...';
+        function poll() {
+            continuousTimer = null;
+            if (continuousRun !== run) return;
+            if (!continuousEnabled() || run.expected !== collectionIdentity()) {
+                stopContinuousCollection('连续采集已停止：页面变化或已取消勾选');
+                return;
+            }
+            try {
+                const data = extractData();
+                const price = getCurrentPriceData();
+                renderPreview(data);
+                const missing = missingCollectionFields(data, price);
+                const nextSignature = JSON.stringify([data, price?.rangePrice]);
+                if (missing.length || document.readyState !== 'complete' || nextSignature !== signature) {
+                    stableSince = Date.now();
+                    signature = nextSignature;
+                }
+                if (!missing.length && document.readyState === 'complete' &&
+                    Date.now() - startedAt >= 4000 && Date.now() - stableSince >= 3000) {
+                    collectAndSend(true);
+                    return;
+                }
+                if (Date.now() - startedAt >= 90000) {
+                    stopContinuousCollection('等待超时，连续采集已停止：' +
+                        (missing.length ? '缺少' + missing.join('、') : '页面信息尚未稳定'), 'error');
+                    return;
+                }
+                showStatus(missing.length ? '⏳ 等待：' + missing.join('、') : '⏳ 信息已齐全，正在确认页面稳定', 'success', true);
+                continuousTimer = setTimeout(poll, 1000);
+            } catch (error) {
+                stopContinuousCollection('页面信息读取失败，连续采集已停止', 'error');
+            }
+        }
+        poll();
+    }
+
+    function advanceContinuousCollection(run) {
+        if (continuousRun !== run || !continuousEnabled()) return;
+        if (collectionIdentity() !== run.expected) {
+            stopContinuousCollection('页面已变化，连续采集已停止');
+            return;
+        }
+        run.completed.push(run.expected);
+        const next = notEnteredList.find(link => {
+            const info = { region: String(link.country || '').toUpperCase(),
+                shopId: link.platform === 'tk' ? null : String(link.shop_id), productId: String(link.product_id) };
+            return continuousLinkUrl(link, run) && !run.completed.includes(collectionIdentity(info));
+        });
+        if (!next) {
+            stopContinuousCollection('✅ 本平台、本国家的待采集链接已全部完成');
+            return;
+        }
+        const nextUrl = continuousLinkUrl(next, run);
+        // 只允许同源跳转，国家和平台已经由链接生成器再次核验。
+        if (new URL(nextUrl).origin !== window.location.origin) {
+            stopContinuousCollection('下一条链接不属于当前站点，连续采集已停止', 'error');
+            return;
+        }
+        run.expected = collectionIdentity({ region: run.region, shopId: PLATFORM === 'tk' ? null : String(next.shop_id),
+            productId: String(next.product_id) });
+        run.updatedAt = Date.now();
+        saveContinuousRun(run);
+        window.location.href = nextUrl;
+    }
+
+    function sendCollectionRequest(method, payload) {
+        return new Promise((resolve, reject) => GM_xmlhttpRequest({
+            method: 'POST', url: `${API_BASE}/${method}`, timeout: 30000,
+            headers: { 'Content-Type': 'application/json',
+                'token': 'sk-e2ac92a27e75a54299313839fe6a78a7d9f82eb3d0f26f68' },
+            data: JSON.stringify(payload),
+            onload: response => {
+                try {
+                    const result = JSON.parse(response.responseText);
+                    if (response.status < 200 || response.status >= 300 || result.code !== 200) {
+                        reject(new Error(result.msg || '请求失败，请刷新列表确认采集结果'));
+                    } else resolve(result);
+                } catch (error) { reject(new Error('响应解析失败，请刷新列表确认采集结果')); }
+            },
+            onerror: () => reject(new Error('网络请求失败，请刷新列表确认采集结果')),
+            ontimeout: () => reject(new Error('请求超时，请刷新列表确认采集结果'))
+        }));
     }
 
     // 刷新数据预览
@@ -1391,7 +1632,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
         if (hint) {
             hint.textContent = hasAny
-                ? '⚠️ 请确认数据正确后再发送'
+                ? '⚠️ 请确认数据正确后再采集'
                 : '❌ 页面数据未能读取，请确认页面已加载完成';
             hint.style.color = hasAny ? '#faad14' : '#ff4d4f';
         }
@@ -1405,11 +1646,13 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     }
 
     // 显示状态消息
-    function showStatus(message, type = 'success') {
+    function showStatus(message, type = 'success', persistent = false) {
         const status = document.getElementById('tiktok-collector-status');
         status.textContent = message;
         status.className = type;
-        setTimeout(() => {
+        status.style.display = 'block';
+        clearTimeout(showStatus.timer);
+        if (!persistent) showStatus.timer = setTimeout(() => {
             status.style.display = 'none';
         }, 3000);
     }
@@ -1423,7 +1666,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             const match = url.match(/\/pdp\/(\d+)/);
             const productId = match ? match[1] : null;
             const urlParams = new URLSearchParams(window.location.search);
-            const region = urlParams.get('region') || 'TH';
+            const pathRegion = window.location.pathname.match(/\/shop\/([a-z]{2})\//i);
+            const region = (pathRegion?.[1] || urlParams.get('region') || '').toUpperCase();
             return { productId, shopId: null, region };
         } else {
             // Shopee 同时使用 /product/{shop_id}/{product_id} 和商品标题-i.{shop_id}.{product_id}
@@ -1831,8 +2075,14 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     }
 
     // 采集并发送数据
-    async function collectAndSend() {
+    async function collectAndSend(automatic = false) {
+        if (collectionInFlight) return;
+        if (!automatic && continuousRun) stopContinuousCollection();
+        const run = automatic ? continuousRun : null;
+        if (automatic && (!run || !continuousEnabled() || run.expected !== collectionIdentity())) return;
+        collectionInFlight = true;
         const btn = document.getElementById('tiktok-collector-btn');
+        btn.disabled = true;
         btn.classList.add('loading');
         btn.textContent = '⏳ 采集中...';
 
@@ -1845,12 +2095,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             console.log(`[${PLATFORM}采集器] 商品ID:`, productId, 'shopId:', shopId, '区域:', region);
 
             // 从待采集列表中找到对应的 competitor_id
-            let competitor;
-            if (PLATFORM === 'tk') {
-                competitor = notEnteredList.find(item => item.product_id === productId);
-            } else {
-                competitor = notEnteredList.find(item => item.shop_id === shopId && item.product_id === productId);
-            }
+            const competitor = notEnteredList.find(item => isCurrentCompetitor(item));
 
             if (!competitor) {
                 throw new Error('当前商品不在待采集列表中，可能已录入或不是竞品链接');
@@ -1858,6 +2103,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
             console.log(`[${PLATFORM}采集器] ========== 开始提取页面数据 ==========`);
             const data = extractData();
+            const priceData = getCurrentPriceData();
+            if (automatic) {
+                const missing = missingCollectionFields(data, priceData);
+                if (missing.length) throw new Error('信息尚未齐全：' + missing.join('、'));
+            }
             console.log(`[${PLATFORM}采集器] ========== 提取的数据详情 ==========`);
             console.log(`[${PLATFORM}采集器] 销量 (soldCount):`, data.soldCount);
             console.log(`[${PLATFORM}采集器] 评价数 (reviewCount):`, data.reviewCount);
@@ -1866,31 +2116,23 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             console.log(`[${PLATFORM}采集器] 喜欢数 (likes):`, data.likes);
             console.log(`[${PLATFORM}采集器] 完整数据对象:`, JSON.stringify(data));
 
-            if (!data.soldCount && !data.reviewCount && !data.productRating && !data.likes && !getCurrentPriceData()) {
+            if (Object.values(data).every(value => value === null || value === undefined) && !getCurrentPriceData()) {
                 throw new Error('未能提取到任何数据，请检查页面是否完全加载');
             }
 
             // 步骤1: 更新链接表的评分
             if (data.productRating !== null) {
                 console.log(`[${PLATFORM}采集器] 更新评分:`, data.productRating);
-                GM_xmlhttpRequest({
-                    method: 'POST',
-                    url: `${API_BASE}/updateCompetitor`,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'token': 'sk-e2ac92a27e75a54299313839fe6a78a7d9f82eb3d0f26f68'
-                    },
-                    data: JSON.stringify({
-                        _id: competitor._id,
-                        rating: data.productRating
-                    }),
-                    onload: function(response) {
-                        console.log(`[${PLATFORM}采集器] 更新评分响应:`, response.responseText);
-                    },
-                    onerror: function(error) {
-                        console.error(`[${PLATFORM}采集器] 更新评分失败:`, error);
-                    }
+                await sendCollectionRequest('updateCompetitor', {
+                    _id: competitor._id,
+                    rating: data.productRating
                 });
+            }
+
+            // 评分提交期间取消勾选或页面变化时，停止本轮自动提交。
+            if (automatic && (continuousRun !== run || !continuousEnabled() || run.expected !== collectionIdentity())) {
+                stopContinuousCollection('连续采集已停止');
+                return;
             }
 
             // 步骤2: 添加每日数据
@@ -1908,13 +2150,13 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 dailyPayload.global_review_count = data.globalReviewCount;
                 // 价格区间（从 SSR 拦截获取）
                 _debug('发送时 interceptedPriceData: ' + JSON.stringify(interceptedPriceData));
-                if (interceptedPriceData) {
-                    dailyPayload.price_range = interceptedPriceData.rangePrice || '';
+                if (priceData) {
+                    dailyPayload.price_range = priceData.rangePrice || '';
                     _debugPricePoint('提交ERP前价格确认', {
                         product_id: _getCurrentTikTokProductId(),
-                        parser_source: interceptedPriceData.source || null,
-                        parsed_min: interceptedPriceData.minRealPrice,
-                        parsed_max: interceptedPriceData.maxRealPrice,
+                        parser_source: priceData.source || null,
+                        parsed_min: priceData.minRealPrice,
+                        parsed_max: priceData.maxRealPrice,
                         final_price_range: dailyPayload.price_range,
                         api_method: 'addDailyData'
                     });
@@ -1926,7 +2168,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             } else {
                 dailyPayload.likes = data.likes;
                 dailyPayload.shop_review_count = data.shopReviewCount;
-                const price = getCurrentPriceData();
+                const price = priceData;
                 if (price) {
                     dailyPayload.price_range = price.rangePrice;
                     logShopeePrice('提交前价格确认', {
@@ -1949,57 +2191,29 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             console.log(`[${PLATFORM}采集器] 请求方法: POST`);
             console.log(`[${PLATFORM}采集器] 请求体:`, JSON.stringify(dailyPayload));
 
-            GM_xmlhttpRequest({
-                method: 'POST',
-                url: `${API_BASE}/addDailyData`,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': 'sk-e2ac92a27e75a54299313839fe6a78a7d9f82eb3d0f26f68'
-                },
-                data: JSON.stringify(dailyPayload),
-                onload: function(response) {
-                    console.log(`[${PLATFORM}采集器] ========== API响应 ==========`);
-                    console.log(`[${PLATFORM}采集器] 响应状态:`, response.status);
-                    console.log(`[${PLATFORM}采集器] 响应内容:`, response.responseText);
-                    try {
-                        const result = JSON.parse(response.responseText);
-                        console.log(`[${PLATFORM}采集器] 解析后的响应:`, result);
-                        console.log(`[${PLATFORM}采集器] 响应code:`, result.code);
-                        console.log(`[${PLATFORM}采集器] 响应msg:`, result.msg);
-                        if (result.code === 200) {
-                            let successMsg = `✅ 录入成功！销量: ${data.soldCount || '-'}, 评价: ${data.reviewCount || '-'}`;
-                            if (PLATFORM === 'tk') {
-                                successMsg += `, 全球评价: ${data.globalReviewCount || '-'}`;
-                            } else {
-                                successMsg += `, 喜欢: ${data.likes || '-'}, 店铺评价: ${data.shopReviewCount || '-'}`;
-                            }
-                            successMsg += `, 评分: ${data.productRating || '-'}`;
-                            showStatus(successMsg, 'success');
-                            // 重新加载未录入列表
-                            setTimeout(() => loadNotEnteredList(), 1000);
-                        } else {
-                            showStatus(`❌ 录入失败: ${result.msg}`, 'error');
-                        }
-                    } catch (e) {
-                        console.error(`[${PLATFORM}采集器] 解析响应失败:`, e);
-                        showStatus('❌ 录入失败: 解析响应失败', 'error');
-                    }
-                    btn.classList.remove('loading');
-                    btn.textContent = '📊 发送到 ERP';
-                },
-                onerror: function(error) {
-                    console.error(`[${PLATFORM}采集器] 请求失败:`, error);
-                    showStatus('❌ 录入失败: 网络请求失败', 'error');
-                    btn.classList.remove('loading');
-                    btn.textContent = '📊 发送到 ERP';
-                }
-            });
-
+            await sendCollectionRequest('addDailyData', dailyPayload);
+            // 服务端确认成功后才删除本地条目、推进下一页；不自动重试写入请求。
+            notEnteredList = notEnteredList.filter(item => !isCurrentCompetitor(item, { productId, shopId, region }));
+            let successMsg = `✅ 采集成功！销量: ${data.soldCount ?? '-'}, 评价: ${data.reviewCount ?? '-'}`;
+            successMsg += PLATFORM === 'tk' ? `, 全球评价: ${data.globalReviewCount ?? '-'}` :
+                `, 喜欢: ${data.likes ?? '-'}, 店铺评价: ${data.shopReviewCount ?? '-'}`;
+            successMsg += `, 评分: ${data.productRating ?? '-'}`;
+            showStatus(successMsg, 'success');
+            if (run && continuousRun === run && continuousEnabled()) {
+                advanceContinuousCollection(run);
+            } else {
+                renderNotEnteredList();
+                setTimeout(() => loadNotEnteredList(), 1000);
+            }
         } catch (error) {
             console.error(`[${PLATFORM}采集器] 错误:`, error);
+            stopContinuousCollection();
             showStatus(`❌ 采集失败: ${error.message}`, 'error');
+        } finally {
+            collectionInFlight = false;
+            btn.disabled = false;
             btn.classList.remove('loading');
-            btn.textContent = '📊 发送到 ERP';
+            btn.textContent = '📊 采集';
         }
     }
 

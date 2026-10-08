@@ -8,6 +8,7 @@ const source = fs.readFileSync(path.resolve(__dirname, '../多平台数据采集
 const priceCode = source.slice(source.indexOf('    function logShopeePrice('), source.indexOf('    // 从 SSR JSON 中递归查找价格字段'));
 const previewCode = source.slice(source.indexOf('    function renderPreview('), source.indexOf('    // 显示错误'));
 const sendCode = source.slice(source.indexOf('    async function collectAndSend('), source.indexOf('    // 初始化'));
+const continuousCode = source.slice(source.indexOf('    // 连续采集：'), source.indexOf('    // 刷新数据预览'));
 const itemId = '29377737789';
 const shopId = '323536941';
 const detailPath = '/api/v4/pdp/get_pc';
@@ -33,11 +34,16 @@ function fixture(platform = 'sp', hostname = 'shopee.com.my') {
         document: { getElementById: id => elements[id] }, getProductInfo: () => current,
         _debug: text => logs.push(text), _debugPricePoint() {}, _getCurrentTikTokProductId: () => itemId,
         console: { log() {}, warn() {}, error() {} }, updatePricePreview() {},
-        notEnteredList: [{ _id: 'competitor-fixture', product_id: itemId, shop_id: shopId }], API_BASE: 'https://fixture.invalid',
+        notEnteredList: [{ _id: 'competitor-fixture', product_id: itemId, shop_id: shopId, platform,
+            country: current.region }], API_BASE: 'https://fixture.invalid',
         extractData: () => ({ soldCount: 20000, productRating: 4.9, reviewCount: 4900, globalReviewCount: null, likes: 5700, shopReviewCount: 94900 }),
-        GM_xmlhttpRequest: request => requests.push(request), showStatus(message) { throw new Error(message); } };
+        GM_xmlhttpRequest: request => { requests.push(request); request.onload({ status: 200, responseText: '{"code":200}' }); },
+        showStatus() {}, renderNotEnteredList() {},
+        loadNotEnteredList() { context.notEnteredList = [{ _id: 'competitor-fixture', product_id: itemId, shop_id: shopId,
+            platform, country: current.region }]; },
+        setTimeout(callback) { callback(); return 1; }, clearTimeout() {} };
     vm.createContext(context);
-    vm.runInContext(priceCode + previewCode + sendCode, context);
+    vm.runInContext(continuousCode + priceCode + previewCode + sendCode, context);
     return { context, elements, requests, logs, changeProduct: value => { current = value; },
         setPriceNodes(values) {
             const root = { textContent: values.map(value => value.text).join(' ') };

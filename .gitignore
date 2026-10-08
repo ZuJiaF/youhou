@@ -11,3 +11,5 @@ node_modules/
 bridge.log
 directory-bridge.log
 gpt-bridge.log
+# 本机终端会话状态，不参与多电脑同步。
+/sessionTerminals.json

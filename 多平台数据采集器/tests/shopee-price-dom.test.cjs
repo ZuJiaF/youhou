@@ -10,7 +10,8 @@ try { ({ chromium } = require('playwright')); } catch (error) {
 }
 const source = fs.readFileSync(path.resolve(__dirname, '../多平台数据采集器.user.js'), 'utf8');
 function section(start, end) { return source.slice(source.indexOf(start), source.indexOf(end)); }
-const code = section('    function logShopeePrice(', '    // 从 SSR JSON 中递归查找价格字段') +
+const code = section('    // 连续采集：', '    // 刷新数据预览') +
+    section('    function logShopeePrice(', '    // 从 SSR JSON 中递归查找价格字段') +
     section('    function updatePricePreview(', '    // 添加样式') +
     section('    function renderPreview(', '    // 显示错误') +
     section('    async function collectAndSend(', '    // 初始化');
@@ -25,11 +26,18 @@ const harness = `
         const parts = location.pathname.split('/');
         return { productId: parts[3], shopId: parts[2], region: 'MY' };
     }
-    const notEnteredList = [{ _id: 'fixture', product_id: '28487872335', shop_id: '1549429165' }];
+    let notEnteredList = [{ _id: 'fixture', product_id: '28487872335', shop_id: '1549429165', platform: 'sp', country: 'MY' }];
     const API_BASE = 'https://fixture.invalid';
-    function GM_xmlhttpRequest(request) { replayRequests.push({ url: request.url, data: request.data }); }
+    function GM_xmlhttpRequest(request) {
+        replayRequests.push({ url: request.url, data: request.data });
+        request.onload({ status: 200, responseText: '{"code":200}' });
+    }
     function extractData() { return { soldCount: 5000, productRating: 4.9, reviewCount: 992, likes: 1400, shopReviewCount: 6300 }; }
-    function showStatus(message) { throw new Error(message); }
+    function showStatus() {}
+    function renderNotEnteredList() {}
+    function loadNotEnteredList() {
+        notEnteredList = [{ _id: 'fixture', product_id: '28487872335', shop_id: '1549429165', platform: 'sp', country: 'MY' }];
+    }
     function _debugPricePoint() {}
 `;
 
@@ -58,6 +66,7 @@ test('Shopee 用户回传页面售价：真实浏览器验证预览、提交与�
     }
     async function payload(page) {
         return page.evaluate(async () => {
+            loadNotEnteredList();
             await collectAndSend();
             return JSON.parse(replayRequests.find(request => request.url.endsWith('/addDailyData')).data);
         });
