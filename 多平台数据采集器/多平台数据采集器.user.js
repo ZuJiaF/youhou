@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.7.1
+// @version      2.7.3
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -50,7 +50,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     _debug('IIFE 进入');
 
-    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.7.1';
+    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.7.3';
 
     // 平台检测
     const PLATFORM = window.location.href.includes('tiktok.com') ? 'tk' : 'sp';
@@ -1083,7 +1083,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 连续采集 <small>仅同平台、同国家</small>
             </label>
             <div id="tiktok-continuous-timing" aria-live="off"></div>
-            <button id="tiktok-collector-btn">📊 采集</button>
+            <button id="tiktok-collector-btn">📊 推送到 ERP</button>
             <pre id="tiktok-debug-area" style="font-size:10px;color:#999;padding:6px 10px;margin:0;max-height:80px;overflow-y:auto;background:#f9f9f9;border-top:1px solid #eee;white-space:pre-wrap;word-break:break-all;"></pre>
         `;
         document.body.appendChild(panel);
@@ -1392,8 +1392,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     let continuousClockTimer = null;
     let collectionInFlight = false;
 
-    function continuousResultKey() {
-        return `erp-collector:continuous-last:${PLATFORM}:${getProductInfo().region}`;
+    function continuousResultKey(region = getProductInfo().region) {
+        return `erp-collector:continuous-last:${PLATFORM}:${region}`;
     }
 
     function readContinuousResult() {
@@ -1508,15 +1508,15 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         if (run && Number.isFinite(run.startedAt)) {
             const result = { outcome, completedCount: run.completed.length, total: run.total,
                 durationMs: Math.max(0, Date.now() - run.startedAt), endedAt: Date.now() };
-            try { localStorage.setItem(continuousResultKey(), JSON.stringify(result)); } catch (error) {}
+            try { localStorage.setItem(continuousResultKey(run.region), JSON.stringify(result)); } catch (error) {}
             renderContinuousTiming(result);
         }
         try { sessionStorage.removeItem(CONTINUOUS_RUN_KEY); } catch (error) {}
         if (!collectionInFlight) {
             const btn = document.getElementById('tiktok-collector-btn');
-            if (btn) { btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '📊 采集'; }
+            if (btn) { btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '📊 推送到 ERP'; }
         }
-        if (message) showStatus(message, type);
+        if (message) showStatus(message, type, outcome === 'completed');
     }
 
     function startContinuousCollection() {
@@ -1729,7 +1729,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
         if (hint) {
             hint.textContent = hasAny
-                ? '⚠️ 请确认数据正确后再采集'
+                ? '⚠️ 请确认数据正确后再推送到 ERP'
                 : '❌ 页面数据未能读取，请确认页面已加载完成';
             hint.style.color = hasAny ? '#faad14' : '#ff4d4f';
         }
@@ -2310,7 +2310,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             collectionInFlight = false;
             btn.disabled = false;
             btn.classList.remove('loading');
-            btn.textContent = '📊 采集';
+            btn.textContent = '📊 推送到 ERP';
         }
     }
 
