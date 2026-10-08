@@ -12,22 +12,24 @@ const runKey = 'erp-collector:continuous-run:v1';
 const store = (values = new Map()) => ({ getItem: key => values.get(key) ?? null,
     setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key), values });
 function fixture({ platform = 'sp', region = 'MY', productId = '20', shopId = '10',
-    session = store(), local = store(), pending, automaticResponses = true } = {}) {
+    session = store(), local = store(), pending, automaticResponses = true, startTime = 100000 } = {}) {
     const info = { productId, shopId: platform === 'tk' ? null : shopId, region };
     const link = (id, extra = {}) => ({ _id: `row-${id}`, platform, country: region,
         product_id: id, shop_id: shopId, ...extra });
-    let now = 100000;
+    let now = startTime;
     let serial = 0;
     const timers = new Map(), requests = [], navigation = [], messages = [];
     const checkbox = { checked: true };
     const button = { disabled: false, classList: { add() {}, remove() {} } };
+    const timing = { textContent: '' };
     const hostname = platform === 'tk' ? 'www.tiktok.com' : region === 'MY' ? 'shopee.com.my' : 'shopee.co.th';
     const location = { hostname, origin: `https://${hostname}` };
     Object.defineProperty(location, 'href', { get: () => navigation.at(-1) || location.origin,
         set: value => navigation.push(value) });
     const c = { PLATFORM: platform, URL, window: { location }, Date: { now: () => now },
         localStorage: local, sessionStorage: session,
-        document: { readyState: 'complete', getElementById: id => id === 'tiktok-continuous-checkbox' ? checkbox : button },
+        document: { readyState: 'complete', getElementById: id => id === 'tiktok-continuous-checkbox' ? checkbox :
+            id === 'tiktok-continuous-timing' ? timing : button },
         getProductInfo: () => info,
         notEnteredList: pending || [link(productId), link('21', { country: 'TH' }),
             link('22', { platform: platform === 'sp' ? 'tk' : 'sp' }), link('23'), link('24')],
@@ -47,7 +49,7 @@ function fixture({ platform = 'sp', region = 'MY', productId = '20', shopId = '1
     vm.createContext(c);
     vm.runInContext(code, c);
     async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
-    return { c, session, local, requests, navigation, messages, checkbox, button, info,
+    return { c, session, local, requests, navigation, messages, checkbox, button, timing, info,
         async advance(ms) {
             const until = now + ms;
             while (true) {
@@ -186,4 +188,57 @@ test('下一条国家未知、链接编号非法或进度存储失败时不跳�
     const failed = fixture(); failed.session.setItem = () => { throw new Error('quota'); };
     failed.c.startContinuousCollection(); await failed.advance(10000);
     assert.equal(failed.navigation.length, 0); assert.equal(failed.requests.length, 0);
+});
+
+test('整批计时跨页累计，包含提交等待和跳页时间，完成后记录总耗时且刷新后保留', async () => {
+    const first = fixture({ automaticResponses: false });
+    first.c.startContinuousCollection();
+    assert.match(first.timing.textContent, /已完成 0\/3 · 已用 0秒/);
+    assert.match(first.timing.textContent, /完成首条后估算/);
+    await first.advance(8000);
+    assert.match(first.timing.textContent, /已用 8秒/); // 请求在途时，计时继续。
+    first.requests[0].onload({ status: 200, responseText: '{"code":200}' }); await first.flush();
+    first.requests[1].onload({ status: 200, responseText: '{"code":200}' }); await first.flush();
+    assert.match(first.timing.textContent, /已完成 1\/3/);
+    assert.equal(JSON.parse(first.session.getItem(runKey)).startedAt, 100000);
+    const second = fixture({ productId: '23', session: first.session, local: first.local, startTime: 111000 });
+    second.c.resumeContinuousCollection();
+    assert.match(second.timing.textContent, /已用 11秒/);
+    assert.match(second.timing.textContent, /约13秒（按本轮速度估算）/);
+    await second.advance(4000);
+    const third = fixture({ productId: '24', session: first.session, local: first.local, startTime: 117000 });
+    third.c.resumeContinuousCollection(); await third.advance(4000);
+    assert.match(third.timing.textContent, /上次已完成 3\/3 · 总耗时 21秒/);
+    assert.equal(third.c.readContinuousResult().durationMs, 21000);
+    await third.advance(10000); assert.match(third.timing.textContent, /总耗时 21秒/);
+    const reload = fixture({ local: first.local, startTime: 200000 }); reload.c.renderContinuousTiming();
+    assert.match(reload.timing.textContent, /总耗时 21秒/);
+});
+
+test('上次完成耗时用于首条估算，当前页面超过估算时提示待更新而不显示剩余0秒', async () => {
+    const f = fixture();
+    f.local.setItem(f.c.continuousResultKey(), JSON.stringify({ outcome: 'completed',
+        durationMs: 30000, completedCount: 3, total: 3 }));
+    f.c.data.likes = null; f.c.startContinuousCollection();
+    assert.match(f.timing.textContent, /约30秒（按上次速度估算）/);
+    await f.advance(31000);
+    assert.match(f.timing.textContent, /当前页面较慢/);
+    assert.doesNotMatch(f.timing.textContent, /剩余：0秒/);
+    f.c.stopContinuousCollection();
+    assert.match(f.timing.textContent, /上次已停止 0\/3 · 总耗时 31秒/);
+    await f.advance(10000); assert.match(f.timing.textContent, /总耗时 31秒/);
+});
+
+test('失败和取消均冻结本轮耗时，记录只在同平台同国家读取；长耗时格式正确', async () => {
+    const f = fixture(); f.c.data.likes = null; f.c.startContinuousCollection(); await f.advance(90000);
+    assert.match(f.timing.textContent, /上次已停止 0\/3 · 总耗时 1分30秒/);
+    assert.equal(f.c.readContinuousResult().outcome, 'stopped');
+    f.info.region = 'TH'; assert.equal(f.c.readContinuousResult(), null);
+    assert.equal(f.c.formatCollectionDuration(3661000), '1小时1分1秒');
+    assert.equal(f.c.formatCollectionDuration(1001, true), '2秒');
+    f.local.setItem(f.c.continuousResultKey(), '{broken'); assert.equal(f.c.readContinuousResult(), null);
+    const changed = fixture(); changed.c.startContinuousCollection(); changed.info.region = 'TH';
+    await changed.advance(1000);
+    assert.equal(changed.c.readContinuousResult(), null);
+    changed.info.region = 'MY'; assert.equal(changed.c.readContinuousResult().durationMs, 1000);
 });

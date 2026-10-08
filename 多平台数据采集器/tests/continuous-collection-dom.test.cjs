@@ -40,7 +40,7 @@ test('完整脚本浏览器回放：复选框持久化、慢加载等待、跳�
     }) : route.abort());
     await page.addInitScript(() => {
         window.unsafeWindow = window;
-        window.GM_info = { script: { version: '2.7.0' } };
+        window.GM_info = { script: { version: '2.7.1' } };
         window.GM_addStyle = css => {
             const append = () => { const style = document.createElement('style'); style.textContent = css; document.head.append(style); };
             if (document.head) append(); else document.addEventListener('DOMContentLoaded', append);
@@ -62,6 +62,7 @@ test('完整脚本浏览器回放：复选框持久化、慢加载等待、跳�
     assert.equal(await checkbox.isChecked(), true);
     assert.equal(writes.length, 0); // 只恢复偏好，重新打开页面需要点击开始。
     await page.locator('#tiktok-collector-btn').click();
+    await page.waitForFunction(() => document.getElementById('tiktok-continuous-timing').textContent.includes('已完成 0/2'));
     await page.waitForFunction(() => document.getElementById('tiktok-collector-status').textContent.includes('店铺评价数'));
     assert.equal(writes.length, 0);
     await page.locator('#sll2-pdp-product-shop').evaluate(node => { node.innerHTML = '<span>6.4千 Ratings</span>'; });
@@ -69,6 +70,8 @@ test('完整脚本浏览器回放：复选框持久化、慢加载等待、跳�
     await page.waitForFunction(() => document.getElementById('tiktok-collector-status')?.textContent.includes('店铺评价数'));
     assert.equal(await checkbox.isChecked(), true);
     assert.equal(writes.length, 1);
+    assert.match(await page.locator('#tiktok-continuous-timing').textContent(), /已完成 1\/2 · 已用/);
+    assert.match(await page.locator('#tiktok-continuous-timing').textContent(), /预计剩余/);
     await page.locator('#sll2-pdp-product-shop').evaluate(node => { node.innerHTML = '<span>6.4千 Ratings</span>'; });
     await page.waitForFunction(() => document.getElementById('tiktok-collector-status')?.textContent.includes('已全部完成'),
         null, { timeout: 15000 });
@@ -78,8 +81,11 @@ test('完整脚本浏览器回放：复选框持久化、慢加载等待、跳�
     assert.equal(page.url(), 'https://shopee.com.my/product/11/23');
     assert.equal(await page.locator('#tiktok-collector-btn').isDisabled(), false);
     assert.equal(await page.evaluate(() => sessionStorage.getItem('erp-collector:continuous-run:v1')), null);
+    const finishedTiming = await page.locator('#tiktok-continuous-timing').textContent();
+    assert.match(finishedTiming, /上次已完成 2\/2 · 总耗时/);
     await checkbox.uncheck();
     await page.reload();
     await checkbox.waitFor();
     assert.equal(await checkbox.isChecked(), false);
+    assert.equal(await page.locator('#tiktok-continuous-timing').textContent(), finishedTiming);
 });

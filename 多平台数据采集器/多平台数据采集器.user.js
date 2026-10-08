@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.7.0
+// @version      2.7.1
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -50,7 +50,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     _debug('IIFE 进入');
 
-    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.7.0';
+    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.7.1';
 
     // 平台检测
     const PLATFORM = window.location.href.includes('tiktok.com') ? 'tk' : 'sp';
@@ -909,6 +909,15 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             margin-left: auto;
             color: #999;
         }
+        #tiktok-continuous-timing {
+            padding: 0 14px 8px;
+            background: #fafafa;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+        #tiktok-continuous-timing:empty { display: none; }
         #tiktok-collector-status {
             padding: 10px 16px;
             background: white;
@@ -1073,6 +1082,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
                 <input id="tiktok-continuous-checkbox" type="checkbox">
                 连续采集 <small>仅同平台、同国家</small>
             </label>
+            <div id="tiktok-continuous-timing" aria-live="off"></div>
             <button id="tiktok-collector-btn">📊 采集</button>
             <pre id="tiktok-debug-area" style="font-size:10px;color:#999;padding:6px 10px;margin:0;max-height:80px;overflow-y:auto;background:#f9f9f9;border-top:1px solid #eee;white-space:pre-wrap;word-break:break-all;"></pre>
         `;
@@ -1152,6 +1162,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         // 勾选偏好按平台、国家保存在本机；运行进度只属于当前标签页。
         const continuousCheckbox = document.getElementById('tiktok-continuous-checkbox');
         continuousCheckbox.checked = readContinuousPreference();
+        renderContinuousTiming();
         continuousCheckbox.onchange = () => {
             try {
                 localStorage.setItem(continuousPreferenceKey(), String(continuousCheckbox.checked));
@@ -1378,7 +1389,74 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     const CONTINUOUS_RUN_KEY = 'erp-collector:continuous-run:v1';
     let continuousRun = null;
     let continuousTimer = null;
+    let continuousClockTimer = null;
     let collectionInFlight = false;
+
+    function continuousResultKey(region = getProductInfo().region) {
+        return `erp-collector:continuous-last:${PLATFORM}:${region}`;
+    }
+
+    function readContinuousResult() {
+        try {
+            const result = JSON.parse(localStorage.getItem(continuousResultKey()) || 'null');
+            return result && Number.isFinite(result.durationMs) && result.durationMs >= 0 &&
+                Number.isInteger(result.completedCount) && result.completedCount >= 0 &&
+                Number.isInteger(result.total) && result.total >= result.completedCount ? result : null;
+        } catch (error) { return null; }
+    }
+
+    function formatCollectionDuration(ms, roundUp = false) {
+        const seconds = Math.max(0, (roundUp ? Math.ceil : Math.floor)(ms / 1000));
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor(seconds % 3600 / 60);
+        return (hours ? `${hours}小时` : '') + (hours || minutes ? `${minutes}分` : '') + `${seconds % 60}秒`;
+    }
+
+    function refreshContinuousTotal(run) {
+        const remaining = new Set(notEnteredList.filter(link => continuousLinkUrl(link, run)).map(link =>
+            collectionIdentity({ region: run.region, shopId: run.platform === 'tk' ? null : String(link.shop_id),
+                productId: String(link.product_id) })).filter(key => !run.completed.includes(key)));
+        run.total = run.completed.length + remaining.size;
+    }
+
+    function continuousTimeEstimate(run, now = Date.now()) {
+        const count = run.completed.length;
+        const remaining = Math.max(0, run.total - count);
+        if (!remaining) return '预计剩余：0秒';
+        const history = readContinuousResult();
+        const average = count && Number.isFinite(run.lastCompletedAt)
+            ? (run.lastCompletedAt - run.startedAt) / count
+            : history?.outcome === 'completed' && history.completedCount > 0
+                ? history.durationMs / history.completedCount : null;
+        if (average === null || average <= 0) return '预计剩余：完成首条后估算';
+        const estimate = average * remaining - Math.max(0, now - (run.lastCompletedAt || run.startedAt));
+        if (estimate <= 0) return '当前页面较慢，预计剩余时间待更新';
+        return `预计剩余：约${formatCollectionDuration(estimate, true)}（${count ? '按本轮速度' : '按上次速度'}估算）`;
+    }
+
+    function renderContinuousTiming(result = readContinuousResult()) {
+        const el = document.getElementById('tiktok-continuous-timing');
+        if (!el) return;
+        if (continuousRun) {
+            const run = continuousRun;
+            el.textContent = `已完成 ${run.completed.length}/${run.total} · 已用 ${formatCollectionDuration(Date.now() - run.startedAt)}\n` +
+                continuousTimeEstimate(run);
+        } else if (result) {
+            el.textContent = `上次${result.outcome === 'completed' ? '已完成' : '已停止'} ${result.completedCount}/${result.total} · 总耗时 ${formatCollectionDuration(result.durationMs)}`;
+        } else el.textContent = '';
+    }
+
+    function startContinuousClock() {
+        if (continuousClockTimer !== null) clearTimeout(continuousClockTimer);
+        const run = continuousRun;
+        function tick() {
+            continuousClockTimer = null;
+            if (continuousRun !== run) return;
+            renderContinuousTiming();
+            continuousClockTimer = setTimeout(tick, 1000);
+        }
+        tick();
+    }
 
     function continuousPreferenceKey() {
         return `erp-collector:continuous-enabled:${PLATFORM}:${getProductInfo().region}`;
@@ -1420,10 +1498,19 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         continuousRun = run;
     }
 
-    function stopContinuousCollection(message, type = 'success') {
+    function stopContinuousCollection(message, type = 'success', outcome = 'stopped') {
         if (continuousTimer !== null) clearTimeout(continuousTimer);
         continuousTimer = null;
+        if (continuousClockTimer !== null) clearTimeout(continuousClockTimer);
+        continuousClockTimer = null;
+        const run = continuousRun;
         continuousRun = null;
+        if (run && Number.isFinite(run.startedAt)) {
+            const result = { outcome, completedCount: run.completed.length, total: run.total,
+                durationMs: Math.max(0, Date.now() - run.startedAt), endedAt: Date.now() };
+            try { localStorage.setItem(continuousResultKey(run.region), JSON.stringify(result)); } catch (error) {}
+            renderContinuousTiming(result);
+        }
         try { sessionStorage.removeItem(CONTINUOUS_RUN_KEY); } catch (error) {}
         if (!collectionInFlight) {
             const btn = document.getElementById('tiktok-collector-btn');
@@ -1440,8 +1527,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             return;
         }
         try {
-            saveContinuousRun({ platform: PLATFORM, region: info.region, expected: collectionIdentity(info),
-                completed: [], updatedAt: Date.now() });
+            const run = { platform: PLATFORM, region: info.region, expected: collectionIdentity(info),
+                completed: [], updatedAt: Date.now(), startedAt: Date.now(), lastCompletedAt: null };
+            refreshContinuousTotal(run);
+            saveContinuousRun(run);
+            startContinuousClock();
             waitForContinuousData();
         } catch (error) {
             stopContinuousCollection('本地进度保存失败，连续采集已停止', 'error');
@@ -1465,7 +1555,11 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             stopContinuousCollection('当前商品已不在待采集列表中，连续采集已停止');
             return;
         }
-        continuousRun = run;
+        // 兼容更新前的续采进度；新批次始终保留最初的开始时间。
+        if (!Number.isFinite(run.startedAt)) run.startedAt = run.updatedAt;
+        refreshContinuousTotal(run);
+        saveContinuousRun(run);
+        startContinuousClock();
         waitForContinuousData();
     }
 
@@ -1531,13 +1625,16 @@ _debug('脚本开始执行, URL: ' + window.location.href);
             return;
         }
         run.completed.push(run.expected);
+        run.lastCompletedAt = Date.now();
+        refreshContinuousTotal(run);
+        renderContinuousTiming();
         const next = notEnteredList.find(link => {
             const info = { region: String(link.country || '').toUpperCase(),
                 shopId: link.platform === 'tk' ? null : String(link.shop_id), productId: String(link.product_id) };
             return continuousLinkUrl(link, run) && !run.completed.includes(collectionIdentity(info));
         });
         if (!next) {
-            stopContinuousCollection('✅ 本平台、本国家的待采集链接已全部完成');
+            stopContinuousCollection('✅ 本平台、本国家的待采集链接已全部完成', 'success', 'completed');
             return;
         }
         const nextUrl = continuousLinkUrl(next, run);
