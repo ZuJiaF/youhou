@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         多平台数据采集器
 // @namespace    http://tampermonkey.net/
-// @version      2.6.17
+// @version      2.6.18
 // @description  采集TikTok和Shopee商品页面的销量、评价数、评分等数据，并发送到ERP系统
 // @author       聚树ERP
 // @match        https://www.tiktok.com/shop/*/pdp/*
@@ -50,7 +50,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
 
     _debug('IIFE 进入');
 
-    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.6.17';
+    const SCRIPT_VERSION = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '2.6.18';
 
     // 平台检测
     const PLATFORM = window.location.href.includes('tiktok.com') ? 'tk' : 'sp';
@@ -200,8 +200,8 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     if (PLATFORM === 'sp') installShopeePriceProbe();
 
     function logShopeePrice(stage, data) {
-        _debug('[debug][2026-10-07][ShopeePrice] ' + JSON.stringify({
-            build: 'price-identity-v2', scriptVersion: typeof SCRIPT_VERSION === 'undefined' ? null : SCRIPT_VERSION,
+        _debug('[debug][2026-10-08][ShopeePrice] ' + JSON.stringify({
+            build: 'price-dom-v3', scriptVersion: typeof SCRIPT_VERSION === 'undefined' ? null : SCRIPT_VERSION,
             stage, data
         }));
     }
@@ -495,11 +495,84 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         return Array.from(ranges.values());
     }
 
+    // 2026-10-08 用户回传 HTML：只读取 aria-live 售价区的独立金额节点。
+    // 旁边 CcxgW6 是划线价；会员价、运费和优惠券不在此节点内。
+    function readShopeePagePrice(product) {
+        if (window.location.hostname !== 'shopee.com.my' || !product.productId || !product.shopId) return null;
+        const root = document.getElementById('sll2-normal-pdp-main');
+        if (!root || typeof root.querySelectorAll !== 'function') return null;
+        const binding = readShopeePagePrice.binding;
+        if (!binding || binding.root !== root) {
+            readShopeePagePrice.binding = { root, productId: product.productId, shopId: product.shopId };
+        } else if (binding.productId !== product.productId || binding.shopId !== product.shopId) {
+            // 地址切换而旧商品 DOM 仍在时，不把旧售价绑定到新商品。
+            return null;
+        }
+        const nodes = Array.from(root.querySelectorAll('section[aria-live="polite"] .pyzxvq.pw3J3G'));
+        const ranges = new Map();
+        for (const node of nodes) {
+            if (node.closest('del, s, strike')) continue;
+            let visible = true;
+            for (let ancestor = node; ancestor; ancestor = ancestor.parentElement) {
+                const style = window.getComputedStyle(ancestor);
+                if (ancestor.hidden || ancestor.getAttribute('aria-hidden') === 'true' || style.display === 'none' ||
+                    /^(?:hidden|collapse)$/.test(style.visibility) || style.opacity === '0' ||
+                    /line-through/.test(style.textDecorationLine || style.textDecoration || '')) visible = false;
+                if (ancestor === root) break;
+            }
+            if (!visible) continue;
+            const text = (node.textContent || '').replace(/\u00a0/g, ' ').trim();
+            const match = text.match(/^(?:RM|MYR)\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?:\s*[-–—~]\s*(?:(?:RM|MYR)\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?))?$/i);
+            if (!match) continue;
+            const min = Number(match[1].replace(/,/g, ''));
+            const max = match[2] ? Number(match[2].replace(/,/g, '')) : min;
+            if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) continue;
+            ranges.set(min + ':' + max, { min, max });
+        }
+        if (ranges.size !== 1) return null;
+        const { min, max } = ranges.values().next().value;
+        return { productId: product.productId, shopId: product.shopId, currency: 'MYR',
+            rangePrice: min === max ? min.toFixed(2) : min.toFixed(2) + ' - ' + max.toFixed(2),
+            minRealPrice: min, maxRealPrice: max, source: 'page.primary_price', modelCount: null };
+    }
+
+    // 售价常在首屏之后填充；页面金额出现后立即刷新价格，不依赖接口拦截结果。
+    function installShopeePagePriceObserver() {
+        if (PLATFORM !== 'sp' || window.location.hostname !== 'shopee.com.my' ||
+            typeof MutationObserver === 'undefined' || !document.body) return;
+        const pageUrl = window.location.href;
+        let pending = null;
+        const observer = new MutationObserver(records => {
+            if (window.location.href !== pageUrl) { observer.disconnect(); return; }
+            const root = document.getElementById('sll2-normal-pdp-main');
+            if (!root || !records.some(record => root.contains(record.target) ||
+                Array.from(record.addedNodes).some(node => node === root || (node.contains && node.contains(root))))) return;
+            if (pending !== null) return;
+            pending = setTimeout(() => {
+                pending = null;
+                if (window.location.href === pageUrl) updatePricePreview();
+            }, 50);
+        });
+        observer.observe(document.body, { subtree: true, childList: true, characterData: true,
+            attributes: true, attributeFilter: ['class', 'style', 'hidden', 'aria-hidden'] });
+        updatePricePreview();
+    }
+
     function getCurrentPriceData() {
         if (PLATFORM === 'tk') return interceptedPriceData;
         const product = getProductInfo();
+        const pagePrice = readShopeePagePrice(product);
         const price = interceptedPriceData;
-        if (!price || price.productId !== product.productId || price.shopId !== product.shopId) return null;
+        if (!price || price.productId !== product.productId || price.shopId !== product.shopId) {
+            if (pagePrice) {
+                const signature = pagePrice.productId + ':' + pagePrice.rangePrice;
+                if (readShopeePagePrice.lastReported !== signature) {
+                    readShopeePagePrice.lastReported = signature;
+                    logShopeePrice('页面售价已读取', pagePrice);
+                }
+            }
+            return pagePrice;
+        }
         if (price.requiresPageCheck && !price.pageVerified) {
             const pageRanges = getShopeeVisiblePriceRanges(price.currency);
             price.pageVerified = pageRanges.some(range => Math.round(range.min * 100) === Math.round(price.minRealPrice * 100) &&
@@ -719,10 +792,14 @@ _debug('脚本开始执行, URL: ' + window.location.href);
     // 更新预览面板中的价格显示
     function updatePricePreview() {
         const el = document.getElementById('tiktok-price-range-value');
-        if (el && getCurrentPriceData()) {
-            const display = getPricePreviewValue() || '';
-            el.textContent = display || '未获取';
+        if (!el) return;
+        const display = getPricePreviewValue();
+        if (display) {
+            el.textContent = display;
             el.classList.remove('not-found');
+        } else if (PLATFORM === 'sp') {
+            el.textContent = '未采集到';
+            el.classList.add('not-found');
         }
     }
 
@@ -956,7 +1033,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         panel.innerHTML = `
             <div id="tiktok-not-entered-header">
                 <div id="tiktok-header-main">
-                    <span id="tiktok-version">v${SCRIPT_VERSION}</span>
+                    <span id="tiktok-version">v${SCRIPT_VERSION}${PLATFORM === 'sp' && window.location.hostname === 'shopee.com.my' ? ' · 价格读取3' : ''}</span>
                     <span id="tiktok-header-title">📋 今日待采集 (<span id="tiktok-count">0</span>)</span>
                 </div>
                 <div>
@@ -1071,6 +1148,7 @@ _debug('脚本开始执行, URL: ' + window.location.href);
         if (debugEl && _debugLogs.length) debugEl.textContent = _debugLogs.slice(-5).join('\n');
 
         // 初始自动刷新预览（等页面渲染稳定后再采集）
+        installShopeePagePriceObserver();
         setTimeout(refreshPreview, 1500);
         if (PLATFORM === 'sp' && ['shopee.com.my', 'shopee.co.th'].includes(window.location.hostname) && getProductInfo().productId) {
             const pageUrl = window.location.href;

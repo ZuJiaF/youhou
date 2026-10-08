@@ -43,7 +43,7 @@ function fixture(platform = 'sp', hostname = 'shopee.com.my') {
             const root = { textContent: values.map(value => value.text).join(' ') };
             const nodes = values.map(value => ({ textContent: value.text, parentElement: root,
                 closest: () => value.deleted ? {} : null, computedStyle: value.style || {} }));
-            root.querySelectorAll = () => nodes;
+            root.querySelectorAll = selector => selector === 'div, span' ? nodes : [];
             elements['sll2-normal-pdp-main'] = root;
         } };
 }
@@ -133,7 +133,7 @@ test('回传窗帘商品的售价进入预览和每日提交，划线价及VIP�
     assert.match(f.elements['tiktok-preview-grid'].innerHTML, /RM 9\.20 - 55\.80/);
     assert.equal(f.context.interceptedPriceData.source, 'item.price_min/price_max');
     assert.equal(f.context.interceptedPriceData.productIdField, 'item_id');
-    assert.ok(f.logs.some(line => line.includes('price-identity-v2') && line.includes('价格区间已读取')));
+    assert.ok(f.logs.some(line => line.includes('price-dom-v3') && line.includes('价格区间已读取')));
     await f.context.collectAndSend();
     const payload = JSON.parse(f.requests.find(request => request.url.endsWith('/addDailyData')).data);
     assert.equal(payload.price_range, '9.20 - 55.80');
