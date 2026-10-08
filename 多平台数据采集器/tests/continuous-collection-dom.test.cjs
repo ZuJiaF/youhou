@@ -40,7 +40,7 @@ test('完整脚本浏览器回放：复选框持久化、慢加载等待、跳�
     }) : route.abort());
     await page.addInitScript(() => {
         window.unsafeWindow = window;
-        window.GM_info = { script: { version: '2.7.1' } };
+        window.GM_info = { script: { version: '2.7.2' } };
         window.GM_addStyle = css => {
             const append = () => { const style = document.createElement('style'); style.textContent = css; document.head.append(style); };
             if (document.head) append(); else document.addEventListener('DOMContentLoaded', append);
@@ -55,7 +55,7 @@ test('完整脚本浏览器回放：复选框持久化、慢加载等待、跳�
     const checkbox = page.locator('#tiktok-continuous-checkbox');
     await page.waitForFunction(() => document.querySelectorAll('.tiktok-link-item').length === 3);
     assert.equal(await checkbox.isChecked(), false);
-    assert.equal(await page.locator('#tiktok-collector-btn').textContent(), '📊 采集');
+    assert.equal(await page.locator('#tiktok-collector-btn').textContent(), '📊 推送到 ERP');
     await checkbox.check();
     await page.reload();
     await page.waitForFunction(() => document.querySelectorAll('.tiktok-link-item').length === 3);
